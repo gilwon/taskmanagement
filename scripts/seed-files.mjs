@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
 
-const SEED_SLUGS = ['hanbit', 'dalbit', 'byeol'];
+const SEED_SLUGS = ['company', 'dalbit', 'byeol'];
 
 // 1x1 투명 PNG
 const PNG = Buffer.from(

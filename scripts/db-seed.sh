@@ -20,9 +20,9 @@ fi
 # libpq 환경 변수가 접속 대상을 바꾸지 못하게 지운다(PGHOSTADDR는 URL 호스트보다 우선한다).
 unset PGHOST PGHOSTADDR PGSERVICE PGSERVICEFILE
 
-existing="$(psql "$DB_URL" -Atc "select count(*) from public.workspaces where slug in ('hanbit', 'dalbit', 'byeol')")"
+existing="$(psql "$DB_URL" -Atc "select count(*) from public.workspaces where slug in ('company', 'dalbit', 'byeol')")"
 if [ "$existing" != "0" ]; then
-  echo "중단: 시드 워크스페이스(hanbit·dalbit·byeol)가 이미 있다. pnpm db:reset 후 다시 실행한다." >&2
+  echo "중단: 시드 워크스페이스(company·dalbit·byeol)가 이미 있다. pnpm db:reset 후 다시 실행한다." >&2
   exit 1
 fi
 

@@ -7,14 +7,14 @@
 -- files 행은 pending으로 들어가고 scripts/seed-files.mjs가 실제 업로드에 성공한 행만 ready로 바꾼다.
 --
 -- 로그인 계정. 공통 비밀번호는 seed-pass-2026 이다.
---   jiyoon.kim@example.com    김지윤  제품 총괄         hanbit owner, dalbit member
---   seojun.park@example.com   박서준  디자인 리드       hanbit admin
---   dohyun.lee@example.com    이도현  프론트엔드 엔지니어 hanbit member
---   haeun.choi@example.com    최하은  프로덕트 디자이너  hanbit member
---   minjae.jung@example.com   정민재  콘텐츠 전략가     hanbit member
---   taeo.kang@example.com     강태오  백엔드 엔지니어   hanbit member
---   sora.yoon@example.com     윤소라  QA 리드          hanbit admin
---   yujin.han@example.com     한유진  프리랜스 카피라이터 hanbit guest(invited)
+--   jiyoon.kim@example.com    김지윤  제품 총괄         company owner, dalbit member
+--   seojun.park@example.com   박서준  디자인 리드       company admin
+--   dohyun.lee@example.com    이도현  프론트엔드 엔지니어 company member
+--   haeun.choi@example.com    최하은  프로덕트 디자이너  company member
+--   minjae.jung@example.com   정민재  콘텐츠 전략가     company member
+--   taeo.kang@example.com     강태오  백엔드 엔지니어   company member
+--   sora.yoon@example.com     윤소라  QA 리드          company admin
+--   yujin.han@example.com     한유진  프리랜스 카피라이터 company guest(invited)
 --   serin.oh@example.com      오세린  dalbit owner
 --   jaewon.lim@example.com    임재원  byeol owner
 
@@ -43,7 +43,7 @@ insert into seed_people (local, name, title, color, team, role, status, last_act
   ('taeo.kang',   '강태오', '백엔드 엔지니어',    'teal',   '엔지니어링', 'member', 'active',  interval '1 day'),
   ('sora.yoon',   '윤소라', 'QA 리드',           'green',  '엔지니어링', 'admin',  'active',  interval '30 minutes'),
   ('yujin.han',   '한유진', '프리랜스 카피라이터', 'slate',  '마케팅',   'guest',  'invited', null),
-  -- 다른 워크스페이스 소유자. hanbit 구성원이 아니다.
+  -- 다른 워크스페이스 소유자. company 구성원이 아니다.
   ('serin.oh',    '오세린', null,                'teal',   null,       null,     null,      null),
   ('jaewon.lim',  '임재원', null,                'rose',   null,       null,     null,      null);
 
@@ -59,13 +59,13 @@ $$;
 create function pg_temp.p(p_key text) returns uuid language sql stable as $$
   select pr.id from public.projects pr
   join public.workspaces w on w.id = pr.workspace_id
-  where w.slug in ('hanbit', 'dalbit', 'byeol') and pr.key = p_key;
+  where w.slug in ('company', 'dalbit', 'byeol') and pr.key = p_key;
 $$;
 
 create function pg_temp.t(p_key text) returns uuid language sql stable as $$
   select t.id from public.tasks t
   join public.workspaces w on w.id = t.workspace_id
-  where w.slug in ('hanbit', 'dalbit', 'byeol') and t.key = p_key;
+  where w.slug in ('company', 'dalbit', 'byeol') and t.key = p_key;
 $$;
 
 -- ─────────────────────────────────────────────
@@ -101,21 +101,21 @@ where pf.id = pg_temp.u(sp.local);
 -- 워크스페이스·팀·구성원
 -- ─────────────────────────────────────────────
 insert into public.workspaces (name, slug, color, team_size, created_by) values
-  ('컴퍼니', 'hanbit', 'indigo', '2-10', pg_temp.u('jiyoon.kim')),
+  ('컴퍼니', 'company', 'indigo', '2-10', pg_temp.u('jiyoon.kim')),
   ('달빛 랩스',     'dalbit', 'teal',   '2-10', pg_temp.u('serin.oh')),
   ('별빛 커머스',   'byeol',  'rose',   'solo', pg_temp.u('jaewon.lim'));
 
 insert into public.teams (workspace_id, name, icon, color, description) values
-  (pg_temp.ws('hanbit'), '디자인',     'palette',   'violet', '브랜드와 제품 화면 디자인을 맡는다.'),
-  (pg_temp.ws('hanbit'), '엔지니어링', 'code',      'blue',   '웹·앱·서버 개발과 품질 검증을 맡는다.'),
-  (pg_temp.ws('hanbit'), '마케팅',     'megaphone', 'amber',  '캠페인과 콘텐츠를 맡는다.'),
-  (pg_temp.ws('hanbit'), '제품',       'target',    'indigo', '제품 방향과 출시 일정을 맡는다.');
+  (pg_temp.ws('company'), '디자인',     'palette',   'violet', '브랜드와 제품 화면 디자인을 맡는다.'),
+  (pg_temp.ws('company'), '엔지니어링', 'code',      'blue',   '웹·앱·서버 개발과 품질 검증을 맡는다.'),
+  (pg_temp.ws('company'), '마케팅',     'megaphone', 'amber',  '캠페인과 콘텐츠를 맡는다.'),
+  (pg_temp.ws('company'), '제품',       'target',    'indigo', '제품 방향과 출시 일정을 맡는다.');
 
 insert into public.workspace_members (workspace_id, user_id, role, status, title, color, team_id, last_active_at)
-select pg_temp.ws('hanbit'), pg_temp.u(sp.local), sp.role, sp.status, sp.title, sp.color, tm.id,
+select pg_temp.ws('company'), pg_temp.u(sp.local), sp.role, sp.status, sp.title, sp.color, tm.id,
        now() - sp.last_active
 from seed_people sp
-left join public.teams tm on tm.workspace_id = pg_temp.ws('hanbit') and tm.name = sp.team
+left join public.teams tm on tm.workspace_id = pg_temp.ws('company') and tm.name = sp.team
 where sp.role is not null;
 
 insert into public.workspace_members (workspace_id, user_id, role, status, title, color, last_active_at) values
@@ -133,13 +133,13 @@ select pg_temp.ws(v.ws), v.key, v.name, v.icon, v.color, v.status::public.projec
        pg_temp.u(v.lead), current_date + v.s, current_date + v.d, v.descr, v.access::public.project_access,
        pg_temp.u(v.lead), now() - make_interval(days => v.age)
 from (values
-  ('hanbit', 'WEB', '웹사이트 리디자인', 'globe',       'indigo', 'active',   '디자인',     'seojun.park', -30, 21, '회사 웹사이트의 구조와 디자인을 새로 정리한다.', 'workspace', 35),
-  ('hanbit', 'MOB', '모바일 앱',         'smartphone',  'blue',   'active',   '엔지니어링', 'dohyun.lee',  -20, 30, 'iOS·Android 앱 1.0을 출시한다.',              'workspace', 25),
-  ('hanbit', 'MKT', '마케팅 캠페인',     'megaphone',   'amber',  'planning', '마케팅',     'minjae.jung', -5,  20, '가을 신규 고객 유치 캠페인을 준비한다.',       'workspace', 14),
-  ('hanbit', 'LCH', '제품 출시',         'rocket',      'rose',   'risk',     '제품',       'jiyoon.kim',  -25, 14, '신규 요금제와 결제 기능을 출시한다.',          'workspace', 30),
-  ('hanbit', 'DS',  '디자인 시스템',     'component',   'violet', 'active',   '디자인',     'haeun.choi',  -40, 18, '공통 컴포넌트와 토큰을 정리해 문서화한다.',    'workspace', 45),
-  ('hanbit', 'CP',  '고객 포털',         'building-2',  'teal',   'hold',     '엔지니어링', 'taeo.kang',   -60, 60, '기업 고객용 포털. 요구사항 재검토로 보류 중이다.', 'private', 70),
-  ('hanbit', 'MW',  '마케팅 웹사이트',   'layout-grid', 'green',  'complete', '마케팅',     'minjae.jung', -60, -30, '캠페인 랜딩 페이지. 배포를 마쳤다.',          'workspace', 65),
+  ('company', 'WEB', '웹사이트 리디자인', 'globe',       'indigo', 'active',   '디자인',     'seojun.park', -30, 21, '회사 웹사이트의 구조와 디자인을 새로 정리한다.', 'workspace', 35),
+  ('company', 'MOB', '모바일 앱',         'smartphone',  'blue',   'active',   '엔지니어링', 'dohyun.lee',  -20, 30, 'iOS·Android 앱 1.0을 출시한다.',              'workspace', 25),
+  ('company', 'MKT', '마케팅 캠페인',     'megaphone',   'amber',  'planning', '마케팅',     'minjae.jung', -5,  20, '가을 신규 고객 유치 캠페인을 준비한다.',       'workspace', 14),
+  ('company', 'LCH', '제품 출시',         'rocket',      'rose',   'risk',     '제품',       'jiyoon.kim',  -25, 14, '신규 요금제와 결제 기능을 출시한다.',          'workspace', 30),
+  ('company', 'DS',  '디자인 시스템',     'component',   'violet', 'active',   '디자인',     'haeun.choi',  -40, 18, '공통 컴포넌트와 토큰을 정리해 문서화한다.',    'workspace', 45),
+  ('company', 'CP',  '고객 포털',         'building-2',  'teal',   'hold',     '엔지니어링', 'taeo.kang',   -60, 60, '기업 고객용 포털. 요구사항 재검토로 보류 중이다.', 'private', 70),
+  ('company', 'MW',  '마케팅 웹사이트',   'layout-grid', 'green',  'complete', '마케팅',     'minjae.jung', -60, -30, '캠페인 랜딩 페이지. 배포를 마쳤다.',          'workspace', 65),
   ('dalbit', 'EXP', '실험 대시보드',     'layers',      'teal',   'active',   null,         'serin.oh',    -10, 20, 'A/B 실험 결과를 한 화면에서 본다.',           'workspace', 12),
   ('byeol',  'SHOP', '쇼핑몰 오픈 준비', 'briefcase',   'rose',   'planning', null,         'jaewon.lim',  -3,  40, '온라인 쇼핑몰 1차 오픈을 준비한다.',          'workspace', 5)
 ) v(ws, key, name, icon, color, status, team, lead, s, d, descr, access, age);
@@ -148,7 +148,7 @@ from (values
 insert into public.project_members (project_id, user_id, perm)
 select pr.id, pr.lead_id, 'full'
 from public.projects pr
-where pr.workspace_id in (pg_temp.ws('hanbit'), pg_temp.ws('dalbit'), pg_temp.ws('byeol'));
+where pr.workspace_id in (pg_temp.ws('company'), pg_temp.ws('dalbit'), pg_temp.ws('byeol'));
 
 insert into public.project_members (project_id, user_id, perm) values
   -- 비공개 고객 포털은 리드(강태오) 외에 이도현만 초대한다.
@@ -369,12 +369,12 @@ from (values
 join public.projects pr on pr.id = pg_temp.p(v.pkey);
 
 -- ─────────────────────────────────────────────
--- 알림 10. 수신자는 모두 김지윤(hanbit). read_at이 있으면 읽음
+-- 알림 10. 수신자는 모두 김지윤(company). read_at이 있으면 읽음
 -- 문구·발췌는 서버 트리거와 같다. 서버가 만들지 않는 update 유형은 넣지 않는다.
 -- 작업 알림은 같은 프로젝트를 함께 넣는다(복합 FK).
 -- ─────────────────────────────────────────────
 insert into public.notifications (user_id, workspace_id, type, actor_id, task_id, project_id, text, snippet, read_at, created_at)
-select pg_temp.u('jiyoon.kim'), pg_temp.ws('hanbit'), v.type::public.notification_type, pg_temp.u(v.who),
+select pg_temp.u('jiyoon.kim'), pg_temp.ws('company'), v.type::public.notification_type, pg_temp.u(v.who),
        pg_temp.t(v.task), pg_temp.p(v.pkey), v.text, v.snippet,
        case when v.is_read then now() - v.ago + interval '10 minutes' end, now() - v.ago
 from (values
@@ -406,9 +406,9 @@ from (values
 join public.projects pr on pr.id = pg_temp.p(v.pkey);
 
 insert into public.saved_views (workspace_id, project_id, name, type, filters, created_by)
-values (pg_temp.ws('hanbit'), pg_temp.p('WEB'), '높은 우선순위', 'list',
+values (pg_temp.ws('company'), pg_temp.p('WEB'), '높은 우선순위', 'list',
         '[{"f":"priority","op":"is","v":["urgent","high"]}]', pg_temp.u('jiyoon.kim'));
 
 insert into public.favorites (user_id, workspace_id, project_id) values
-  (pg_temp.u('jiyoon.kim'), pg_temp.ws('hanbit'), pg_temp.p('WEB')),
-  (pg_temp.u('jiyoon.kim'), pg_temp.ws('hanbit'), pg_temp.p('MOB'));
+  (pg_temp.u('jiyoon.kim'), pg_temp.ws('company'), pg_temp.p('WEB')),
+  (pg_temp.u('jiyoon.kim'), pg_temp.ws('company'), pg_temp.p('MOB'));
