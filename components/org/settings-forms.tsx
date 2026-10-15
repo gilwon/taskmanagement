@@ -440,7 +440,7 @@ export function PasswordForm() {
             aria-describedby="pw-new-hint pw-new-error"
           />
           <p id="pw-new-hint" className="text-(length:--fs-xs) text-(--text-3)">
-            {MIN_PASSWORD_LENGTH}자 이상
+            영문과 숫자를 섞어 {MIN_PASSWORD_LENGTH}자 이상
           </p>
           <FieldError id="pw-new-error" message={fieldError("password")} />
         </div>

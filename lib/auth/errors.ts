@@ -1,5 +1,5 @@
 // Supabase Auth 오류 코드와 RPC 오류 코드를 화면에 보일 한국어 안내로 바꾼다. 원문은 내보내지 않는다
-import type { FieldError } from "@/lib/auth/rules";
+import { MIN_PASSWORD_LENGTH, type FieldError } from "@/lib/auth/rules";
 
 export const GENERIC_ERROR = "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
 
@@ -30,7 +30,7 @@ const AUTH_MESSAGES: Record<string, FieldError> = {
     message: "이메일 확인이 필요합니다. 메일함의 확인 링크를 눌러 주세요.",
   },
   email_address_invalid: { field: "email", message: "사용할 수 없는 이메일 주소입니다." },
-  weak_password: { field: "password", message: "비밀번호가 너무 약합니다. 더 길고 복잡하게 정해 주세요." },
+  weak_password: { field: "password", message: `비밀번호가 너무 약합니다. 영문과 숫자를 섞어 ${MIN_PASSWORD_LENGTH}자 이상으로 정해 주세요.` },
   same_password: { field: "password", message: "이전과 다른 비밀번호를 입력해 주세요." },
   over_email_send_rate_limit: { message: "메일을 너무 자주 요청했습니다. 잠시 후 다시 시도해 주세요." },
   over_request_rate_limit: { message: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },

@@ -180,10 +180,10 @@ enable_anonymous_sign_ins = false
 # 계정 수동 연결 테스트를 허용/차단한다.
 enable_manual_linking = false
 # 이 값보다 짧은 비밀번호는 약한 비밀번호로 거부한다. 최소 6, 권장 8 이상.
-minimum_password_length = 6
+minimum_password_length = 8
 # 다음 요구 사항을 충족하지 않는 비밀번호는 약한 비밀번호로 거부한다. 지원 값은
 # `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`이다.
-password_requirements = ""
+password_requirements = "letters_digits"
 
 # 패스키 로그인을 설정한다.
 # [auth.passkey]

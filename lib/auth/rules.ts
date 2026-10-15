@@ -2,7 +2,7 @@
 import { TEMPLATE_LABELS } from "@/lib/i18n/labels";
 
 // supabase/config.toml의 auth.minimum_password_length와 같아야 한다
-export const MIN_PASSWORD_LENGTH = 6;
+export const MIN_PASSWORD_LENGTH = 8;
 
 // 마이그레이션 workspaces.slug check와 create_workspace_onboarding의 정규식과 같다
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}$/;

@@ -17,6 +17,7 @@ export function ResetForm() {
           type="password"
           autoComplete="new-password"
           placeholder={`${MIN_PASSWORD_LENGTH}자 이상`}
+          hint={`영문과 숫자를 섞어 ${MIN_PASSWORD_LENGTH}자 이상 입력해 주세요.`}
           minLength={MIN_PASSWORD_LENGTH}
           required
           error={fieldError("password")}
