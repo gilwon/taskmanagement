@@ -62,15 +62,26 @@ function Host() {
 
   useNewTaskTarget(useMemo(() => ({ create: actions.create, open }), [actions.create, open]));
 
+  // 닫을 때 포커스를 돌려줄 곳. 연 요소가 사라졌으면 본문으로 보낸다
+  const restoreFocus = useCallback(() => {
+    const target = opener.current?.isConnected ? opener.current : document.getElementById("main-content");
+    target?.focus();
+  }, []);
+
   // 연 요소는 드로어가 포커스를 가져가기 전에 기억한다(레이아웃 효과가 Radix 포커스보다 먼저 돈다)
   const wasOpen = useRef(false);
+  const asideRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     if (openKey && !wasOpen.current) {
       const active = document.activeElement as HTMLElement | null;
       opener.current = active && active !== document.body ? active : null;
+    } else if (!openKey && wasOpen.current) {
+      // 닫히면 패널 내용이 바로 바뀌어 포커스가 body로 떨어진다. 닫힘 애니메이션이 끝날 때까지 기다리지 않고 지금 돌려준다
+      const active = document.activeElement;
+      if (!active || active === document.body || asideRef.current?.contains(active)) restoreFocus();
     }
     wasOpen.current = !!openKey;
-  }, [openKey]);
+  }, [openKey, restoreFocus]);
 
   // store에 없는 작업은 서버에서 읽는다
   const missing = !!openKey && !item;
@@ -137,8 +148,9 @@ function Host() {
           }}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            const target = opener.current?.isConnected ? opener.current : document.getElementById("main-content");
-            target?.focus();
+            // 닫힐 때 이미 돌려줬다. 그 사이 사용자가 다른 곳으로 옮겼으면 건드리지 않는다
+            const active = document.activeElement;
+            if (!active || active === document.body) restoreFocus();
           }}
           // 사이드 패널일 때는 목록을 계속 쓸 수 있어 바깥 클릭·포커스로 닫지 않는다
           onInteractOutside={(e) => {
@@ -150,7 +162,7 @@ function Host() {
             if (escRef.current?.()) e.preventDefault();
           }}
         >
-        <aside className="fixed inset-y-0 right-0 z-50 flex h-full w-[620px] max-w-full flex-col border-l border-(--border) bg-(--surface) shadow-(--shadow-pop) outline-none duration-300 ease-(--ease-drawer) data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right max-[640px]:w-full max-[640px]:border-l-0">
+        <aside ref={asideRef} className="fixed inset-y-0 right-0 z-50 flex h-full w-[620px] max-w-full flex-col border-l border-(--border) bg-(--surface) shadow-(--shadow-pop) outline-none duration-300 ease-(--ease-drawer) data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right max-[640px]:w-full max-[640px]:border-l-0">
           <SheetTitle className="sr-only">{item ? `${item.key} ${item.title}` : (openKey ?? "작업")}</SheetTitle>
           {item ? (
             <TaskDetailPanel
