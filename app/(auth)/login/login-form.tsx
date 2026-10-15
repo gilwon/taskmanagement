@@ -58,7 +58,7 @@ export function LoginForm({ next, linkError, demo }: { next: string; linkError?:
   );
 }
 
-// 데모 계정 로그인. 자격은 서버가 환경변수에서 넣으므로 폼은 아무 값도 보내지 않는다
+// 데모 시작. 서버가 익명 로그인과 사본 생성을 하므로 폼은 아무 값도 보내지 않는다
 function DemoLogin() {
   const { pending, formRef, onSubmit, formError } = useAuthAction(signInDemo);
   return (
@@ -74,7 +74,7 @@ function DemoLogin() {
         {pending ? "데모 준비 중…" : "데모로 둘러보기"}
       </SubmitButton>
       <p id="demo-note" className="text-center text-[length:var(--fs-xs)] text-[var(--text-3)]">
-        데모 데이터는 모두가 함께 쓰며 언제든 초기화될 수 있습니다.
+        가입 없이 나만의 데모가 열리고 24시간 뒤 지워집니다. 파일 업로드는 할 수 없습니다.
       </p>
     </form>
   );

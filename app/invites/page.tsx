@@ -29,7 +29,7 @@ export default async function InvitesPage() {
         footer={
           <span className="flex flex-wrap justify-center gap-x-4 gap-y-1">
             {/* 데모 계정은 워크스페이스를 만들 수 없어 진입점을 숨긴다 */}
-            {!isDemoUser(data.claims.email) && (
+            {!isDemoUser(data.claims) && (
               <Link href="/onboarding" className={linkClass}>
                 새 워크스페이스 만들기
               </Link>

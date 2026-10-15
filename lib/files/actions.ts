@@ -2,6 +2,7 @@
 // 파일 Server Action. 업로드 준비(행 생성 + 서명 업로드 URL), 완료·실패·재시도, 다운로드·미리보기 서명 URL, 삭제·복원, 작업 연결.
 // 파일 본문은 받지 않는다(브라우저가 서명 URL로 Storage에 직접 올린다). 입력은 매번 다시 검증하고 RLS가 걸린 세션 클라이언트로만 쓴다
 import { MSG } from "@/lib/auth/errors";
+import { isDemoUser } from "@/lib/demo/config";
 import { fileErrorMessage } from "@/lib/files/errors";
 import { checkUpload } from "@/lib/files/mime";
 import { FILE_SELECT, selectFilePerms, selectFiles, toFileItem } from "@/lib/files/queries";
@@ -35,11 +36,11 @@ function dbErr<T>(what: string, error: DbError): ActionResult<T> {
 }
 
 // Server Action은 직접 POST로도 불릴 수 있다. 매번 검증된 클레임으로 사용자를 확인한다
-async function session(): Promise<{ supabase: Client; uid: string } | null> {
+async function session(): Promise<{ supabase: Client; uid: string; demo: boolean } | null> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const uid = data?.claims?.sub;
-  return uid ? { supabase, uid } : null;
+  return uid ? { supabase, uid, demo: isDemoUser(data.claims) } : null;
 }
 
 function uuid(value: unknown): string {
@@ -52,7 +53,7 @@ function optUuid(value: unknown): string | null {
 }
 
 // 검증 실패와 예상하지 못한 예외를 결과로 바꾼다. 실패를 빈 성공으로 숨기지 않는다
-async function run<T>(what: string, body: (s: { supabase: Client; uid: string }) => Promise<ActionResult<T>>) {
+async function run<T>(what: string, body: (s: { supabase: Client; uid: string; demo: boolean }) => Promise<ActionResult<T>>) {
   try {
     const s = await session();
     if (!s) return err<T>(MSG.sessionExpired);
@@ -84,7 +85,9 @@ export async function prepareUpload(
   name: string,
   size: number,
 ): Promise<ActionResult<UploadTicket>> {
-  return run("업로드 준비", async ({ supabase, uid }) => {
+  return run("업로드 준비", async ({ supabase, uid, demo }) => {
+    // 데모 사본은 Storage 객체를 남기지 않도록 업로드를 막는다(Storage 정책도 거부한다)
+    if (demo) return err(MSG.demoRestricted);
     const pid = uuid(projectId);
     const tid = optUuid(taskId);
     if (typeof name !== "string" || typeof size !== "number") throw new InputError();
@@ -150,7 +153,8 @@ export async function failUpload(fileId: string): Promise<ActionResult<null>> {
 
 // 다시 올리기. 끊겨 pending으로 남은 본인 업로드는 먼저 failed로 돌린 뒤 retry_file로 pending에 놓고 새 서명 URL을 준다
 export async function retryUpload(fileId: string): Promise<ActionResult<UploadTicket>> {
-  return run("업로드 재시도", async ({ supabase, uid }) => {
+  return run("업로드 재시도", async ({ supabase, uid, demo }) => {
+    if (demo) return err(MSG.demoRestricted);
     const id = uuid(fileId);
     const row = await supabase
       .from("files")

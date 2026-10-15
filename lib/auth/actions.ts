@@ -13,7 +13,7 @@ import {
   type ActionState,
   type OnboardingInput,
 } from "@/lib/auth/rules";
-import { demoCredentials, isDemoUser } from "@/lib/demo/config";
+import { isDemoEnabled, isDemoUser } from "@/lib/demo/config";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
@@ -64,19 +64,26 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   redirect(safeNext(text(formData, "next")));
 }
 
-// 데모 계정 로그인. 자격은 서버 환경변수에서만 읽고 결과·로그에 담지 않는다
+// 데모 시작. 익명 로그인 후 그 사용자 전용 데모 사본을 만들고 홈으로 보낸다.
+// 이미 익명 사용자로 로그인했으면 새로 로그인하지 않아 같은 사본으로 간다
 export async function signInDemo(): Promise<ActionState> {
-  const demo = demoCredentials();
-  if (!demo) return fail(undefined, MSG.demoDisabled);
+  if (!isDemoEnabled()) return fail(undefined, MSG.demoDisabled);
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(demo);
-  if (error) {
-    console.error("[데모 로그인]", error.code);
-    // 시드 전이면 계정이 없어 자격 오류가 난다
-    return error.code === "invalid_credentials" ? fail(undefined, MSG.demoNotReady) : { error: authErrorMessage(error.code) };
+  const { data } = await supabase.auth.getClaims();
+  if (!isDemoUser(data?.claims)) {
+    const { error } = await supabase.auth.signInAnonymously({ options: { data: { name: "데모 사용자" } } });
+    if (error) {
+      console.error("[데모 로그인]", error.code);
+      return { error: authErrorMessage(error.code) };
+    }
   }
-  redirect("/demo/home");
+  const { data: slug, error } = await supabase.rpc("start_demo_sandbox");
+  if (error || !slug) {
+    console.error("[데모 사본]", error?.code, error?.message);
+    return fail(undefined, error?.message === "demo_full" ? MSG.demoFull : MSG.demoNotReady);
+  }
+  redirect(`/${slug}/home`);
 }
 
 export async function signUp(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -139,7 +146,7 @@ export async function updatePassword(_prev: ActionState, formData: FormData): Pr
   if (!isRecoverySession(data?.claims, auth.user?.recovery_sent_at)) {
     return fail(undefined, MSG.recoveryExpired);
   }
-  if (isDemoUser(auth.user?.email)) return fail(undefined, MSG.demoRestricted);
+  if (isDemoUser(auth.user)) return fail(undefined, MSG.demoRestricted);
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: authErrorMessage(error.code) };
@@ -189,8 +196,8 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) return fail(undefined, MSG.sessionExpired);
-  // 데모 계정이 만든 워크스페이스는 pnpm db:demo 초기화로 지워지지 않아 만들지 못하게 한다
-  if (isDemoUser(auth.claims.email)) return fail(undefined, MSG.demoRestricted);
+  // 데모 사용자가 만든 워크스페이스는 사본 만료 정리로 지워지지 않아 만들지 못하게 한다
+  if (isDemoUser(auth.claims)) return fail(undefined, MSG.demoRestricted);
 
   const { data, error } = await supabase.rpc("create_workspace_onboarding", {
     p_name: name,

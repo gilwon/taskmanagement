@@ -176,7 +176,8 @@ refresh_token_reuse_interval = 10
 # 프로젝트의 신규 사용자 가입을 허용/차단한다.
 enable_signup = true
 # 프로젝트의 익명 로그인을 허용/차단한다.
-enable_anonymous_sign_ins = false
+# 방문자별 데모 사본이 가입 없이 익명 사용자로 시작하므로 켠다. 익명 사용자의 계정 전환·가입은 DB 가드(013)가 막는다.
+enable_anonymous_sign_ins = true
 # 계정 수동 연결 테스트를 허용/차단한다.
 enable_manual_linking = false
 # 이 값보다 짧은 비밀번호는 약한 비밀번호로 거부한다. 최소 6, 권장 8 이상.

@@ -25,6 +25,7 @@ export const MSG = {
   demoDisabled: "데모가 꺼져 있습니다.",
   demoNotReady: "데모가 아직 준비되지 않았습니다.",
   demoRestricted: "데모 계정에서는 쓸 수 없는 기능입니다.",
+  demoFull: "데모 사용자가 많습니다. 잠시 후 다시 시도해 주세요.",
 } as const;
 
 const AUTH_MESSAGES: Record<string, FieldError> = {

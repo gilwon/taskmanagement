@@ -1,7 +1,8 @@
-// 데모 설정 판정과 환경변수가 없을 때 데모 로그인 액션 거부를 검증한다
+// 데모 설정 판정, 데모 시작 액션(익명 로그인·사본 RPC), 데모 사용자 워크스페이스 이동 차단을 검증한다
+import { redirect } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MSG } from "@/lib/auth/errors";
-import { demoCredentials, isDemoEnabled, isDemoUser } from "@/lib/demo/config";
+import { isDemoEnabled, isDemoUser } from "@/lib/demo/config";
 
 const createClient = vi.fn();
 vi.mock("server-only", () => ({}));
@@ -15,42 +16,65 @@ afterEach(() => {
 });
 
 describe("데모 설정", () => {
-  it("이메일·비밀번호가 둘 다 있어야 켜진다", () => {
-    vi.stubEnv("DEMO_EMAIL", "demo@example.test");
-    vi.stubEnv("DEMO_PASSWORD", "");
+  it("DEMO_ENABLED가 정확히 true일 때만 켜진다", () => {
+    vi.stubEnv("DEMO_ENABLED", "");
     expect(isDemoEnabled()).toBe(false);
-    vi.stubEnv("DEMO_PASSWORD", "x");
+    vi.stubEnv("DEMO_ENABLED", "1");
+    expect(isDemoEnabled()).toBe(false);
+    vi.stubEnv("DEMO_ENABLED", "true");
     expect(isDemoEnabled()).toBe(true);
-    expect(demoCredentials()).toEqual({ email: "demo@example.test", password: "x" });
-    vi.stubEnv("DEMO_EMAIL", " ");
-    expect(isDemoEnabled()).toBe(false);
   });
 
-  it("데모 계정은 대소문자와 앞뒤 공백을 무시하고 판정하고, 환경변수가 없으면 늘 거짓이다", () => {
-    vi.stubEnv("DEMO_EMAIL", "Demo@Example.test");
-    expect(isDemoUser(" demo@example.TEST ")).toBe(true);
-    expect(isDemoUser("other@example.test")).toBe(false);
+  it("익명 로그인 사용자만 데모 사용자다", () => {
+    expect(isDemoUser({ is_anonymous: true })).toBe(true);
+    expect(isDemoUser({ is_anonymous: false })).toBe(false);
+    expect(isDemoUser({})).toBe(false);
+    expect(isDemoUser(null)).toBe(false);
     expect(isDemoUser(undefined)).toBe(false);
-    vi.stubEnv("DEMO_EMAIL", "");
-    expect(isDemoUser("")).toBe(false);
-    expect(isDemoUser("demo@example.test")).toBe(false);
   });
 
-  it("환경변수가 없으면 데모 로그인 액션이 Supabase를 부르지 않고 거부한다", async () => {
-    vi.stubEnv("DEMO_EMAIL", "");
-    vi.stubEnv("DEMO_PASSWORD", "");
+  it("꺼져 있으면 데모 시작 액션이 Supabase를 부르지 않고 거부한다", async () => {
+    vi.stubEnv("DEMO_ENABLED", "");
     const { signInDemo } = await import("@/lib/auth/actions");
     expect(await signInDemo()).toEqual({ error: { field: undefined, message: MSG.demoDisabled } });
     expect(createClient).not.toHaveBeenCalled();
   });
 });
 
-describe("데모 계정 워크스페이스 이동 차단", () => {
+describe("데모 시작", () => {
+  it("익명 로그인 후 사본 slug의 홈으로 보낸다", async () => {
+    vi.stubEnv("DEMO_ENABLED", "true");
+    const signInAnonymously = vi.fn(async () => ({ error: null }));
+    const rpc = vi.fn(async () => ({ data: "demo-abc12345", error: null }));
+    createClient.mockResolvedValue({ auth: { getClaims: async () => ({ data: null }), signInAnonymously }, rpc });
+    const { signInDemo } = await import("@/lib/auth/actions");
+    await signInDemo();
+    expect(signInAnonymously).toHaveBeenCalledWith({ options: { data: { name: "데모 사용자" } } });
+    expect(rpc).toHaveBeenCalledWith("start_demo_sandbox");
+    expect(redirect).toHaveBeenCalledWith("/demo-abc12345/home");
+  });
+
+  it("이미 익명 사용자면 다시 로그인하지 않고, 상한이면 demoFull 문구를 돌려준다", async () => {
+    vi.stubEnv("DEMO_ENABLED", "true");
+    const signInAnonymously = vi.fn();
+    const rpc = vi.fn(async () => ({ data: null, error: { code: "P0001", message: "demo_full" } }));
+    createClient.mockResolvedValue({
+      auth: { getClaims: async () => ({ data: { claims: { sub: "u1", is_anonymous: true } } }), signInAnonymously },
+      rpc,
+    });
+    const { signInDemo } = await import("@/lib/auth/actions");
+    expect(await signInDemo()).toEqual({ error: { field: undefined, message: MSG.demoFull } });
+    expect(signInAnonymously).not.toHaveBeenCalled();
+    rpc.mockResolvedValueOnce({ data: null, error: { code: "P0001", message: "forbidden" } });
+    expect(await signInDemo()).toEqual({ error: { field: undefined, message: MSG.demoNotReady } });
+  });
+});
+
+describe("데모 사용자 워크스페이스 이동 차단", () => {
   it("온보딩 완료와 초대 수락을 RPC 전에 거부한다", async () => {
-    vi.stubEnv("DEMO_EMAIL", "demo@example.test");
     const rpc = vi.fn();
     createClient.mockResolvedValue({
-      auth: { getClaims: async () => ({ data: { claims: { sub: "u1", email: "demo@example.test" } } }) },
+      auth: { getClaims: async () => ({ data: { claims: { sub: "u1", is_anonymous: true } } }) },
       rpc,
     });
     const { completeOnboarding } = await import("@/lib/auth/actions");

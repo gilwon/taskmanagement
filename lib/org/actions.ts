@@ -31,7 +31,7 @@ async function session() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const uid = data?.claims?.sub;
-  return uid ? { supabase, uid, email: data.claims.email } : null;
+  return uid ? { supabase, uid, demo: isDemoUser(data.claims) } : null;
 }
 
 // ─────────────────────────────────────────────
@@ -55,6 +55,8 @@ export async function inviteMembers(
   if (emails.length > MAX_INVITES) return err(`한 번에 ${MAX_INVITES}명까지 초대할 수 있습니다.`);
   const s = await session();
   if (!s) return err(MSG.sessionExpired);
+  // 데모 사본에는 초대를 넣을 수 없다(DB 정책도 거부한다)
+  if (s.demo) return err(MSG.demoRestricted);
 
   const results: InviteOutcome[] = [];
   for (const email of emails) {
@@ -93,7 +95,7 @@ export async function acceptInvite(inviteId: string): Promise<ActionResult<{ slu
   const s = await session();
   if (!s) return err(MSG.sessionExpired);
   // 데모 계정은 데모 워크스페이스 밖으로 나가지 않는다
-  if (isDemoUser(s.email)) return err(MSG.demoRestricted);
+  if (s.demo) return err(MSG.demoRestricted);
   const { data, error } = await s.supabase.rpc("accept_invite", { p_invite: inviteId });
   if (error) return dbErr("초대 수락", error);
   if (data.status !== "active") return err("이 워크스페이스에서 비활성화된 계정이라 들어갈 수 없습니다. 관리자에게 문의해 주세요.");
@@ -390,8 +392,8 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
   if (password !== confirm) return { error: { field: "confirm", message: MSG.passwordMismatch } };
   const s = await session();
   if (!s) return { error: { message: MSG.sessionExpired } };
-  // 공용 데모 계정은 비밀번호를 바꾸지 못한다. 재인증 요청도 여기서 함께 막힌다
-  if (isDemoUser(s.email)) return { error: { message: MSG.demoRestricted } };
+  // 데모 사용자는 비밀번호를 설정해 실제 계정으로 바꾸지 못한다. 재인증 요청도 여기서 함께 막힌다
+  if (s.demo) return { error: { message: MSG.demoRestricted } };
 
   const { error } = await s.supabase.auth.updateUser(nonce ? { password, nonce } : { password });
   if (!error) return { ok: true };
@@ -410,8 +412,8 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
 export async function signOutOthers(): Promise<ActionResult<null>> {
   const s = await session();
   if (!s) return err(MSG.sessionExpired);
-  // 데모 계정은 여러 사람이 함께 쓰므로 다른 사람의 세션을 끊지 못하게 한다
-  if (isDemoUser(s.email)) return err(MSG.demoRestricted);
+  // 데모 사용자에게는 쓸 일이 없는 기능이라 막아 둔다
+  if (s.demo) return err(MSG.demoRestricted);
   const { error } = await s.supabase.auth.signOut({ scope: "others" });
   if (error) {
     console.error("[다른 기기 로그아웃]", error.code, error.message);

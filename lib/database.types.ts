@@ -600,14 +600,14 @@ isOneToOne: false
                   ]
                 },"workspaces": {
                   Row: {
-                    "color": string,"created_at": string,"created_by": string | null,"id": string,"name": string,"slug": string,"team_size": string | null,"updated_at": string,"usage": string | null
+                    "color": string,"created_at": string,"created_by": string | null,"demo_expires_at": string | null,"id": string,"name": string,"slug": string,"team_size": string | null,"updated_at": string,"usage": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "color"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"slug": string,"team_size"?: string | null,"updated_at"?: string,"usage"?: string | null
+                    "color"?: string,"created_at"?: string,"created_by"?: string | null,"demo_expires_at"?: string | null,"id"?: string,"name": string,"slug": string,"team_size"?: string | null,"updated_at"?: string,"usage"?: string | null
                   }
                   Update: {
-                    "color"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"slug"?: string,"team_size"?: string | null,"updated_at"?: string,"usage"?: string | null
+                    "color"?: string,"created_at"?: string,"created_by"?: string | null,"demo_expires_at"?: string | null,"id"?: string,"name"?: string,"slug"?: string,"team_size"?: string | null,"updated_at"?: string,"usage"?: string | null
                   }
                   Relationships: [
                     {
@@ -1102,6 +1102,9 @@ isOneToOne: false
                            },
 "soft_delete_task":
 { Args: { "p_task": string }; Returns: string
+                           },
+"start_demo_sandbox":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "task_project_id":
 { Args: { "p_task": string }; Returns: string
