@@ -69,7 +69,7 @@ export function WorkspaceOverview({
   return (
     <div className="px-(--gutter) pb-(--s-8)">
       <h2 className="sr-only">요약</h2>
-      <dl className="grid grid-cols-4 gap-(--s-3) max-[900px]:grid-cols-2">
+      <dl className="grid grid-cols-4 gap-(--s-3) max-[901px]:grid-cols-2">
         <Stat label={OVERVIEW_STAT_LABELS.projects} value={projects.length} note={`${active}개 진행 중`} delay={0} />
         <Stat label={OVERVIEW_STAT_LABELS.tasks} value={all.total} note={`${all.open}개 열림`} delay={40} />
         <Stat label={OVERVIEW_STAT_LABELS.completion} value={all.pct} suffix="%" note={`${all.done}개 완료`} delay={80} />

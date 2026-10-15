@@ -260,7 +260,8 @@ export function MonthCalendar({
                         )}
                       </div>
 
-                      <ul className="hide-m flex min-w-0 flex-col gap-0.5">
+                      {/* 칩 높이가 24px 미만이라 WCAG 2.5.8 간격 예외를 맞추려고 칩 사이(gap-1)와 "+N개 더" 위(셀 gap-0.5 + mt-0.5)를 4px 띄운다 */}
+                      <ul className="hide-m flex min-w-0 flex-col gap-1">
                         {shownEvents.map((e) => (
                           <li
                             key={e.id}
@@ -294,7 +295,7 @@ export function MonthCalendar({
                           type="button"
                           tabIndex={-1}
                           onClick={() => setOpenDay(iso)}
-                          className="hide-m self-start rounded-(--r-xs) px-1.5 text-(length:--fs-2xs) font-medium text-(--text-3) hover:bg-(--surface-2) hover:text-(--text)"
+                          className="hide-m mt-0.5 self-start rounded-(--r-xs) px-1.5 text-(length:--fs-2xs) font-medium text-(--text-3) hover:bg-(--surface-2) hover:text-(--text)"
                         >
                           +{hidden}개 더
                         </button>

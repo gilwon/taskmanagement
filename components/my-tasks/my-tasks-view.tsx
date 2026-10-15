@@ -54,7 +54,7 @@ function Row({ t, now }: { t: TaskItem; now: Date }) {
       >
         {t.title}
       </button>
-      <span className="flex w-36 shrink-0 items-center gap-1.5 truncate text-(length:--fs-sm) text-(--text-3) max-[900px]:hidden">
+      <span className="flex w-36 shrink-0 items-center gap-1.5 truncate text-(length:--fs-sm) text-(--text-3) max-[901px]:hidden">
         <ProjectIcon icon={t.project.icon} color={t.project.color} size={16} />
         <span className="truncate">{t.project.name}</span>
       </span>

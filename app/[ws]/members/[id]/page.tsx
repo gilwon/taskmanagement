@@ -6,7 +6,7 @@ import { MemberProfileBody } from "@/components/org/member-profile";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { selectActivities } from "@/lib/activity/queries";
 import { getMember, getWorkspace } from "@/lib/data/workspace";
-import { MEMBER_STATUS_LABELS, ROLE_LABELS } from "@/lib/i18n/labels";
+import { MEMBER_STATUS_LABELS, NAV_LABELS, ROLE_LABELS } from "@/lib/i18n/labels";
 import { orgErrorMessage } from "@/lib/org/errors";
 import { canOpenOrg, getMemberTasks, getOrgMembers, getTeams } from "@/lib/org/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -16,8 +16,8 @@ type Params = Promise<{ ws: string; id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { ws, id } = await params;
-  // 403 응답의 제목에 구성원 이름이 실리지 않게 역할부터 본다
-  if (!(await canOpenOrg(ws))) return {};
+  // 403 응답의 제목에 구성원 이름이 실리지 않게 역할부터 보고 목록과 같은 제목만 준다
+  if (!(await canOpenOrg(ws))) return { title: NAV_LABELS.members };
   const member = await getMember(ws, id);
   return member ? { title: member.profiles?.name || "구성원" } : {};
 }

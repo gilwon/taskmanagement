@@ -6,7 +6,7 @@ export function CommentBody({ body, members }: { body: string; members: MentionM
     <p className="text-(length:--fs-base) leading-relaxed break-words whitespace-pre-wrap text-(--text)">
       {splitMentions(body, members).map((s, i) =>
         s.memberId ? (
-          <span key={i} className="rounded-(--r-xs) bg-(--accent-soft) px-0.5 font-medium text-(--accent)">
+          <span key={i} className="rounded-(--r-xs) bg-(--accent-soft) px-0.5 font-medium text-(--accent-ink)">
             {s.text}
           </span>
         ) : (

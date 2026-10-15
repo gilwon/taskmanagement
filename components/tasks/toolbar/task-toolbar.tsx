@@ -109,7 +109,7 @@ function FilterButton({ state, onChange }: { state: ViewState; onChange: (next: 
           {count > 0 && (
             <span
               aria-hidden
-              className="inline-flex min-w-4 items-center justify-center rounded-(--r-full) bg-(--accent-soft) px-1 text-(length:--fs-2xs) text-(--accent)"
+              className="inline-flex min-w-4 items-center justify-center rounded-(--r-full) bg-(--accent-soft) px-1 text-(length:--fs-2xs) text-(--accent-ink)"
             >
               {count}
             </span>

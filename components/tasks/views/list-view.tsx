@@ -240,7 +240,7 @@ function Row({
           <span
             data-drag-handle
             aria-hidden
-            className="-ml-3 flex w-3 shrink-0 cursor-grab touch-none justify-center text-(--text-4) opacity-0 group-hover/row:opacity-100 max-[900px]:opacity-100"
+            className="-ml-3 flex w-3 shrink-0 cursor-grab touch-none justify-center text-(--text-4) opacity-0 group-hover/row:opacity-100 max-[901px]:opacity-100"
           >
             <GripVertical size={13} strokeWidth={1.8} />
           </span>
@@ -288,7 +288,7 @@ function Row({
           </span>
         )}
         {ctl.showProject && (
-          <span className="flex w-36 shrink-0 items-center gap-1.5 truncate text-(length:--fs-sm) text-(--text-3) max-[900px]:hidden">
+          <span className="flex w-36 shrink-0 items-center gap-1.5 truncate text-(length:--fs-sm) text-(--text-3) max-[901px]:hidden">
             <ProjectIcon icon={t.project.icon} color={t.project.color} size={16} />
             <span className="truncate">{t.project.name}</span>
           </span>

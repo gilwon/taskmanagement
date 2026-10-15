@@ -121,6 +121,8 @@
 
   --accent: var(--acc-l);
   --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  /* accent-soft 위 글자용. light에서 blue·teal 등은 accent 그대로면 4.5:1 아래라 검정을 12% 섞는다 */
+  --accent-ink: color-mix(in srgb, var(--accent) 88%, black);
   --accent-line: color-mix(in srgb, var(--accent) 38%, transparent);
   --green-soft: color-mix(in srgb, var(--green) 11%, transparent);
   --amber-soft: color-mix(in srgb, var(--amber) 12%, transparent);
@@ -229,6 +231,7 @@
   --shadow-pop: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-strong);
   --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
   --accent: var(--acc-d);
+  --accent-ink: var(--accent);
   color-scheme: dark;
 }
 
@@ -268,6 +271,7 @@
     --shadow-pop: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-strong);
     --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
     --accent: var(--acc-d);
+    --accent-ink: var(--accent);
     color-scheme: dark;
   }
 }

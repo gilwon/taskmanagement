@@ -225,7 +225,7 @@ function ProjectItem({
           <span
             data-drag-handle
             aria-hidden
-            className="flex w-3 shrink-0 cursor-grab touch-none justify-center text-(--text-4) opacity-0 group-hover/proj:opacity-100 max-[900px]:opacity-100"
+            className="flex w-3 shrink-0 cursor-grab touch-none justify-center text-(--text-4) opacity-0 group-hover/proj:opacity-100 max-[901px]:opacity-100"
           >
             <GripVertical size={12} strokeWidth={1.8} />
           </span>

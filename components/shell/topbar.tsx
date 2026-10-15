@@ -101,7 +101,7 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
   const crumbs = buildCrumbs(pathname, data);
 
   return (
-    <header className="flex h-(--topbar-h) shrink-0 items-center gap-2 border-b border-(--border) bg-(--bg) px-3 max-[900px]:px-(--gutter)">
+    <header className="flex h-(--topbar-h) shrink-0 items-center gap-2 border-b border-(--border) bg-(--bg) px-3 max-[901px]:px-(--gutter)">
       <Button
         variant="ghost"
         size="icon-sm"

@@ -46,7 +46,7 @@ type ViewMode = keyof typeof PROJECT_VIEW_LABELS;
 type Member = { id: string; name: string; color: string };
 
 const STATUS_ALL_LABEL = "모든 상태";
-const PRESSED = "aria-pressed:bg-(--accent-soft) aria-pressed:text-(--accent)";
+const PRESSED = "aria-pressed:bg-(--accent-soft) aria-pressed:text-(--accent-ink)";
 
 type Props = {
   projects: ProjectSummary[];

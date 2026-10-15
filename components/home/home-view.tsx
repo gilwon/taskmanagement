@@ -88,7 +88,7 @@ export function HomeView({
   return (
     <div className="px-(--gutter) pb-(--s-8)">
       <h2 className="sr-only">요약</h2>
-      <dl className="grid grid-cols-4 gap-(--s-3) max-[900px]:grid-cols-2">
+      <dl className="grid grid-cols-4 gap-(--s-3) max-[901px]:grid-cols-2">
         <Stat
           label={HOME_STAT_LABELS.activeProjects}
           value={s.activeProjects}

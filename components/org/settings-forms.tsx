@@ -200,7 +200,7 @@ export function AppearanceForm() {
                 <ToggleGroupItem
                   key={v}
                   value={v}
-                  className="px-3 data-[state=on]:bg-(--accent-soft) data-[state=on]:font-medium data-[state=on]:text-(--accent)"
+                  className="px-3 data-[state=on]:bg-(--accent-soft) data-[state=on]:font-medium data-[state=on]:text-(--accent-ink)"
                 >
                   {labels[v]}
                 </ToggleGroupItem>

@@ -51,8 +51,8 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
   const href = selected ? notificationHref(workspace.slug, selected) : null;
 
   return (
-    <div className="grid min-h-0 grid-cols-[420px_minmax(0,1fr)] gap-(--s-4) px-(--gutter) pb-(--s-8) max-[900px]:grid-cols-1">
-      <section aria-label="수신함 목록" className={cn("flex min-w-0 flex-col gap-(--s-3)", selected && "max-[900px]:hidden")}>
+    <div className="grid min-h-0 grid-cols-[420px_minmax(0,1fr)] gap-(--s-4) px-(--gutter) pb-(--s-8) max-[901px]:grid-cols-1">
+      <section aria-label="수신함 목록" className={cn("flex min-w-0 flex-col gap-(--s-3)", selected && "max-[901px]:hidden")}>
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList className="max-w-full overflow-x-auto overflow-y-hidden">
             {TABS.map((t) => (
@@ -102,7 +102,7 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
         aria-label="미리보기"
         className={cn(
           "min-w-0 self-start rounded-(--r-lg) border border-(--border) bg-(--surface) p-(--s-5)",
-          !selected && "max-[900px]:hidden",
+          !selected && "max-[901px]:hidden",
         )}
       >
         {selected ? (

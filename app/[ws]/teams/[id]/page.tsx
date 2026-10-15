@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { forbidden, notFound } from "next/navigation";
 import { TeamDetail } from "@/components/org/team-detail";
 import { getTeam, getWorkspace, requireUserId } from "@/lib/data/workspace";
+import { NAV_LABELS } from "@/lib/i18n/labels";
 import { canOpenOrg, getOpenTaskCount, getOrgMembers, getTeamProjects, getTeams } from "@/lib/org/queries";
 import { isAdminRole } from "@/lib/org/rules";
 
@@ -10,8 +11,8 @@ type Params = Promise<{ ws: string; id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { ws, id } = await params;
-  // 403 응답의 제목에 팀 이름이 실리지 않게 역할부터 본다
-  if (!(await canOpenOrg(ws))) return {};
+  // 403 응답의 제목에 팀 이름이 실리지 않게 역할부터 보고 목록과 같은 제목만 준다
+  if (!(await canOpenOrg(ws))) return { title: NAV_LABELS.teams };
   const team = await getTeam(ws, id);
   return team ? { title: team.name } : {};
 }

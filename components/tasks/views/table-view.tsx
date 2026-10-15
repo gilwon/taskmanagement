@@ -104,7 +104,8 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
   return (
     <>
       {/* relative가 없으면 머리글의 sr-only(absolute)가 스크롤 영역 밖 문서 기준으로 놓여 페이지 가로 스크롤을 만든다 */}
-      <div className="relative mx-(--gutter) mb-(--s-8) overflow-x-auto rounded-(--r) border border-(--border) max-[900px]:hidden">
+      {/* Tailwind v4의 max-[X]는 width < X라 셸과 같이 900px을 포함하려면 901로 쓴다 */}
+      <div className="relative mx-(--gutter) mb-(--s-8) overflow-x-auto rounded-(--r) border border-(--border) max-[901px]:hidden">
         <table className="table-fixed border-collapse text-(length:--fs-base)" style={{ width: total }}>
           <colgroup>
             <col style={{ width: CHECK_W }} />
@@ -132,7 +133,7 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
                       <button
                         type="button"
                         onClick={() => sortBy(f)}
-                        className="inline-flex max-w-full items-center gap-1 truncate rounded-(--r-xs) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
+                        className="inline-flex min-h-6 max-w-[calc(100%-10px)] min-w-6 items-center gap-1 truncate rounded-(--r-xs) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
                       >
                         {COLUMN_LABELS[c]}
                         {active &&
@@ -184,6 +185,8 @@ function ResizeHandle({
 }) {
   const start = useRef<{ x: number; w: number } | null>(null);
   const clamp = (w: number) => Math.min(COL_MAX, Math.max(COL_MIN, w));
+  // 보이는 막대는 6px이고 누르는 영역은 ::after로 경계 -18px~+6px(24px)까지 넓힌다
+  // 다음 열 정렬 버튼은 px-2(+8px)에서 시작하고, 같은 열 정렬 버튼은 max-w를 10px 줄여 -18px 앞에서 끝나 겹치지 않는다
   return (
     <span
       role="separator"
@@ -214,7 +217,7 @@ function ResizeHandle({
         e.preventDefault();
         onCommit(clamp(width + (e.key === "ArrowRight" ? 16 : -16)));
       }}
-      className="absolute top-1 right-0 bottom-1 w-1.5 cursor-col-resize touch-none rounded-full outline-none hover:bg-(--accent-line) focus-visible:bg-(--accent)"
+      className="absolute top-1 right-0 bottom-1 z-10 w-1.5 cursor-col-resize touch-none rounded-full outline-none after:absolute after:inset-y-0 after:-right-1.5 after:-left-3 hover:bg-(--accent-line) focus-visible:bg-(--accent)"
     />
   );
 }
