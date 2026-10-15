@@ -18,6 +18,7 @@ type Ctx = {
   openPalette: (mode?: PaletteMode) => void;
   openShortcuts: () => void;
   openInvite: () => void;
+  toggleTheme: () => void;
 };
 
 const CommandContext = createContext<Ctx | null>(null);
@@ -123,8 +124,8 @@ export function CommandProvider({ data, children }: { data: ShellData; children:
   };
 
   const ctx = useMemo<Ctx>(
-    () => ({ openPalette, openShortcuts, openInvite: () => setInviteOpen(true) }),
-    [openPalette, openShortcuts, setInviteOpen],
+    () => ({ openPalette, openShortcuts, openInvite: () => setInviteOpen(true), toggleTheme }),
+    [openPalette, openShortcuts, setInviteOpen, toggleTheme],
   );
 
   return (

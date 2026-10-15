@@ -1,9 +1,9 @@
 "use client";
-// 탑바. 메뉴·사이드바 펼치기 버튼, 브레드크럼, 검색 이동, 알림 벨, 새로 만들기, 아바타 메뉴(META §1)
+// 탑바. 메뉴·사이드바 펼치기 버튼, 브레드크럼, 검색 이동, 테마 전환, 알림 벨, 새로 만들기, 아바타 메뉴(META §1)
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
-import { Bell, ChevronDown, LogOut, Menu, PanelLeftOpen, Plus, Search, Settings, User } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, Moon, PanelLeftOpen, Plus, Search, Settings, Sun, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -96,7 +96,7 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
   const [signingOut, startSignOut] = useTransition();
   const { openNewTask } = useNewTask();
   const { openNewProject } = useNewProject();
-  const { openPalette, openInvite } = useCommand();
+  const { openPalette, openInvite, toggleTheme } = useCommand();
   const ws = data.workspace.slug;
   const crumbs = buildCrumbs(pathname, data);
 
@@ -166,6 +166,19 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
         <Search size={14} strokeWidth={1.8} aria-hidden className="shrink-0" />
         <span className="truncate max-[1100px]:hidden">검색하거나 이동…</span>
         <kbd className="ml-auto font-mono text-(length:--fs-2xs) text-(--text-3) max-[1100px]:hidden">⌘K</kbd>
+      </button>
+
+      {/* 밝게·어둡게를 한 번에 바꾼다. ⌘⇧L과 같은 동작이고 아이콘은 dark 변형으로 골라 서버 렌더와 어긋나지 않는다 */}
+      <button
+        type="button"
+        aria-label="밝게·어둡게 전환"
+        aria-keyshortcuts="Meta+Shift+L Control+Shift+L"
+        title="밝게·어둡게 전환 (⌘⇧L)"
+        onClick={toggleTheme}
+        className="inline-flex size-(--h-md) shrink-0 items-center justify-center rounded-(--r-sm) text-(--text-2) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
+      >
+        <Moon size={16} strokeWidth={1.8} aria-hidden className="dark:hidden" />
+        <Sun size={16} strokeWidth={1.8} aria-hidden className="hidden dark:block" />
       </button>
 
       <Link
