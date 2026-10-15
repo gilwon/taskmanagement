@@ -1,9 +1,9 @@
--- 방문자별 데모 사본(013)을 검증한다. 사본 생성·재사용·격리·상한·만료 정리와 익명 사용자 가드를 본다.
+-- 방문자별 데모 사본(013·014)을 검증한다. 사본 생성·재사용·격리·상한·만료 정리와 익명 사용자 가드를 본다.
 -- 한계. GoTrue가 supabase_auth_admin으로 보내는 UPDATE 분기는 이 세션에서 재현하지 않는다.
 -- 그 분기는 로컬 스택에서 익명 토큰으로 PUT /auth/v1/user 이메일 변경이 막히는 것으로 확인한다.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(39);
 
 -- ─────────────────────────────────────────────
 -- 픽스처
@@ -40,8 +40,18 @@ select ok(not has_function_privilege('anon', 'public.start_demo_sandbox()', 'exe
 select ok(not has_function_privilege('authenticated', 'private.seed_demo_workspace(uuid)', 'execute')
           and not has_function_privilege('authenticated', 'private.purge_demo_sandboxes()', 'execute'),
   'authenticated는 시드·정리 함수를 실행할 수 없다');
+select ok(to_regprocedure('private.ensure_demo_members()') is not null
+          and not has_function_privilege('authenticated', 'private.ensure_demo_members()', 'execute'),
+  'ensure_demo_members가 있고 authenticated는 실행할 수 없다');
 select is((select count(*)::int from cron.job where jobname = 'purge-demo-sandboxes' and schedule = '17 * * * *'), 1,
   '매시간 정리 작업이 예약되어 있다');
+
+-- 데모가 아닌 계정이 공유 구성원 이메일을 쓰고 있으면 그 계정을 쓰지 않고 멈춘다
+insert into auth.users (id, email, encrypted_password, raw_app_meta_data) values
+  ('00000000-0000-0000-0000-0000000018a6', 'hana.song@demo.example.com', 'hash', '{"provider":"email"}');
+select throws_ok($$select private.ensure_demo_members()$$, 'P0001', 'demo_member_conflict',
+  '데모가 아닌 계정이 공유 이메일을 쓰면 demo_member_conflict로 거부한다');
+delete from auth.users where id = '00000000-0000-0000-0000-0000000018a6';
 
 -- ─────────────────────────────────────────────
 -- 사본 생성
@@ -78,6 +88,25 @@ select ok((select demo_expires_at between now() + interval '23 hours' and now() 
            from public.workspaces w join t_slug s on s.slug = w.slug and s.who = 'a'), '사본은 24시간 뒤 만료된다');
 select is((select count(*)::int from auth.users where raw_app_meta_data ->> 'demo_seed' = 'true'
            and banned_until > now() + interval '100 years'), 5, '없던 공유 구성원 5명을 로그인 금지로 만든다');
+select is((select created_by from public.workspaces w join t_slug s on s.slug = w.slug and s.who = 'a'),
+  '00000000-0000-0000-0000-0000000018a1'::uuid, '사본의 created_by는 호출자다');
+select ok((select (m ->> 'hana.song')::uuid = (select id from auth.users where email = 'hana.song@demo.example.com')
+                  and (select count(*) from auth.users where raw_app_meta_data ->> 'demo_seed' = 'true') = 5
+           from private.ensure_demo_members() m),
+  'ensure_demo_members는 이미 있는 공유 구성원을 다시 쓴다');
+
+-- 사본 admin이 자기 구성원 행을 지우고 다시 불러도 새 사본을 만들지 않는다(상한 고갈 방지)
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000018a1","role":"authenticated","is_anonymous":true}', true);
+delete from public.workspace_members where user_id = '00000000-0000-0000-0000-0000000018a1';
+select is(public.start_demo_sandbox(), (select slug from t_slug where who = 'a'),
+  '자기 구성원 행을 지운 뒤 다시 불러도 같은 slug를 돌려준다');
+reset role;
+select set_config('request.jwt.claims', '', true);
+select is((select count(*)::int from public.workspaces where created_by = '00000000-0000-0000-0000-0000000018a1'), 1,
+  '구성원 행을 지운 뒤에도 a의 사본은 하나다');
+select is((select count(*)::int from public.workspace_members where user_id = '00000000-0000-0000-0000-0000000018a1'), 0,
+  '지운 구성원 행은 실제로 지워졌고 재호출로 되살아나지 않는다');
 
 -- 두 번째 익명 사용자는 공유 구성원을 다시 만들지 않고 자기 사본을 받는다
 set local role authenticated;
@@ -118,6 +147,12 @@ select throws_ok(
 select throws_ok(
   $$update auth.users set is_anonymous = false where id = '00000000-0000-0000-0000-0000000018a2'$$,
   'P0001', 'forbidden', '익명 사용자 자신은 실제 계정으로 바뀔 수 없다');
+select throws_ok(
+  $$update auth.users set email_change = 'take@sandbox.test' where id = '00000000-0000-0000-0000-0000000018a2'$$,
+  'P0001', 'forbidden', '익명 사용자 자신은 이메일 변경을 요청할 수 없다');
+select throws_ok(
+  $$update auth.users set phone = '821012345678' where id = '00000000-0000-0000-0000-0000000018a2'$$,
+  'P0001', 'forbidden', '익명 사용자 자신은 전화번호를 설정할 수 없다');
 select lives_ok(
   $$update auth.users set last_sign_in_at = now(), encrypted_password = '' where id = '00000000-0000-0000-0000-0000000018a2'$$,
   '익명 사용자의 로그인 컬럼 갱신은 허용된다');
