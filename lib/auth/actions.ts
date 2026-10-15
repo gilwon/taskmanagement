@@ -1,6 +1,5 @@
 "use server";
 // 인증·온보딩 Server Action. 입력을 검증한 뒤 서버 Supabase 클라이언트로 호출하고 한국어 오류를 돌려준다
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { MSG, authErrorMessage, rpcErrorMessage } from "@/lib/auth/errors";
 import {
@@ -46,10 +45,11 @@ function checkPassword(password: string, field = "password") {
   return null;
 }
 
-// 이메일 링크의 기준 주소. Server Action 요청에는 브라우저가 Origin을 붙인다
-async function origin() {
-  const h = await headers();
-  return h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+// 이메일 링크의 돌아올 주소. Origin·Host 헤더는 위조할 수 있어 서버 환경변수 SITE_URL만 믿는다
+// 값이 없으면 넘기지 않아 Supabase Auth의 site_url을 쓴다
+function redirectTo(path: string) {
+  const site = process.env.SITE_URL?.replace(/\/+$/, "");
+  return site ? `${site}${path}` : undefined;
 }
 
 export async function signIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -94,7 +94,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
     password,
     options: {
       data: { name },
-      emailRedirectTo: `${await origin()}/auth/confirm?next=/onboarding`,
+      emailRedirectTo: redirectTo("/auth/confirm?next=/onboarding"),
     },
   });
   // 이미 가입된 이메일은 오류 없이 오거나 user_already_exists·email_exists로 온다.
@@ -118,7 +118,7 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
   const supabase = await createClient();
   // 결과와 상관없이 같은 안내로 보낸다. 오류를 보이면 계정 존재 여부가 드러난다
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${await origin()}/auth/confirm?next=/reset`,
+    redirectTo: redirectTo("/auth/confirm?next=/reset"),
   });
   redirect("/forgot/sent");
 }
@@ -152,7 +152,7 @@ export async function resendConfirmation(_prev: ActionState, formData: FormData)
   const { error } = await supabase.auth.resend({
     type: "signup",
     email,
-    options: { emailRedirectTo: `${await origin()}/auth/confirm?next=/onboarding` },
+    options: { emailRedirectTo: redirectTo("/auth/confirm?next=/onboarding") },
   });
   // 보내기 제한만 알리고 그 밖의 오류는 계정 존재를 숨기려고 성공과 같게 둔다
   if (error?.code === "over_email_send_rate_limit") return { error: authErrorMessage(error.code) };
