@@ -6,9 +6,12 @@ export function EmptyState({
   title,
   description,
   action,
+  titleAs: Title = "p",
 }: {
   icon: LucideIcon;
   title: string;
+  // 화면의 유일한 제목이면 h1로 그린다
+  titleAs?: "p" | "h1";
   description?: string;
   action?: React.ReactNode;
 }) {
@@ -17,7 +20,7 @@ export function EmptyState({
       <span className="mb-(--s-3) inline-flex size-10 items-center justify-center rounded-full bg-(--surface-2) text-(--text-3)">
         <Icon aria-hidden size={18} strokeWidth={1.8} />
       </span>
-      <p className="text-(length:--fs-md) font-medium text-(--text)">{title}</p>
+      <Title className="text-(length:--fs-md) font-medium text-(--text)">{title}</Title>
       {description && <p className="mt-1 max-w-md text-(length:--fs-base) text-(--text-3)">{description}</p>}
       {action && <div className="mt-(--s-4)">{action}</div>}
     </div>

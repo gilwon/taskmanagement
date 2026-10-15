@@ -7,6 +7,8 @@ import { signIn } from "@/lib/auth/actions";
 
 export function LoginForm({ next, linkError }: { next: string; linkError?: string }) {
   const { pending, formRef, onSubmit, fieldError, formError, state } = useAuthAction(signIn);
+  // 제출 뒤 폼 전체 오류는 이메일·비밀번호 조합에 대한 것이라 두 칸 모두 오류로 표시하고 문구를 잇는다
+  const credError = state && formError ? "login-error" : undefined;
   return (
     <AuthCard
       title="로그인"
@@ -22,7 +24,7 @@ export function LoginForm({ next, linkError }: { next: string; linkError?: strin
     >
       <form ref={formRef} method="post" onSubmit={onSubmit} noValidate className="flex flex-col gap-[var(--s-4)]">
         {/* 제출 전에는 링크 오류를, 제출 뒤에는 그 결과만 보인다 */}
-        <FormAlert message={state ? formError : linkError} />
+        <FormAlert id="login-error" message={state ? formError : linkError} />
         <input type="hidden" name="next" value={next} />
         <Field
           id="email"
@@ -32,6 +34,7 @@ export function LoginForm({ next, linkError }: { next: string; linkError?: strin
           placeholder="name@example.com"
           required
           error={fieldError("email")}
+          invalidBy={credError}
         />
         <div className="flex flex-col gap-[var(--s-2)]">
           <Field
@@ -42,6 +45,7 @@ export function LoginForm({ next, linkError }: { next: string; linkError?: strin
             placeholder="비밀번호"
             required
             error={fieldError("password")}
+            invalidBy={credError}
           />
           <Link href="/forgot" className={`${linkClass} self-end text-[length:var(--fs-sm)]`}>
             비밀번호를 잊으셨나요?

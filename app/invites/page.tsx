@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
+import { RouteAnnouncer } from "@/components/auth/route-announcer";
 import { InvitesList } from "@/components/org/invites-list";
 import { getMyInvites } from "@/lib/org/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -39,6 +40,7 @@ export default async function InvitesPage() {
       >
         <InvitesList invites={invites} />
       </AuthCard>
+      <RouteAnnouncer />
     </main>
   );
 }

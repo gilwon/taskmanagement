@@ -80,6 +80,8 @@
 :root[data-accent=graphite] {
   --acc-l: #34332f;
   --acc-d: #d9d6cf;
+  /* 무채색 강조는 10%면 그 위 --text-3·--text-4가 4.5:1 아래로 떨어져 8%로 줄인다 */
+  --accent-soft: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 /* light 토큰(기본값)과 테마에 무관한 토큰 */
@@ -97,7 +99,7 @@
   --text: #1d1c1a;
   --text-2: #57544e;
   --text-3: #6b6760;
-  --text-4: #8c8880;
+  --text-4: #6d6963;
   --on-accent: #ffffff;
   --green: #25754b;
   --amber: #8f5e0e;
@@ -207,7 +209,7 @@
   --text: #eceae5;
   --text-2: #b5b2ab;
   --text-3: #9a968f;
-  --text-4: #6f6c66;
+  --text-4: #96938c;
   --on-accent: #12131c;
   --green: #5cba86;
   --amber: #d8a443;
@@ -246,7 +248,7 @@
     --text: #eceae5;
     --text-2: #b5b2ab;
     --text-3: #9a968f;
-    --text-4: #6f6c66;
+    --text-4: #96938c;
     --on-accent: #12131c;
     --green: #5cba86;
     --amber: #d8a443;

@@ -1,7 +1,7 @@
 "use client";
-// 표 뷰. 열 숨김·폭(ViewState.hidden·colW), 머리글 클릭 정렬, 제목·예상 시간 인라인 편집, 행 선택. 좁은 화면은 표 영역 안에서만 가로 스크롤한다
+// 표 뷰. 열 숨김·폭(ViewState.hidden·colW), 머리글 클릭 정렬, 제목·예상 시간 인라인 편집, 행 선택. 900px 이하는 같은 칸을 카드 목록으로 보인다(META §8)
 import { ArrowDown, ArrowUp, ListChecks } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/shell/empty-state";
 import { ProjectIcon } from "@/components/shell/project-icon";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -86,82 +86,87 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
   const sortBy = (f: SortField) =>
     setState({ ...state, sort: state.sort.f === f ? { f, dir: state.sort.dir === 1 ? -1 : 1 } : { f, dir: 1 } });
 
+  const row = (t: TaskItem, card?: boolean) => (
+    <Row
+      key={t.id}
+      t={t}
+      ctl={ctl}
+      cols={cols}
+      keyOf={keyOf}
+      card={card}
+      editing={editing === t.id}
+      onEdit={() => setEditing(t.id)}
+      onEditDone={() => setEditing(null)}
+    />
+  );
+
+  // 서버 렌더와 첫 화면이 어긋나지 않게 폭 판정은 CSS로 한다. 숨긴 쪽은 display:none이라 초점·보조기술에서 빠진다
   return (
-    // relative가 없으면 머리글의 sr-only(absolute)가 스크롤 영역 밖 문서 기준으로 놓여 페이지 가로 스크롤을 만든다
-    <div className="relative mx-(--gutter) mb-(--s-8) overflow-x-auto rounded-(--r) border border-(--border)">
-      <table className="table-fixed border-collapse text-(length:--fs-base)" style={{ width: total }}>
-        <colgroup>
-          <col style={{ width: CHECK_W }} />
-          {cols.map((c) => (
-            <col key={c} style={{ width: width(c) }} />
-          ))}
-          <col style={{ width: MENU_W }} />
-        </colgroup>
-        <thead className="bg-(--surface-2)">
-          <tr className="h-9 border-b border-(--border) text-left text-(length:--fs-xs) text-(--text-3)">
-            <th scope="col">
-              <span className="sr-only">선택</span>
-            </th>
-            {cols.map((c) => {
-              const f = SORT_OF[c];
-              const active = f && state.sort.f === f;
-              return (
-                <th
-                  key={c}
-                  scope="col"
-                  aria-sort={active ? (state.sort.dir === 1 ? "ascending" : "descending") : undefined}
-                  className="relative px-2 font-medium"
-                >
-                  {f ? (
-                    <button
-                      type="button"
-                      onClick={() => sortBy(f)}
-                      className="inline-flex max-w-full items-center gap-1 truncate rounded-(--r-xs) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
-                    >
-                      {COLUMN_LABELS[c]}
-                      {active &&
-                        (state.sort.dir === 1 ? (
-                          <ArrowUp aria-hidden size={12} strokeWidth={1.8} />
-                        ) : (
-                          <ArrowDown aria-hidden size={12} strokeWidth={1.8} />
-                        ))}
-                    </button>
-                  ) : (
-                    <span className="truncate">{COLUMN_LABELS[c]}</span>
-                  )}
-                  <ResizeHandle
-                    label={COLUMN_LABELS[c]}
-                    width={width(c)}
-                    onLive={(w) => setLive({ col: c, w })}
-                    onCommit={(w) => {
-                      setLive(null);
-                      saveWidth(c, w);
-                    }}
-                  />
-                </th>
-              );
-            })}
-            <th scope="col">
-              <span className="sr-only">메뉴</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((t) => (
-            <Row
-              key={t.id}
-              t={t}
-              ctl={ctl}
-              cols={cols}
-              keyOf={keyOf}
-              editing={editing === t.id}
-              onEdit={() => setEditing(t.id)}
-              onEditDone={() => setEditing(null)}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* relative가 없으면 머리글의 sr-only(absolute)가 스크롤 영역 밖 문서 기준으로 놓여 페이지 가로 스크롤을 만든다 */}
+      <div className="relative mx-(--gutter) mb-(--s-8) overflow-x-auto rounded-(--r) border border-(--border) max-[900px]:hidden">
+        <table className="table-fixed border-collapse text-(length:--fs-base)" style={{ width: total }}>
+          <colgroup>
+            <col style={{ width: CHECK_W }} />
+            {cols.map((c) => (
+              <col key={c} style={{ width: width(c) }} />
+            ))}
+            <col style={{ width: MENU_W }} />
+          </colgroup>
+          <thead className="bg-(--surface-2)">
+            <tr className="h-9 border-b border-(--border) text-left text-(length:--fs-xs) text-(--text-3)">
+              <th scope="col">
+                <span className="sr-only">선택</span>
+              </th>
+              {cols.map((c) => {
+                const f = SORT_OF[c];
+                const active = f && state.sort.f === f;
+                return (
+                  <th
+                    key={c}
+                    scope="col"
+                    aria-sort={active ? (state.sort.dir === 1 ? "ascending" : "descending") : undefined}
+                    className="relative px-2 font-medium"
+                  >
+                    {f ? (
+                      <button
+                        type="button"
+                        onClick={() => sortBy(f)}
+                        className="inline-flex max-w-full items-center gap-1 truncate rounded-(--r-xs) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
+                      >
+                        {COLUMN_LABELS[c]}
+                        {active &&
+                          (state.sort.dir === 1 ? (
+                            <ArrowUp aria-hidden size={12} strokeWidth={1.8} />
+                          ) : (
+                            <ArrowDown aria-hidden size={12} strokeWidth={1.8} />
+                          ))}
+                      </button>
+                    ) : (
+                      <span className="truncate">{COLUMN_LABELS[c]}</span>
+                    )}
+                    <ResizeHandle
+                      label={COLUMN_LABELS[c]}
+                      width={width(c)}
+                      onLive={(w) => setLive({ col: c, w })}
+                      onCommit={(w) => {
+                        setLive(null);
+                        saveWidth(c, w);
+                      }}
+                    />
+                  </th>
+                );
+              })}
+              <th scope="col">
+                <span className="sr-only">메뉴</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>{items.map((t) => row(t))}</tbody>
+        </table>
+      </div>
+      <ul className="mx-(--gutter) mb-(--s-8) flex flex-col gap-2 min-[901px]:hidden">{items.map((t) => row(t, true))}</ul>
+    </>
   );
 }
 
@@ -219,6 +224,7 @@ function Row({
   ctl,
   cols,
   keyOf,
+  card,
   editing,
   onEdit,
   onEditDone,
@@ -227,6 +233,8 @@ function Row({
   ctl: ViewCtl;
   cols: ColumnKey[];
   keyOf: Map<string, string>;
+  // 좁은 화면 카드. 칸 내용(cell)은 표 행과 같다
+  card?: boolean;
   editing: boolean;
   onEdit: () => void;
   onEditDone: () => void;
@@ -407,6 +415,65 @@ function Row({
     }
   };
 
+  const checkbox = (
+    <Checkbox
+      checked={checked}
+      aria-label={`${t.key} 선택`}
+      onClick={(e) => {
+        e.stopPropagation();
+        ctl.select(t.id, { range: e.shiftKey });
+      }}
+    />
+  );
+
+  if (card) {
+    // 작업 칸은 머리에 두고 나머지 보이는 열을 이름·값 쌍으로 늘어놓는다
+    const rest = cols.filter((c) => c !== "task");
+    return (
+      <TaskContextMenu task={t}>
+        <li
+          tabIndex={0}
+          aria-label={`${t.key} ${t.title}`}
+          data-state={checked ? "selected" : undefined}
+          onClick={(e) => {
+            if (editing || isInnerControl(e.target)) return;
+            open(t.key);
+          }}
+          onKeyDown={(e) => {
+            if (e.target !== e.currentTarget) return;
+            if (e.key === "Enter") {
+              e.preventDefault();
+              open(t.key);
+            } else if (e.key === " ") {
+              e.preventDefault();
+              ctl.select(t.id, { range: e.shiftKey });
+            }
+          }}
+          className={cn(
+            "flex min-w-0 cursor-default flex-col gap-2 rounded-(--r) border border-(--border) bg-(--surface) p-(--card-pad) text-(length:--fs-base) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)",
+            checked && "border-(--accent) bg-(--accent-soft) hover:bg-(--accent-soft)",
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            {checkbox}
+            <div className="min-w-0 flex-1">{cell("task")}</div>
+            <TaskMenu task={t} onRename={onEdit} />
+          </div>
+          {rest.length > 0 && (
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+              {rest.map((c) => (
+                <Fragment key={c}>
+                  <dt className="text-(length:--fs-xs) text-(--text-3)">{COLUMN_LABELS[c]}</dt>
+                  <dd className="min-w-0 overflow-hidden">{cell(c)}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          )}
+        </li>
+      </TaskContextMenu>
+    );
+  }
+
   return (
     <TaskContextMenu task={t}>
       <tr
@@ -420,16 +487,7 @@ function Row({
           checked && "bg-(--accent-soft) hover:bg-(--accent-soft)",
         )}
       >
-        <td className="px-3">
-          <Checkbox
-            checked={checked}
-            aria-label={`${t.key} 선택`}
-            onClick={(e) => {
-              e.stopPropagation();
-              ctl.select(t.id, { range: e.shiftKey });
-            }}
-          />
-        </td>
+        <td className="px-3">{checkbox}</td>
         {cols.map((c) => (
           <td key={c} className="overflow-hidden px-2">
             {cell(c)}

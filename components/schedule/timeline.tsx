@@ -586,7 +586,7 @@ function Bar({
         <span
           className={cn(
             "pointer-events-none truncate px-2.5 text-(length:--fs-2xs) font-medium",
-            done ? "text-(--text-3) line-through" : "text-(--text)",
+            done ? "text-(--text-2) line-through" : "text-(--text)",
           )}
         >
           {t.title}

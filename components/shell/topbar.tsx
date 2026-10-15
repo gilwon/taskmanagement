@@ -90,7 +90,7 @@ const THEME_OPTIONS: { value: Prefs["theme"]; label: string }[] = [
   { value: "system", label: "시스템 설정" },
 ];
 
-export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () => void }) {
+export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOpen: boolean; onOpenMenu: () => void }) {
   const pathname = usePathname();
   const { prefs, setPref } = usePrefs();
   const [signingOut, startSignOut] = useTransition();
@@ -102,7 +102,17 @@ export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () =
 
   return (
     <header className="flex h-(--topbar-h) shrink-0 items-center gap-2 border-b border-(--border) bg-(--bg) px-3 max-[900px]:px-(--gutter)">
-      <Button variant="ghost" size="icon-sm" aria-label="메뉴 열기" className={`only-narrow ${iconBtn}`} onClick={onOpenMenu}>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="메뉴 열기"
+        aria-haspopup="dialog"
+        aria-expanded={menuOpen}
+        // 시트는 닫히면 DOM에서 빠지므로 열렸을 때만 가리킨다
+        aria-controls={menuOpen ? "app-menu" : undefined}
+        className={`only-narrow ${iconBtn}`}
+        onClick={onOpenMenu}
+      >
         <Menu size={18} strokeWidth={1.8} aria-hidden />
       </Button>
       <Button
@@ -131,7 +141,7 @@ export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () =
               {c.href ? (
                 <Link
                   href={c.href}
-                  className="truncate rounded-(--r-xs) text-(--text-3) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
+                  className="-my-0.5 truncate rounded-(--r-xs) py-0.5 text-(--text-3) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
                 >
                   {c.label}
                 </Link>

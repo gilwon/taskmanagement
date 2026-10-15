@@ -1,8 +1,8 @@
-// 프로젝트 화면 머리말. 아이콘 타일·이름·즐겨찾기(표시만)·상태 pill·구성원 아바타와 탭(기본 탭·저장 뷰·+ 저장 뷰)
-import { Star } from "lucide-react";
+// 프로젝트 화면 머리말. 아이콘 타일·이름·즐겨찾기 토글·상태 pill·구성원 아바타와 탭(기본 탭·저장 뷰·+ 저장 뷰)
 import Link from "next/link";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { ProjectIcon, ProjectStatusDot } from "@/components/shell/project-icon";
+import { ProjectFavoriteButton } from "@/components/tasks/project-favorite-button";
 import { SaveViewDialog } from "@/components/tasks/save-view-dialog";
 import { SavedViewTab } from "@/components/tasks/saved-view-tab";
 import type { Enums } from "@/lib/database.types";
@@ -49,13 +49,7 @@ export async function ProjectHeader({
         <h1 className="min-w-0 truncate text-(length:--fs-xl) font-semibold tracking-tight text-(--text)">
           {project.name}
         </h1>
-        <Star
-          role="img"
-          aria-label={favorite ? "즐겨찾기한 프로젝트" : "즐겨찾기하지 않은 프로젝트"}
-          size={16}
-          strokeWidth={1.8}
-          className={cn("shrink-0", favorite ? "fill-(--amber) text-(--amber)" : "text-(--text-4)")}
-        />
+        <ProjectFavoriteButton workspaceId={workspaceId} projectId={project.id} favorite={favorite} />
         <span className="inline-flex h-(--h-sm) shrink-0 items-center gap-1.5 rounded-(--r-full) border border-(--border) bg-(--surface) px-2.5 text-(length:--fs-xs) text-(--text-2)">
           <ProjectStatusDot status={project.status} />
           {PROJECT_STATUS_LABELS[project.status]}

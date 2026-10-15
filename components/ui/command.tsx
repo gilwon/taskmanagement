@@ -91,11 +91,14 @@ function CommandInput({
 
 function CommandList({
   className,
+  label,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.List>) {
   return (
     <CommandPrimitive.List
       data-slot="command-list"
+      // cmdk는 label로 aria-label을 덮어쓰고 기본값이 "Suggestions"다. 호출부의 aria-label을 살리고 없으면 한국어 이름을 준다
+      label={label ?? props["aria-label"] ?? "검색 결과"}
       className={cn(
         "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
         className

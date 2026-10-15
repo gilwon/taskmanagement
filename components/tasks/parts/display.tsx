@@ -168,7 +168,8 @@ export function LabelChip({ label, className }: { label: string; className?: str
         "inline-flex h-(--h-xs) items-center rounded-(--r-xs) px-1.5 text-(length:--fs-2xs) font-medium whitespace-nowrap",
         className,
       )}
-      style={{ color, background: `color-mix(in srgb, ${color} 12%, transparent)` }}
+      // 글자는 본문색 쪽으로 30% 섞어 12% 배경 위에서도 AA(4.5:1)를 넘긴다
+      style={{ color: `color-mix(in srgb, ${color} 70%, var(--text))`, background: `color-mix(in srgb, ${color} 12%, transparent)` }}
     >
       {TASK_LABEL_LABELS[label as TaskLabel] ?? label}
     </span>

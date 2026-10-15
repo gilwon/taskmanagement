@@ -39,8 +39,9 @@ import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, UNASSIGNED_LABEL } from "@/li
 import type { GroupField, TaskGroup, TaskItem, TaskStatus } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
+// 아이콘만 있는 칸은 22px이라 보이는 크기는 두고 ::after로 누를 수 있는 폭을 24px로 넓힌다(WCAG 2.5.8)
 export const cellBtn =
-  "inline-flex h-(--h-sm) shrink-0 items-center justify-center gap-1 rounded-(--r-xs) px-1 outline-none hover:bg-(--surface-3) focus-visible:ring-2 focus-visible:ring-(--accent)";
+  "relative inline-flex h-(--h-sm) shrink-0 items-center justify-center gap-1 rounded-(--r-xs) px-1 outline-none after:absolute after:-inset-x-px after:inset-y-0 hover:bg-(--surface-3) focus-visible:ring-2 focus-visible:ring-(--accent)";
 
 // 더블클릭과 구분하려고 제목 한 번 클릭은 이만큼 기다렸다 드로어를 연다
 const DBL_WAIT = 220;

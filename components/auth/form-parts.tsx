@@ -44,10 +44,18 @@ export function Field({
   label,
   error,
   hint,
+  invalidBy,
   className,
   ...props
-}: React.ComponentProps<"input"> & { id: string; label: string; error?: string; hint?: string }) {
-  const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
+}: React.ComponentProps<"input"> & {
+  id: string;
+  label: string;
+  error?: string;
+  hint?: string;
+  // 폼 전체 오류(틀린 자격 증명 등)가 이 칸에도 해당하면 그 오류 문구의 id
+  invalidBy?: string;
+}) {
+  const describedBy = [hint && `${id}-hint`, error && `${id}-error`, invalidBy].filter(Boolean).join(" ") || undefined;
   return (
     <div className="flex flex-col gap-[var(--s-2)]">
       <Label htmlFor={id} className="text-[length:var(--fs-sm)] text-[var(--text-2)]">
@@ -56,7 +64,7 @@ export function Field({
       <Input
         id={id}
         name={id}
-        aria-invalid={error ? true : undefined}
+        aria-invalid={error || invalidBy ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
           "h-[var(--h-lg)] rounded-[var(--r)] bg-[var(--surface)] text-[length:var(--fs-base)] md:text-[length:var(--fs-base)]",
@@ -78,10 +86,11 @@ export function Field({
   );
 }
 
-export function FormAlert({ message, tone = "error" }: { message?: string; tone?: "error" | "info" }) {
+export function FormAlert({ id, message, tone = "error" }: { id?: string; message?: string; tone?: "error" | "info" }) {
   if (!message) return null;
   return (
     <div
+      id={id}
       role={tone === "error" ? "alert" : "status"}
       className={cn(
         "rounded-[var(--r)] px-[var(--s-3)] py-[var(--s-2)] text-[length:var(--fs-sm)]",

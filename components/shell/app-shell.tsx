@@ -1,7 +1,7 @@
 "use client";
 // 앱 셸 골격. 본문 건너뛰기, 사이드바(데스크톱 고정·좁은 화면 오프캔버스), 탑바, 메인, 하단 내비, 화면 전환 안내
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { CommandProvider } from "@/components/command/command-provider";
 import { MobileNav } from "@/components/shell/mobile-nav";
@@ -30,6 +30,10 @@ function RouteAnnouncer() {
   return <div id="sr-live" ref={liveRef} aria-live="polite" className="sr-only" />;
 }
 
+// 셸 안 화면이 문서 제목에 쓸 워크스페이스 이름. metadata를 둘 수 없는 404가 읽는다
+const WorkspaceNameContext = createContext("");
+export const useWorkspaceName = () => useContext(WorkspaceNameContext);
+
 export function AppShell({ data, children }: { data: ShellData; children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   // 트리거 없이 여는 시트라 닫을 때 포커스를 돌려줄 버튼을 기억한다
@@ -57,6 +61,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
 
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetContent
+            id="app-menu"
             side="left"
             showCloseButton={false}
             onCloseAutoFocus={(e) => {
@@ -70,9 +75,9 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         </Sheet>
 
         <div className="flex min-h-0 min-w-0 flex-col">
-          <Topbar data={data} onOpenMenu={openMenu} />
+          <Topbar data={data} menuOpen={menuOpen} onOpenMenu={openMenu} />
           <main id="main-content" tabIndex={-1} className="app-main min-h-0 flex-1 overflow-y-auto outline-none">
-            {children}
+            <WorkspaceNameContext.Provider value={data.workspace.name}>{children}</WorkspaceNameContext.Provider>
           </main>
         </div>
 

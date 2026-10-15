@@ -253,7 +253,7 @@ export function MonthCalendar({
                             tabIndex={-1}
                             aria-label={`${monthDay(iso)}에 새 작업`}
                             onClick={() => onAddTask(iso)}
-                            className="hide-m ml-auto inline-flex size-5 items-center justify-center rounded-(--r-xs) text-(--text-3) opacity-0 group-hover/cell:opacity-100 hover:bg-(--surface-3) hover:text-(--text)"
+                            className="hide-m relative ml-auto inline-flex size-5 items-center justify-center rounded-(--r-xs) text-(--text-3) opacity-0 after:absolute after:-inset-0.5 group-hover/cell:opacity-100 hover:bg-(--surface-3) hover:text-(--text)"
                           >
                             <Plus aria-hidden size={13} strokeWidth={1.8} />
                           </button>
