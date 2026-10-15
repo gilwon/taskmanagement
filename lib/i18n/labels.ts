@@ -286,3 +286,45 @@ export const NAMELESS_MEMBER_LABEL = "이름 없음";
 
 // 달력 요일 머리글. 월요일 시작
 export const WEEKDAY_SHORT_LABELS = ["월", "화", "수", "목", "금", "토", "일"] as const;
+
+// 홈 stat 카드 이름과 보조 문구
+export const HOME_STAT_LABELS = {
+  activeProjects: "진행 중 프로젝트",
+  openTasks: "열린 작업",
+  completed: "완료",
+  overdue: "기한 지남",
+} as const;
+export const HOME_STAT_NOTES = {
+  risk: (n: number) => `${n}개 위험`,
+  mine: (n: number) => `${n}개 내 담당`,
+  thisWeek: "이번 주",
+  needAttention: "확인 필요",
+  allOnTrack: "모두 순조로움",
+} as const;
+
+// 내 작업 묶음. 홈 내 작업 탭(예정·기한 지남·완료)과 내 작업 화면(기한 지남·오늘·예정·완료)이 함께 쓴다
+export const MY_TASK_BUCKET_LABELS = {
+  overdue: DUE_BUCKET_LABELS.overdue,
+  today: DUE_BUCKET_LABELS.today,
+  upcoming: "예정",
+  done: TASK_STATUS_LABELS.done,
+} as const;
+
+// 홈 다가오는 마감 묶음
+export const DEADLINE_GROUP_LABELS = {
+  today: "오늘",
+  tomorrow: "내일",
+  week: "이번 주",
+} as const;
+
+// 홈 프로젝트 진행 표 열
+export const PROJECT_PROGRESS_COLUMN_LABELS = {
+  project: COLUMN_LABELS.project,
+  status: COLUMN_LABELS.status,
+  progress: "진행률",
+  due: COLUMN_LABELS.due,
+  team: "팀",
+} as const;
+
+// 영구 삭제됐거나 볼 수 없는 작업의 표시명(활동 문장 등)
+export const DELETED_TASK_LABEL = "삭제된 작업";
