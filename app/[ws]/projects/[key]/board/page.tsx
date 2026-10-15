@@ -1,5 +1,5 @@
-// 프로젝트 보드 탭 골격. key로 프로젝트를 찾고 없으면 404
-import { ProjectStubPage } from "@/components/shell/project-stub";
+// 프로젝트 보드 탭. key로 프로젝트를 찾고 없으면 404. 뷰 상태는 p:{프로젝트 id} 키로 저장한다
+import { ProjectTasksPage } from "@/components/tasks/project-tasks-page";
 import { projectMetadata, type ProjectParams } from "@/lib/data/project";
 
 export function generateMetadata({ params }: { params: ProjectParams }) {
@@ -7,5 +7,5 @@ export function generateMetadata({ params }: { params: ProjectParams }) {
 }
 
 export default function ProjectBoardPage({ params }: { params: ProjectParams }) {
-  return <ProjectStubPage params={params} tab="board" />;
+  return <ProjectTasksPage params={params} mode="board" />;
 }

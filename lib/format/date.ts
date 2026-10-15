@@ -23,7 +23,7 @@ type DateInput = Date | string | number;
 
 // 서울 기준 달력 날짜를 UTC 자정 시각(ms)으로 돌려준다.
 // DB date("YYYY-MM-DD")는 이미 서울 날짜이므로 시간대 변환 없이 그대로 쓴다
-function seoulDay(input: DateInput) {
+export function seoulDay(input: DateInput) {
   if (typeof input === "string") {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
     if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]);

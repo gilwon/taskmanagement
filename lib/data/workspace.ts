@@ -102,7 +102,7 @@ export const getSavedView = cache(async (projectId: string, viewId: string) => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("saved_views")
-    .select("name")
+    .select("name, type, filters")
     .eq("id", viewId)
     .eq("project_id", projectId)
     .maybeSingle();

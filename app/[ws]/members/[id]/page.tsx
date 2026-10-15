@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { StubPage } from "@/components/shell/stub-page";
 import { getMember } from "@/lib/data/workspace";
-import { ROLE_LABELS } from "@/lib/i18n/labels";
+import { NAMELESS_MEMBER_LABEL, ROLE_LABELS } from "@/lib/i18n/labels";
 
 type Params = Promise<{ ws: string; id: string }>;
 
@@ -18,5 +18,5 @@ export default async function MemberPage({ params }: { params: Params }) {
   const member = await getMember(ws, id);
   if (!member) notFound();
   const subtitle = [member.title, ROLE_LABELS[member.role]].filter(Boolean).join(" · ");
-  return <StubPage title={member.profiles?.name || "이름 없음"} subtitle={subtitle} />;
+  return <StubPage title={member.profiles?.name || NAMELESS_MEMBER_LABEL} subtitle={subtitle} />;
 }

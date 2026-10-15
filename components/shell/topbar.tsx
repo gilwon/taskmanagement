@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { PendingMenuItem } from "@/components/shell/sidebar";
+import { useNewTask } from "@/components/tasks/new-task";
 import { signOut } from "@/lib/auth/actions";
 import type { ShellData } from "@/lib/data/workspace";
 import { NAV_LABELS, PROJECT_TAB_LABELS, SETTINGS_SECTIONS } from "@/lib/i18n/labels";
@@ -91,6 +92,7 @@ export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () =
   const pathname = usePathname();
   const { prefs, setPref } = usePrefs();
   const [signingOut, startSignOut] = useTransition();
+  const { openNewTask } = useNewTask();
   const ws = data.workspace.slug;
   const crumbs = buildCrumbs(pathname, data);
 
@@ -169,7 +171,8 @@ export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () =
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          {[NAV_LABELS.newTask, NAV_LABELS.newProject, NAV_LABELS.inviteMember].map((label) => (
+          <DropdownMenuItem onSelect={() => openNewTask()}>{NAV_LABELS.newTask}</DropdownMenuItem>
+          {[NAV_LABELS.newProject, NAV_LABELS.inviteMember].map((label) => (
             <PendingMenuItem key={label} label={label} side="left" />
           ))}
         </DropdownMenuContent>

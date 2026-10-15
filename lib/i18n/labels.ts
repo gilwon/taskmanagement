@@ -210,3 +210,79 @@ export const PROJECT_TAB_LABELS = {
   activity: "활동",
 } as const;
 export type ProjectTab = keyof typeof PROJECT_TAB_LABELS;
+
+// 작업 공통 툴바(META §3 공통 툴바). 필터·정렬·그룹·열의 표시명
+export const FILTER_FIELD_LABELS = {
+  status: "상태",
+  assignee: "담당자",
+  priority: "우선순위",
+  due: "기한",
+  project: "프로젝트",
+  labels: "라벨",
+  created: "생성일",
+  updated: "수정일",
+} as const;
+
+export const SORT_FIELD_LABELS = {
+  manual: "수동",
+  priority: "우선순위",
+  due: "기한",
+  start: "시작일",
+  title: "제목",
+  status: "상태",
+  assignee: "담당자",
+  created: "생성일",
+  updated: "최근 수정",
+} as const;
+
+export const GROUP_FIELD_LABELS = {
+  status: "상태",
+  priority: "우선순위",
+  assignee: "담당자",
+  project: "프로젝트",
+  due: "기한",
+  none: "그룹 없음",
+} as const;
+
+// 표 열 이름
+export const COLUMN_LABELS = {
+  task: "작업",
+  status: "상태",
+  priority: "우선순위",
+  assignee: "담당자",
+  due: "기한",
+  start: "시작일",
+  labels: "라벨",
+  deps: "선행 작업",
+  estimate: "예상 시간",
+  created: "생성일",
+  project: "프로젝트",
+} as const;
+
+// 기한 필터·그룹 구간(Asia/Seoul 기준)
+export const DUE_BUCKET_LABELS = {
+  overdue: "기한 지남",
+  today: "오늘",
+  next7: "7일 이내",
+  later: "이후",
+  none: "기한 없음",
+} as const;
+
+// 생성·수정 시각 필터 구간
+export const DATE_RANGE_LABELS = {
+  "24h": "최근 24시간",
+  "7d": "최근 7일",
+  "30d": "최근 30일",
+} as const;
+
+// 담당자 미지정 표시와 필터 값 "none"의 표시명
+export const UNASSIGNED_LABEL = "담당자 없음";
+
+// 구성원 목록에 없는 담당자(탈퇴·조회 범위 밖)의 표시명
+export const UNKNOWN_USER_LABEL = "알 수 없는 사용자";
+
+// 프로필 이름과 이메일이 모두 없는 구성원의 표시명
+export const NAMELESS_MEMBER_LABEL = "이름 없음";
+
+// 달력 요일 머리글. 월요일 시작
+export const WEEKDAY_SHORT_LABELS = ["월", "화", "수", "목", "금", "토", "일"] as const;

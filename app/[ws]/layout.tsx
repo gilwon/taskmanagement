@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
+import { NewTaskLauncher } from "@/components/tasks/new-task";
 import { getShellData, getWorkspace, requireUserId } from "@/lib/data/workspace";
 
 type Props = { children: React.ReactNode; params: Promise<{ ws: string }> };
@@ -22,9 +23,12 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   if (!workspace) notFound();
   const data = await getShellData(workspace, userId);
   // 워크스페이스가 바뀌면 셸의 클라이언트 상태(펼침·메뉴)를 새로 시작한다
+  // 새 작업 모달은 셸 어디서나 열 수 있게 셸 바깥에 둔다
   return (
-    <AppShell key={workspace.id} data={data}>
-      {children}
-    </AppShell>
+    <NewTaskLauncher key={workspace.id} workspace={{ id: workspace.id, slug: workspace.slug }} meId={userId}>
+      <AppShell key={workspace.id} data={data}>
+        {children}
+      </AppShell>
+    </NewTaskLauncher>
   );
 }
