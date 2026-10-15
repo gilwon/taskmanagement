@@ -1106,6 +1106,11 @@ isOneToOne: false
 "task_project_id":
 { Args: { "p_task": string }; Returns: string
                            },
+"workspace_member_stats":
+{ Args: { "p_workspace": string }; Returns: {
+              "project_count": number,"task_count": number,"user_id": string
+            }[]
+                           },
 "ws_role":
 { Args: { "ws": string }; Returns: Database["public"]['Enums']["ws_role"]
                            }
