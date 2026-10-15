@@ -1,0 +1,412 @@
+/* 전역 스타일. META §2 디자인 토큰과 shadcn/ui 변수 연결, 모션·keyframes 정의 */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* dark: 변형은 data-theme=dark, 또는 system(속성 없음 포함)이면서 OS가 다크일 때 적용 */
+@custom-variant dark {
+  &:where([data-theme=dark], [data-theme=dark] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(
+      :root:not([data-theme=light], [data-theme=dark]),
+      :root:not([data-theme=light], [data-theme=dark]) *
+    ) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * shadcn 유틸리티 색은 아래 shadcn 변수를 거쳐 META 토큰으로 이어진다.
+ * 단 META의 --accent(강조색)와 이름이 겹치므로 shadcn의 accent(hover 배경)는
+ * 원시 변수를 두지 않고 여기서 --surface-2에 바로 연결한다.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-heading: var(--font-sans);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--text);
+  --color-accent: var(--surface-2);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-lg);
+  --radius-2xl: var(--r-lg);
+  --radius-3xl: var(--r-lg);
+  --radius-4xl: var(--r-lg);
+}
+
+/* 강조색 6종. light는 --acc-l, dark는 --acc-d를 쓴다 */
+:root,
+:root[data-accent=indigo] {
+  --acc-l: #4b5bd6;
+  --acc-d: #8e9af3;
+}
+:root[data-accent=blue] {
+  --acc-l: #2f6cd4;
+  --acc-d: #74a7f0;
+}
+:root[data-accent=violet] {
+  --acc-l: #7348cc;
+  --acc-d: #ae93f0;
+}
+:root[data-accent=teal] {
+  --acc-l: #1a7f7a;
+  --acc-d: #5cc4ba;
+}
+:root[data-accent=rose] {
+  --acc-l: #b93d68;
+  --acc-d: #ec8dae;
+}
+:root[data-accent=graphite] {
+  --acc-l: #34332f;
+  --acc-d: #d9d6cf;
+}
+
+/* light 토큰(기본값)과 테마에 무관한 토큰 */
+:root {
+  --bg: #fbfaf8;
+  --bg-side: #f4f3f0;
+  --surface: #ffffff;
+  --surface-2: #f6f5f2;
+  --surface-3: #eeede9;
+  --sunken: #f7f6f3;
+  --overlay: rgba(24, 22, 19, 0.28);
+  --border: #e9e7e2;
+  --border-strong: #dad7d0;
+  --divider: #f0eeea;
+  --text: #1d1c1a;
+  --text-2: #57544e;
+  --text-3: #6b6760;
+  --text-4: #8c8880;
+  --on-accent: #ffffff;
+  --green: #25754b;
+  --amber: #8f5e0e;
+  --red: #b23c30;
+  --blue: #3570c4;
+  --violet: #7652c2;
+  --teal: #1e8580;
+  --rose: #bc4270;
+  --orange: #c0612b;
+  --gray: #8a867e;
+  --st-backlog: #a29e96;
+  --st-todo: #7c7870;
+  --st-progress: #c88a14;
+  --st-review: #7652c2;
+  --st-done: #2e8456;
+  --shadow-card: 0 1px 2px rgba(28, 25, 20, 0.04), 0 0 0 1px var(--border);
+  --shadow-pop: 0 12px 32px -8px rgba(28, 25, 20, 0.16), 0 2px 6px -2px rgba(28, 25, 20, 0.06), 0 0 0 1px var(--border);
+  --shadow-drag: 0 16px 36px -10px rgba(28, 25, 20, 0.28), 0 0 0 1px var(--border-strong);
+
+  --accent: var(--acc-l);
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-line: color-mix(in srgb, var(--accent) 38%, transparent);
+  --green-soft: color-mix(in srgb, var(--green) 11%, transparent);
+  --amber-soft: color-mix(in srgb, var(--amber) 12%, transparent);
+  --red-soft: color-mix(in srgb, var(--red) 10%, transparent);
+
+  /* 반경 */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 10px;
+  --r-full: 999px;
+
+  /* 간격 */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+
+  /* 글자 크기 */
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 12.5px;
+  --fs-base: 13.5px;
+  --fs-md: 14.5px;
+  --fs-lg: 16px;
+  --fs-xl: 19px;
+  --fs-2xl: 23px;
+
+  /* 컨트롤 높이 */
+  --h-xs: 22px;
+  --h-sm: 26px;
+  --h-md: 30px;
+  --h-lg: 36px;
+
+  /* 레이아웃 */
+  --side-w: 252px;
+  --topbar-h: 46px;
+  --row-h: 40px;
+  --side-row: 30px;
+  --card-pad: 10px;
+  --gutter: 24px;
+
+  /* 모션 */
+  --dur: 0.14s;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --reduce: 0;
+
+  /* shadcn 변수 → META 토큰 */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-3);
+  --destructive: var(--red);
+  --input: var(--border-strong);
+  --ring: var(--accent);
+  --radius: var(--r);
+}
+
+/* dark 토큰. data-theme=dark일 때 */
+:root[data-theme=dark] {
+  --bg: #1a1a19;
+  --bg-side: #151514;
+  --surface: #1d1d1c;
+  --surface-2: #252524;
+  --surface-3: #2d2d2b;
+  --sunken: #181817;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --border: #2c2b29;
+  --border-strong: #3a3936;
+  --divider: #252523;
+  --text: #eceae5;
+  --text-2: #b5b2ab;
+  --text-3: #9a968f;
+  --text-4: #6f6c66;
+  --on-accent: #12131c;
+  --green: #5cba86;
+  --amber: #d8a443;
+  --red: #e57d70;
+  --blue: #72a5ea;
+  --violet: #a98deb;
+  --teal: #58c0b6;
+  --rose: #e68aab;
+  --orange: #e3925f;
+  --gray: #8f8b84;
+  --st-backlog: #6f6c66;
+  --st-todo: #a6a39c;
+  --st-progress: #d8a443;
+  --st-review: #a98deb;
+  --st-done: #5cba86;
+  --shadow-card: 0 0 0 1px var(--border);
+  --shadow-pop: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-strong);
+  --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
+  --accent: var(--acc-d);
+  color-scheme: dark;
+}
+
+/* dark 토큰. system(또는 속성 없음)이면서 OS가 다크일 때. 위 블록과 값이 같아야 한다 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]):not([data-theme=dark]) {
+    --bg: #1a1a19;
+    --bg-side: #151514;
+    --surface: #1d1d1c;
+    --surface-2: #252524;
+    --surface-3: #2d2d2b;
+    --sunken: #181817;
+    --overlay: rgba(0, 0, 0, 0.55);
+    --border: #2c2b29;
+    --border-strong: #3a3936;
+    --divider: #252523;
+    --text: #eceae5;
+    --text-2: #b5b2ab;
+    --text-3: #9a968f;
+    --text-4: #6f6c66;
+    --on-accent: #12131c;
+    --green: #5cba86;
+    --amber: #d8a443;
+    --red: #e57d70;
+    --blue: #72a5ea;
+    --violet: #a98deb;
+    --teal: #58c0b6;
+    --rose: #e68aab;
+    --orange: #e3925f;
+    --gray: #8f8b84;
+    --st-backlog: #6f6c66;
+    --st-todo: #a6a39c;
+    --st-progress: #d8a443;
+    --st-review: #a98deb;
+    --st-done: #5cba86;
+    --shadow-card: 0 0 0 1px var(--border);
+    --shadow-pop: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-strong);
+    --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
+    --accent: var(--acc-d);
+    color-scheme: dark;
+  }
+}
+
+/* 밀도 */
+:root[data-density=compact] {
+  --row-h: 34px;
+  --card-pad: 8px;
+}
+:root[data-side=compact] {
+  --side-row: 26px;
+}
+
+/* 반응형 레이아웃 값 */
+@media (max-width: 900px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+@media (max-width: 640px) {
+  :root {
+    --topbar-h: 50px;
+  }
+}
+
+/* 모션. data-motion=full이 아니면 애니메이션·트랜지션을 끈다(META §8) */
+:root:not([data-motion=full]) {
+  --reduce: 1;
+}
+:root:not([data-motion=full]) *,
+:root:not([data-motion=full]) *::before,
+:root:not([data-motion=full]) *::after {
+  animation: none !important;
+  transition: none !important;
+}
+:root[data-motion=full] [data-slot=button]:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* keyframes. 원본 정의가 없어 이름이 뜻하는 단순한 움직임으로 만든다 */
+@keyframes addRing {
+  from { box-shadow: 0 0 0 0 var(--accent-line); }
+  to { box-shadow: 0 0 0 6px transparent; }
+}
+@keyframes addWash {
+  from { background-color: var(--accent-soft); }
+  to { background-color: transparent; }
+}
+@keyframes doneRing {
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 38%, transparent); }
+  to { box-shadow: 0 0 0 6px transparent; }
+}
+@keyframes doneWash {
+  from { background-color: var(--green-soft); }
+  to { background-color: transparent; }
+}
+@keyframes drawerIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fadeOnly {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes growX {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes land {
+  from { transform: scale(1.03); }
+  to { transform: scale(1); }
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes popCheck {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes popUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes slideInR {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: none; }
+}
+/* 사용 시간은 .7s. Tailwind 내장 spin과 같은 회전이라 덮어써도 동작이 같다 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes strike {
+  from { background-size: 0% 1px; }
+  to { background-size: 100% 1px; }
+}
+@keyframes tabIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tipIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+/* 사용 시간은 160ms */
+@keyframes toastOut {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(4px); }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-size: var(--fs-base);
+  }
+  html {
+    @apply font-sans;
+  }
+}
