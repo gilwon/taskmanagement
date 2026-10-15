@@ -153,17 +153,17 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
-      foreignKeyName: "favorites_project_id_fkey"
-      columns: ["project_id"]
+      foreignKeyName: "favorites_project_workspace_fkey"
+      columns: ["project_id","workspace_id"]
 isOneToOne: false
       referencedRelation: "projects"
-      referencedColumns: ["id"]
+      referencedColumns: ["id","workspace_id"]
     },{
-      foreignKeyName: "favorites_task_id_fkey"
-      columns: ["task_id"]
+      foreignKeyName: "favorites_task_workspace_fkey"
+      columns: ["task_id","workspace_id"]
 isOneToOne: false
       referencedRelation: "tasks"
-      referencedColumns: ["id"]
+      referencedColumns: ["id","workspace_id"]
     },{
       foreignKeyName: "favorites_user_id_fkey"
       columns: ["user_id"]
