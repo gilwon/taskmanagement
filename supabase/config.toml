@@ -226,7 +226,8 @@ double_confirm_changes = true
 # 활성화하면 사용자는 로그인 전에 이메일 주소를 확인해야 한다.
 enable_confirmations = true
 # 활성화하면 비밀번호를 변경할 때 재인증하거나 최근에 로그인한 상태여야 한다.
-secure_password_change = false
+# 로그인 세션만으로 비밀번호를 바꾸지 못하게 켠다. 재설정 링크로 막 만든 세션은 최근 로그인이라 영향이 없다.
+secure_password_change = true
 # 가입 확인 이메일이나 비밀번호 재설정 이메일을 다시 보내기 전에 지나야 하는 최소 시간.
 max_frequency = "1s"
 # 이메일 OTP의 문자 수.
