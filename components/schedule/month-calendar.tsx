@@ -108,7 +108,10 @@ export function MonthCalendar({
         ),
     );
   };
-  const { dragId, target, onPointerDown } = useTaskDrag((id: string, t: DropTarget) => moveTo(id, t.group));
+  // 사이드바 프로젝트 목록 같은 다른 묶음 위에 놓으면 날짜가 아니므로 무시한다
+  const { dragId, target, onPointerDown } = useTaskDrag(
+    (id: string, t: DropTarget) => /^\d{4}-\d{2}-\d{2}$/.test(t.group) && moveTo(id, t.group),
+  );
   const canDragTask = !!onMoveTask;
   const canDragEvent = !!onMoveEvent;
 
@@ -140,7 +143,7 @@ export function MonthCalendar({
   const [openDay, setOpenDay] = useState<string | null>(null);
   const refocusItem = useRef<string | null>(null);
   const moveByKey = (e: React.KeyboardEvent, t: TaskItem) => {
-    if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight") || !t.due_date || !onMoveTask) return;
+    if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight") || !t.due_date || !onMoveTask || !t.canEdit) return;
     e.preventDefault();
     const date = addDays(t.due_date, e.key === "ArrowLeft" ? -1 : 1);
     moveTo(t.id, date, true);
@@ -278,7 +281,7 @@ export function MonthCalendar({
                           <li key={t.id}>
                             <TaskChip
                               t={t}
-                              draggable={canDragTask}
+                              draggable={canDragTask && t.canEdit}
                               dragging={dragId === t.id}
                               onPointerDown={onPointerDown}
                               onOpen={() => onOpenTask(t.key)}

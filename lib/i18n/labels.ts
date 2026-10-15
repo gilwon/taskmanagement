@@ -382,3 +382,120 @@ export const FILE_TYPE_ALL_LABEL = "전체";
 
 // 반응 툴팁 등에서 나 자신을 가리키는 이름
 export const ME_LABEL = "나";
+
+// 프로젝트 아이콘(DB check 제약과 같은 값·순서)과 선택지의 접근성 이름
+export const PROJECT_ICON_LABELS = {
+  globe: "지구본",
+  smartphone: "스마트폰",
+  megaphone: "확성기",
+  rocket: "로켓",
+  component: "컴포넌트",
+  "building-2": "건물",
+  "layout-grid": "격자",
+  palette: "팔레트",
+  code: "코드",
+  briefcase: "서류 가방",
+  target: "과녁",
+  layers: "레이어",
+  zap: "번개",
+  heart: "하트",
+  folder: "폴더",
+  sparkles: "반짝임",
+} as const;
+export type ProjectIconName = keyof typeof PROJECT_ICON_LABELS;
+
+// 프로젝트 목록 정렬과 보기 방식
+export const PROJECT_SORT_LABELS = {
+  recent: "최근 활동",
+  name: "이름",
+  due: "기한",
+  progress: "진행률",
+} as const;
+export const PROJECT_VIEW_LABELS = { grid: "카드", list: "목록", table: "표" } as const;
+
+// 프로젝트 목록·개요 표 열(META §3 Portfolio)
+export const PROJECT_COLUMN_LABELS = {
+  project: COLUMN_LABELS.project,
+  lead: "리드",
+  status: COLUMN_LABELS.status,
+  progress: "진행률",
+  open: "열린 작업",
+  overdue: "기한 지남",
+  due: COLUMN_LABELS.due,
+  members: "구성원",
+} as const;
+
+// 워크스페이스 개요 stat 카드
+export const OVERVIEW_STAT_LABELS = {
+  projects: "프로젝트",
+  tasks: "작업",
+  completion: "완료율",
+  members: "구성원",
+} as const;
+
+// 보관함 탭
+export const ARCHIVE_TAB_LABELS = {
+  projects: "프로젝트",
+  tasks: "작업",
+  comments: "댓글",
+  files: "파일",
+} as const;
+
+// 보관함 항목 상태
+export const ARCHIVE_STATE_LABELS = { deleted: "삭제됨", archived: "보관됨" } as const;
+
+// 리드 미지정 표시
+export const NO_LEAD_LABEL = "리드 없음";
+
+// 검색 화면 탭(전체 + 결과 종류)
+export const SEARCH_TAB_LABELS = {
+  all: "전체",
+  tasks: "작업",
+  projects: "프로젝트",
+  people: "사람",
+  files: "파일",
+  comments: "댓글",
+} as const;
+
+// 프로젝트·팀 아이콘 이름의 접근성 이름(META §4 아이콘 목록)
+export const ICON_LABELS = {
+  globe: "지구본",
+  smartphone: "스마트폰",
+  megaphone: "확성기",
+  rocket: "로켓",
+  component: "컴포넌트",
+  "building-2": "건물",
+  "layout-grid": "격자",
+  palette: "팔레트",
+  code: "코드",
+  briefcase: "서류 가방",
+  target: "과녁",
+  layers: "레이어",
+  zap: "번개",
+  heart: "하트",
+  folder: "폴더",
+  sparkles: "반짝임",
+} as const;
+
+// 설정 화면의 "미제공" 표시(spec R23)
+export const UNAVAILABLE_LABEL = "미제공";
+
+// 화면 설정 값의 표시명(lib/prefs/prefs.ts PREF_OPTIONS)
+export const PREF_LABELS = {
+  theme: { light: "라이트", dark: "다크", system: "시스템 설정" },
+  accent: { indigo: "인디고", blue: "파랑", violet: "보라", teal: "청록", rose: "장미", graphite: "흑연" },
+  density: { comfortable: "기본", compact: "촘촘하게" },
+  side: { comfortable: "기본", compact: "촘촘하게" },
+  motion: { full: "켜기", reduce: "줄이기", system: "시스템 설정" },
+} as const;
+
+// 알림 설정의 알림 종류 설명
+export const NOTIF_PREF_DESCRIPTIONS = {
+  mention: "댓글에서 나를 멘션했을 때",
+  assign: "작업 담당자로 지정되었을 때",
+  comment: "내가 담당한 작업에 댓글이 달렸을 때",
+  update: "내가 담당한 작업이 바뀌었을 때",
+} as const;
+
+// 즐겨찾기 화면 정렬
+export const FAVORITE_SORT_LABELS = { recent: "최근 추가순", name: "이름순" } as const;

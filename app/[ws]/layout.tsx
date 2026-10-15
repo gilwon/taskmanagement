@@ -1,6 +1,7 @@
 // 워크스페이스 레이아웃. slug로 소속 워크스페이스를 찾고(없으면 404) 셸 데이터를 읽어 앱 셸을 그린다
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { NewProjectLauncher } from "@/components/projects/new-project-launcher";
 import { AppShell } from "@/components/shell/app-shell";
 import { NewTaskLauncher } from "@/components/tasks/new-task";
 import { getShellData, getWorkspace, requireUserId } from "@/lib/data/workspace";
@@ -23,12 +24,14 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   if (!workspace) notFound();
   const data = await getShellData(workspace, userId);
   // 워크스페이스가 바뀌면 셸의 클라이언트 상태(펼침·메뉴)를 새로 시작한다
-  // 새 작업 모달은 셸 어디서나 열 수 있게 셸 바깥에 둔다
+  // 새 작업·새 프로젝트 모달은 셸 어디서나 열 수 있게 셸 바깥에 둔다
   return (
     <NewTaskLauncher key={workspace.id} workspace={{ id: workspace.id, slug: workspace.slug }} meId={userId}>
-      <AppShell key={workspace.id} data={data}>
-        {children}
-      </AppShell>
+      <NewProjectLauncher workspace={workspace} meId={userId}>
+        <AppShell key={workspace.id} data={data}>
+          {children}
+        </AppShell>
+      </NewProjectLauncher>
     </NewTaskLauncher>
   );
 }

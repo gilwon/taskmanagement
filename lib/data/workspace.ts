@@ -2,6 +2,7 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { SLUG_RE } from "@/lib/auth/rules";
+import { orderProjects } from "@/lib/data/project-order";
 import type { Enums } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -127,7 +128,8 @@ export type ShellData = {
   projects: ShellProject[];
   teams: { id: string; name: string; icon: string; color: string }[];
   counts: { unread: number; myOpenTasks: number };
-  me: { id: string; name: string; email: string; color: string };
+  // role은 메뉴 숨김용. 실제 권한은 RLS와 서버 함수가 판단한다
+  me: { id: string; name: string; email: string; color: string; role: Enums<"ws_role"> | null };
 };
 
 // 사이드바·탑바가 쓰는 데이터를 한 번에 읽는다. 범위는 RLS가 자른다
@@ -136,9 +138,9 @@ export async function getShellData(
   userId: string,
 ): Promise<ShellData> {
   const supabase = await createClient();
-  const [workspaces, projects, favorites, teams, unread, myOpen, profile, membership] = await Promise.all([
+  const [workspaces, projects, favorites, teams, unread, myOpen, profile, membership, prefs] = await Promise.all([
     supabase.from("workspaces").select("id, slug, name, color").order("name"),
-    // 사용자별 순서 저장(proj_order)은 P3 이후. 지금은 이름순
+    // 이름순으로 읽고 아래에서 사용자별 순서(user_prefs.proj_order)로 다시 놓는다
     supabase
       .from("projects")
       .select("id, key, name, icon, color, status, access")
@@ -159,18 +161,27 @@ export async function getShellData(
       .eq("workspace_id", workspace.id)
       .eq("user_id", userId)
       .is("read_at", null),
+    // 홈 "내 담당" 숫자와 같은 기준. 삭제·보관된 프로젝트의 작업은 세지 않는다
     supabase
       .from("tasks")
-      .select("id", { count: "exact", head: true })
+      .select("id, project:projects!tasks_project_id_workspace_id_fkey!inner(id)", { count: "exact", head: true })
       .eq("workspace_id", workspace.id)
       .eq("assignee_id", userId)
       .neq("status", "done")
       .is("deleted_at", null)
-      .is("archived_at", null),
+      .is("archived_at", null)
+      .is("project.deleted_at", null)
+      .is("project.archived_at", null),
     supabase.from("profiles").select("name, email, color").eq("id", userId).maybeSingle(),
     supabase
       .from("workspace_members")
-      .select("color")
+      .select("color, role")
+      .eq("workspace_id", workspace.id)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("user_prefs")
+      .select("proj_order")
       .eq("workspace_id", workspace.id)
       .eq("user_id", userId)
       .maybeSingle(),
@@ -184,12 +195,13 @@ export async function getShellData(
   if (myOpen.error) fail("내 작업 개수", myOpen.error);
   if (profile.error) fail("프로필", profile.error);
   if (membership.error) fail("구성원 정보", membership.error);
+  if (prefs.error) fail("사용자 설정", prefs.error);
 
   const favIds = new Set(favorites.data.map((f) => f.project_id));
   return {
     workspace,
     workspaces: workspaces.data,
-    projects: projects.data.map((p) => ({ ...p, favorite: favIds.has(p.id) })),
+    projects: orderProjects(projects.data, prefs.data?.proj_order ?? []).map((p) => ({ ...p, favorite: favIds.has(p.id) })),
     teams: teams.data,
     counts: { unread: unread.count ?? 0, myOpenTasks: myOpen.count ?? 0 },
     me: {
@@ -197,6 +209,7 @@ export async function getShellData(
       name: profile.data?.name || profile.data?.email || "나",
       email: profile.data?.email ?? "",
       color: membership.data?.color ?? profile.data?.color ?? "indigo",
+      role: membership.data?.role ?? null,
     },
   };
 }

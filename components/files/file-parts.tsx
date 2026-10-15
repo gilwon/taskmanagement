@@ -27,8 +27,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu";
 import type { Transfer } from "@/components/files/upload-store";
 import type { FilesCtl } from "@/components/files/use-files";
+import { KeyContextMenu, type MenuItemComponent } from "@/components/shortcuts/key-context-menu";
 import { UPLOAD_UNFINISHED } from "@/lib/files/errors";
 import { formatRelative } from "@/lib/format/date";
 import { ACCEPT_ATTR, ALLOWED_EXT_LABEL, formatSize, MAX_FILE_LABEL, type FileType } from "@/lib/files/mime";
@@ -159,37 +161,112 @@ export function FileActions({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className={MENU_CLASS}>
-            {ready && (
-              <DropdownMenuItem onSelect={() => void ctl.download(item)}>
-                <Download {...ICON} />
-                다운로드
-              </DropdownMenuItem>
-            )}
-            {canEdit && onLinkRequest && (
-              <DropdownMenuItem onSelect={() => onLinkRequest(item)}>
-                <Link2 {...ICON} />
-                {item.task_id ? "다른 작업에 연결" : "작업에 연결"}
-              </DropdownMenuItem>
-            )}
-            {canEdit && onLinkRequest && item.task_id && (
-              <DropdownMenuItem onSelect={() => void ctl.link(item, null)}>
-                <Unlink {...ICON} />
-                작업 연결 해제
-              </DropdownMenuItem>
-            )}
-            {canEdit && (
-              <>
-                {(ready || onLinkRequest) && <DropdownMenuSeparator />}
-                <DropdownMenuItem variant="destructive" onSelect={() => void ctl.remove(item)}>
-                  <Trash {...ICON} />
-                  삭제
-                </DropdownMenuItem>
-              </>
-            )}
+            <FileMenuItems
+              Item={DropdownMenuItem}
+              Separator={DropdownMenuSeparator}
+              item={item}
+              ready={ready}
+              canEdit={canEdit}
+              ctl={ctl}
+              onLinkRequest={onLinkRequest}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       )}
     </div>
+  );
+}
+
+// 파일 메뉴 항목. ⋯ 메뉴(DropdownMenu)와 행·카드 우클릭 메뉴(ContextMenu)가 같이 쓴다
+function FileMenuItems({
+  Item,
+  Separator,
+  item,
+  ready,
+  canEdit,
+  ctl,
+  onLinkRequest,
+}: {
+  Item: MenuItemComponent;
+  Separator: React.ComponentType;
+  item: FileItem;
+  ready: boolean;
+  canEdit: boolean;
+  ctl: FilesCtl;
+  onLinkRequest?: (item: FileItem) => void;
+}) {
+  return (
+    <>
+      {ready && (
+        <Item onSelect={() => void ctl.download(item)}>
+          <Download {...ICON} />
+          다운로드
+        </Item>
+      )}
+      {canEdit && onLinkRequest && (
+        <Item onSelect={() => onLinkRequest(item)}>
+          <Link2 {...ICON} />
+          {item.task_id ? "다른 작업에 연결" : "작업에 연결"}
+        </Item>
+      )}
+      {canEdit && onLinkRequest && item.task_id && (
+        <Item onSelect={() => void ctl.link(item, null)}>
+          <Unlink {...ICON} />
+          작업 연결 해제
+        </Item>
+      )}
+      {canEdit && (
+        <>
+          {(ready || onLinkRequest) && <Separator />}
+          <Item variant="destructive" onSelect={() => void ctl.remove(item)}>
+            <Trash {...ICON} />
+            삭제
+          </Item>
+        </>
+      )}
+    </>
+  );
+}
+
+// 파일 행·카드 우클릭 메뉴. ⋯ 메뉴가 있을 때만 같은 항목으로 연다
+export function FileContextMenu({
+  item,
+  transfer,
+  ctl,
+  canEdit,
+  meId,
+  onLinkRequest,
+  children,
+}: {
+  item: FileItem;
+  transfer?: Transfer;
+  ctl: FilesCtl;
+  canEdit: boolean;
+  meId: string;
+  onLinkRequest?: (item: FileItem) => void;
+  children: React.ReactElement;
+}) {
+  const phase = phaseOf(item, transfer, meId);
+  const ready = phase === "ready";
+  if (!(ready || (canEdit && phase !== "active"))) return children;
+  return (
+    <KeyContextMenu
+      label={`${item.name} 메뉴`}
+      className={MENU_CLASS}
+      menu={
+        <FileMenuItems
+          Item={ContextMenuItem}
+          Separator={ContextMenuSeparator}
+          item={item}
+          ready={ready}
+          canEdit={canEdit}
+          ctl={ctl}
+          onLinkRequest={onLinkRequest}
+        />
+      }
+    >
+      {children}
+    </KeyContextMenu>
   );
 }
 
@@ -298,38 +375,47 @@ export function FileListRow({
   onLinkRequest?: (item: FileItem) => void;
 }) {
   return (
-    <li className="flex min-w-0 items-center gap-3 border-b border-(--divider) px-3 py-2 last:border-b-0">
-      <FileTypeIcon type={item.type} />
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <p className="min-w-0 truncate text-(length:--fs-sm) text-(--text)" title={item.name}>
-            {item.name}
-          </p>
-          {showTask && item.task && (
-            <span
-              title={item.task.title}
-              className="shrink-0 rounded-(--r-xs) bg-(--surface-2) px-1.5 font-mono text-(length:--fs-2xs) text-(--text-2)"
-            >
-              {item.task.key}
-            </span>
+    <FileContextMenu
+      item={item}
+      transfer={transfer}
+      ctl={ctl}
+      canEdit={canEdit}
+      meId={meId}
+      onLinkRequest={onLinkRequest}
+    >
+      <li className="flex min-w-0 items-center gap-3 border-b border-(--divider) px-3 py-2 last:border-b-0">
+        <FileTypeIcon type={item.type} />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="min-w-0 truncate text-(length:--fs-sm) text-(--text)" title={item.name}>
+              {item.name}
+            </p>
+            {showTask && item.task && (
+              <span
+                title={item.task.title}
+                className="shrink-0 rounded-(--r-xs) bg-(--surface-2) px-1.5 font-mono text-(length:--fs-2xs) text-(--text-2)"
+              >
+                {item.task.key}
+              </span>
+            )}
+          </div>
+          {item.status === "ready" ? (
+            <FileMeta item={item} now={now} />
+          ) : (
+            <FileStatus item={item} transfer={transfer} meId={meId} />
           )}
         </div>
-        {item.status === "ready" ? (
-          <FileMeta item={item} now={now} />
-        ) : (
-          <FileStatus item={item} transfer={transfer} meId={meId} />
-        )}
-      </div>
-      <FileActions
-        item={item}
-        transfer={transfer}
-        ctl={ctl}
-        canEdit={canEdit}
-        canManage={canManage}
-        meId={meId}
-        onLinkRequest={onLinkRequest}
-      />
-    </li>
+        <FileActions
+          item={item}
+          transfer={transfer}
+          ctl={ctl}
+          canEdit={canEdit}
+          canManage={canManage}
+          meId={meId}
+          onLinkRequest={onLinkRequest}
+        />
+      </li>
+    </FileContextMenu>
   );
 }
 

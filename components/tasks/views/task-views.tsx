@@ -188,18 +188,22 @@ export function TaskViews({
     [actions, state, setState, todayIso],
   );
 
+  // 빠른 추가는 편집 권한이 있는 프로젝트로만 한다. 프로젝트 묶음은 그 프로젝트 권한을 본다
+  const editable = useMemo(() => projects.filter((p) => p.canEdit), [projects]);
+
   const ctl: ViewCtl = {
     state,
     setState,
     now,
     showProject,
-    projects,
+    projects: editable,
     selected: new Set(selectedIds),
     select,
-    canAssign,
+    canAssign: (field, key) =>
+      canAssign(field, key) && (field === "project" ? editable.some((p) => p.id === key) : editable.length > 0),
     drop: (id, target, groupList, field) => void commit(id, groupList, field, target.group, target.index),
     keyMove: (e, id, groupList, field) => {
-      if (!e.altKey) return;
+      if (!e.altKey || !items.find((t) => t.id === id)?.canEdit) return;
       const gi = groupList.findIndex((g) => g.items.some((t) => t.id === id));
       const g = groupList[gi];
       if (!g) return;

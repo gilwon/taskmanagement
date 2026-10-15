@@ -40,6 +40,7 @@ function mk(p: Partial<TaskItem> = {}): TaskItem {
     commentCount: 0,
     attachmentCount: 0,
     blockedBy: [],
+    canEdit: true,
     ...p,
   };
 }

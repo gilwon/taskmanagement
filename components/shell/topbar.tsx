@@ -16,11 +16,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MemberAvatar } from "@/components/shell/member-avatar";
-import { PendingMenuItem } from "@/components/shell/sidebar";
+import { useCommand } from "@/components/command/command-provider";
+import { useNewProject } from "@/components/projects/new-project-launcher";
 import { useNewTask } from "@/components/tasks/new-task";
 import { signOut } from "@/lib/auth/actions";
 import type { ShellData } from "@/lib/data/workspace";
 import { NAV_LABELS, PROJECT_TAB_LABELS, SETTINGS_SECTIONS } from "@/lib/i18n/labels";
+import { isAdminRole } from "@/lib/org/rules";
 import type { Prefs } from "@/lib/prefs/prefs";
 import { usePrefs } from "@/lib/prefs/provider";
 
@@ -93,6 +95,8 @@ export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () =
   const { prefs, setPref } = usePrefs();
   const [signingOut, startSignOut] = useTransition();
   const { openNewTask } = useNewTask();
+  const { openNewProject } = useNewProject();
+  const { openPalette, openInvite } = useCommand();
   const ws = data.workspace.slug;
   const crumbs = buildCrumbs(pathname, data);
 
@@ -141,15 +145,18 @@ export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () =
         </ol>
       </nav>
 
-      <Link
-        href={`/${ws}/search`}
+      <button
+        type="button"
         aria-label="검색하거나 이동"
+        aria-keyshortcuts="Meta+K Control+K"
+        aria-haspopup="dialog"
+        onClick={() => openPalette()}
         className="flex h-(--h-md) w-64 shrink-0 items-center gap-2 rounded-(--r-sm) border border-(--border) bg-(--surface) px-2.5 text-(length:--fs-sm) text-(--text-3) outline-none hover:border-(--border-strong) hover:text-(--text-2) focus-visible:ring-2 focus-visible:ring-(--accent) max-[1100px]:w-(--h-md) max-[1100px]:justify-center max-[1100px]:px-0"
       >
         <Search size={14} strokeWidth={1.8} aria-hidden className="shrink-0" />
         <span className="truncate max-[1100px]:hidden">검색하거나 이동…</span>
         <kbd className="ml-auto font-mono text-(length:--fs-2xs) text-(--text-3) max-[1100px]:hidden">⌘K</kbd>
-      </Link>
+      </button>
 
       <Link
         href={`/${ws}/notifications`}
@@ -172,9 +179,10 @@ export function Topbar({ data, onOpenMenu }: { data: ShellData; onOpenMenu: () =
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onSelect={() => openNewTask()}>{NAV_LABELS.newTask}</DropdownMenuItem>
-          {[NAV_LABELS.newProject, NAV_LABELS.inviteMember].map((label) => (
-            <PendingMenuItem key={label} label={label} side="left" />
-          ))}
+          {data.me.role !== null && data.me.role !== "guest" && (
+            <DropdownMenuItem onSelect={openNewProject}>{NAV_LABELS.newProject}</DropdownMenuItem>
+          )}
+          {isAdminRole(data.me.role) && <DropdownMenuItem onSelect={openInvite}>{NAV_LABELS.inviteMember}</DropdownMenuItem>}
         </DropdownMenuContent>
       </DropdownMenu>
 

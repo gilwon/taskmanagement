@@ -5,9 +5,9 @@ import { FolderPlus, Plus, UserPlus } from "lucide-react";
 import { useMemo } from "react";
 import { ActivityPanel, DeadlinesPanel, MyTasksPanel, ProjectProgressPanel } from "@/components/home/home-panels";
 import { CountUp } from "@/components/home/parts";
-import { PENDING_HINT } from "@/components/shell/sidebar";
+import { InviteDialog } from "@/components/org/invite-dialog";
+import { useNewProject } from "@/components/projects/new-project-launcher";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TaskDrawerHost } from "@/components/tasks/drawer";
 import { useNewTask } from "@/components/tasks/new-task";
 import { useTasks } from "@/components/tasks/task-store";
@@ -16,35 +16,32 @@ import type { HomeActivity, HomeProject } from "@/lib/home/queries";
 import { homeStats } from "@/lib/home/stats";
 import { cn } from "@/lib/utils";
 
-// 아직 동작하지 않는 버튼. 누를 수 없음을 알리고 이유를 툴팁으로 보인다(동작하는 척하지 않는다)
-function PendingButton({ icon: Icon, label }: { icon: typeof Plus; label: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          aria-label={label}
-          aria-disabled="true"
-          className="text-(--text-3) aria-disabled:opacity-60"
-          onClick={(e) => e.preventDefault()}
-        >
-          <Icon aria-hidden strokeWidth={1.8} />
-          <span className="hide-m">{label}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{PENDING_HINT}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-// 머리말 오른쪽 버튼. 구성원 초대·새 프로젝트는 P6에서 연결한다
+// 머리말 오른쪽 버튼. 구성원 초대는 owner·admin만 할 수 있어(RLS) 그 역할에게만 보인다
 export function HomeActions() {
   const { openNewTask } = useNewTask();
+  const { openNewProject } = useNewProject();
+  const { members, meId, workspace } = useTasks();
+  const role = members.find((m) => m.id === meId)?.role;
   return (
     <>
-      <PendingButton icon={UserPlus} label={NAV_LABELS.inviteMember} />
-      <PendingButton icon={FolderPlus} label={NAV_LABELS.newProject} />
+      {(role === "owner" || role === "admin") && (
+        <InviteDialog
+          workspaceId={workspace.id}
+          trigger={
+            <Button variant="outline" size="sm" aria-label={NAV_LABELS.inviteMember}>
+              <UserPlus aria-hidden strokeWidth={1.8} />
+              <span className="hide-m">{NAV_LABELS.inviteMember}</span>
+            </Button>
+          }
+        />
+      )}
+      {/* 게스트는 create_project가 거부하므로 새 프로젝트 버튼을 보이지 않는다 */}
+      {role !== "guest" && (
+        <Button variant="outline" size="sm" aria-label={NAV_LABELS.newProject} onClick={openNewProject}>
+          <FolderPlus aria-hidden strokeWidth={1.8} />
+          <span className="hide-m">{NAV_LABELS.newProject}</span>
+        </Button>
+      )}
       <Button size="sm" onClick={() => openNewTask()}>
         <Plus aria-hidden strokeWidth={1.8} />
         {NAV_LABELS.newTask}

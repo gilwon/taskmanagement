@@ -7,7 +7,7 @@ import { loadProject, projectMetadata, type ProjectParams } from "@/lib/data/pro
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { calendarRange, parseCalendarParams, todayIso } from "@/lib/schedule/dates";
 import { getEvents } from "@/lib/schedule/queries";
-import { getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
+import { canEditProject, getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 import type { ViewKey } from "@/lib/tasks/types";
 
 export function generateMetadata({ params }: { params: ProjectParams }) {
@@ -28,13 +28,18 @@ export default async function ProjectCalendarPage({
   const today = todayIso(now);
   const { anchor, mode } = parseCalendarParams(query, today);
   const viewKey: ViewKey = `p:${project.id}`;
-  const [items, viewState, members, labels, events] = await Promise.all([
+  const [items, viewState, members, labels, events, perm] = await Promise.all([
     getTaskItems({ workspaceId: workspace.id, projectId: project.id }),
     getViewState(workspace.id, viewKey),
     getWorkspaceMembers(workspace.id),
     getWorkspaceLabels(workspace.id),
     getEvents({ workspaceId: workspace.id, projectId: project.id, ...calendarRange(anchor, mode) }),
+    canEditProject(project.id),
   ]);
+  if (perm.error) {
+    console.error("[프로젝트 권한]", perm.error.message);
+    throw new Error("프로젝트 권한을 불러오지 못했습니다.");
+  }
 
   return (
     <>
@@ -62,6 +67,7 @@ export default async function ProjectCalendarPage({
             todayIso={today}
             nowIso={now.toISOString()}
             projectId={project.id}
+            canEdit={perm.data === true}
           />
         </TaskStoreProvider>
       </div>

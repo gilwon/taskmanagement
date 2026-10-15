@@ -58,6 +58,12 @@ export async function selectTaskItems(
     where.workspaceId ? membersOf(where.workspaceId) : null,
   ]);
   if (tasks.error) return { items: null, error: tasks.error };
+  // 편집 권한은 작업마다가 아니라 결과에 나온 프로젝트마다 한 번 묻는다
+  const projectIds = [...new Set(tasks.data.map((t) => t.project_id))];
+  const perms = await Promise.all(projectIds.map((id) => canEditProject(id)));
+  const permError = perms.find((r) => r.error)?.error;
+  if (permError) return { items: null, error: permError };
+  const editable = new Set(projectIds.filter((_, i) => perms[i].data === true));
   let memberRows = members;
   // 워크스페이스를 모르는 조회(id·회차)는 작업의 워크스페이스로 구성원을 읽는다
   if (!memberRows) {
@@ -81,6 +87,7 @@ export async function selectTaskItems(
       commentCount: comments[0]?.count ?? 0,
       attachmentCount: files[0]?.count ?? 0,
       blockedBy: deps.map((d) => d.blocked_by_id),
+      canEdit: editable.has(row.project_id),
     };
   });
   return { items, error: null };
@@ -114,6 +121,11 @@ async function selectMembers(
 // 한 요청 안에서 작업 목록과 담당자 선택지가 같은 구성원 조회를 한 번만 쓰게 묶는다.
 // 서버 클라이언트는 호출마다 새로 만들어지므로 클라이언트를 인자로 받지 않고 workspaceId 하나를 키로 쓴다
 const membersOf = cache(async (workspaceId: string) => selectMembers(await createClient(), workspaceId));
+
+// 프로젝트 편집 권한(can_edit_project). 한 요청 안의 페이지·액션이 같은 프로젝트를 다시 묻지 않게 묶는다
+export const canEditProject = cache(async (projectId: string) =>
+  (await createClient()).rpc("can_edit_project", { p: projectId }),
+);
 
 export async function getTaskItems(
   scope: { workspaceId: string } | { workspaceId: string; projectId: string },

@@ -21,8 +21,9 @@ import {
 } from "@/components/tasks/parts";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
+import { TaskContextMenu } from "@/components/tasks/views/task-context-menu";
 import { cellBtn } from "@/components/tasks/views/list-view";
-import { TaskMenu, TitleEditor, isInnerControl, type ViewCtl } from "@/components/tasks/views/shared";
+import { EditCell, TaskMenu, TitleEditor, isInnerControl, type ViewCtl } from "@/components/tasks/views/shared";
 import { formatDue } from "@/lib/format/date";
 import {
   COLUMN_LABELS,
@@ -253,7 +254,7 @@ function Row({
                 }}
                 onDoubleClick={() => {
                   if (clickTimer.current) clearTimeout(clickTimer.current);
-                  onEdit();
+                  if (t.canEdit) onEdit();
                 }}
                 className={cn("truncate text-(--text)", t.status === "done" && "text-(--text-3) line-through")}
               >
@@ -264,68 +265,110 @@ function Row({
         );
       case "status":
         return (
-          <StatusPicker value={t.status} onChange={(s) => s && s !== t.status && void move(t.id, s)}>
-            <button type="button" className={cn(cellBtn, "max-w-full")}>
-              <StatusIcon status={t.status} size={14} />
-              <span className="truncate">{TASK_STATUS_LABELS[t.status]}</span>
-            </button>
-          </StatusPicker>
+          <EditCell
+            canEdit={t.canEdit}
+            className={cn(cellBtn, "max-w-full")}
+            wrap={(b) => (
+              <StatusPicker value={t.status} onChange={(s) => s && s !== t.status && void move(t.id, s)}>
+                {b}
+              </StatusPicker>
+            )}
+          >
+            <StatusIcon status={t.status} size={14} />
+            <span className="truncate">{TASK_STATUS_LABELS[t.status]}</span>
+          </EditCell>
         );
       case "priority":
         return (
-          <PriorityPicker value={t.priority} onChange={(p) => p && p !== t.priority && void update(t.id, { priority: p })}>
-            <button type="button" className={cn(cellBtn, "max-w-full")}>
-              <PriorityIcon priority={t.priority} size={14} />
-              <span className="truncate">{TASK_PRIORITY_LABELS[t.priority]}</span>
-            </button>
-          </PriorityPicker>
+          <EditCell
+            canEdit={t.canEdit}
+            className={cn(cellBtn, "max-w-full")}
+            wrap={(b) => (
+              <PriorityPicker value={t.priority} onChange={(p) => p && p !== t.priority && void update(t.id, { priority: p })}>
+                {b}
+              </PriorityPicker>
+            )}
+          >
+            <PriorityIcon priority={t.priority} size={14} />
+            <span className="truncate">{TASK_PRIORITY_LABELS[t.priority]}</span>
+          </EditCell>
         );
       case "assignee":
         return (
-          <AssigneePicker
-            value={t.assignee_id}
-            members={members}
-            onChange={(v) => v !== undefined && v !== t.assignee_id && void update(t.id, { assigneeId: v })}
+          <EditCell
+            canEdit={t.canEdit}
+            className={cn(cellBtn, "max-w-full")}
+            wrap={(b) => (
+              <AssigneePicker
+                value={t.assignee_id}
+                members={members}
+                onChange={(v) => v !== undefined && v !== t.assignee_id && void update(t.id, { assigneeId: v })}
+              >
+                {b}
+              </AssigneePicker>
+            )}
           >
-            <button type="button" className={cn(cellBtn, "max-w-full")}>
-              <AssigneeAvatar assignee={t.assignee} size={20} />
-              <span className={cn("truncate", !t.assignee && "text-(--text-4)")}>
-                {t.assignee?.name ?? UNASSIGNED_LABEL}
-              </span>
-            </button>
-          </AssigneePicker>
+            <AssigneeAvatar assignee={t.assignee} size={20} />
+            <span className={cn("truncate", !t.assignee && "text-(--text-4)")}>
+              {t.assignee?.name ?? UNASSIGNED_LABEL}
+            </span>
+          </EditCell>
         );
       case "due":
         return (
-          <DatePicker label="기한" value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
-            <button type="button" aria-label={`기한 ${t.due_date ? formatDue(t.due_date, ctl.now) : "없음"}, 바꾸기`} className={cn(cellBtn, "max-w-full")}>
-              {t.due_date ? (
-                <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />
-              ) : (
-                <span className="text-(--text-4)">날짜 지정</span>
-              )}
-            </button>
-          </DatePicker>
+          <EditCell
+            canEdit={t.canEdit}
+            label={`기한 ${t.due_date ? formatDue(t.due_date, ctl.now) : "없음"}, 바꾸기`}
+            className={cn(cellBtn, "max-w-full")}
+            wrap={(b) => (
+              <DatePicker label="기한" value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
+                {b}
+              </DatePicker>
+            )}
+          >
+            {t.due_date ? (
+              <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />
+            ) : (
+              <span className="text-(--text-4)">{t.canEdit ? "날짜 지정" : "—"}</span>
+            )}
+          </EditCell>
         );
       case "start":
         return (
-          <DatePicker
-            label="시작일"
-            value={t.start_date}
-            onChange={(d) => d !== t.start_date && void update(t.id, { start: d })}
+          <EditCell
+            canEdit={t.canEdit}
+            className={cn(cellBtn, "max-w-full")}
+            wrap={(b) => (
+              <DatePicker
+                label="시작일"
+                value={t.start_date}
+                onChange={(d) => d !== t.start_date && void update(t.id, { start: d })}
+              >
+                {b}
+              </DatePicker>
+            )}
           >
-            <button type="button" className={cn(cellBtn, "max-w-full")}>
-              {t.start_date ? formatDue(t.start_date, ctl.now) : <span className="text-(--text-4)">날짜 지정</span>}
-            </button>
-          </DatePicker>
+            {t.start_date ? (
+              formatDue(t.start_date, ctl.now)
+            ) : (
+              <span className="text-(--text-4)">{t.canEdit ? "날짜 지정" : "—"}</span>
+            )}
+          </EditCell>
         );
       case "labels":
         return (
-          <LabelPicker value={t.labels} onChange={(l) => void update(t.id, { labels: l })}>
-            <button type="button" aria-label={`${t.key} 라벨 바꾸기`} className={cn(cellBtn, "max-w-full justify-start")}>
-              {t.labels.length > 0 ? <LabelChips labels={t.labels} max={2} /> : <span className="text-(--text-4)">—</span>}
-            </button>
-          </LabelPicker>
+          <EditCell
+            canEdit={t.canEdit}
+            label={`${t.key} 라벨 바꾸기`}
+            className={cn(cellBtn, "max-w-full justify-start")}
+            wrap={(b) => (
+              <LabelPicker value={t.labels} onChange={(l) => void update(t.id, { labels: l })}>
+                {b}
+              </LabelPicker>
+            )}
+          >
+            {t.labels.length > 0 ? <LabelChips labels={t.labels} max={2} /> : <span className="text-(--text-4)">—</span>}
+          </EditCell>
         );
       case "deps":
         return (
@@ -335,15 +378,22 @@ function Row({
         );
       case "estimate":
         return (
-          <EstimateInput value={t.estimate} onChange={(v) => v !== t.estimate && void update(t.id, { estimate: v })}>
-            <button type="button" aria-label={`${t.key} 예상 시간 바꾸기`} className={cn(cellBtn, "max-w-full")}>
-              {t.estimate ? (
-                (ESTIMATE_LABELS[t.estimate as keyof typeof ESTIMATE_LABELS] ?? t.estimate)
-              ) : (
-                <span className="text-(--text-4)">—</span>
-              )}
-            </button>
-          </EstimateInput>
+          <EditCell
+            canEdit={t.canEdit}
+            label={`${t.key} 예상 시간 바꾸기`}
+            className={cn(cellBtn, "max-w-full")}
+            wrap={(b) => (
+              <EstimateInput value={t.estimate} onChange={(v) => v !== t.estimate && void update(t.id, { estimate: v })}>
+                {b}
+              </EstimateInput>
+            )}
+          >
+            {t.estimate ? (
+              (ESTIMATE_LABELS[t.estimate as keyof typeof ESTIMATE_LABELS] ?? t.estimate)
+            ) : (
+              <span className="text-(--text-4)">—</span>
+            )}
+          </EditCell>
         );
       case "created":
         return <span className="text-(length:--fs-sm) text-(--text-3)">{formatDue(t.created_at, ctl.now)}</span>;
@@ -358,35 +408,37 @@ function Row({
   };
 
   return (
-    <tr
-      data-state={checked ? "selected" : undefined}
-      onClick={(e) => {
-        if (editing || isInnerControl(e.target)) return;
-        open(t.key);
-      }}
-      className={cn(
-        "h-(--row-h) cursor-default border-b border-(--divider) last:border-0 hover:bg-(--surface-2)",
-        checked && "bg-(--accent-soft) hover:bg-(--accent-soft)",
-      )}
-    >
-      <td className="px-3">
-        <Checkbox
-          checked={checked}
-          aria-label={`${t.key} 선택`}
-          onClick={(e) => {
-            e.stopPropagation();
-            ctl.select(t.id, { range: e.shiftKey });
-          }}
-        />
-      </td>
-      {cols.map((c) => (
-        <td key={c} className="overflow-hidden px-2">
-          {cell(c)}
+    <TaskContextMenu task={t}>
+      <tr
+        data-state={checked ? "selected" : undefined}
+        onClick={(e) => {
+          if (editing || isInnerControl(e.target)) return;
+          open(t.key);
+        }}
+        className={cn(
+          "h-(--row-h) cursor-default border-b border-(--divider) last:border-0 hover:bg-(--surface-2)",
+          checked && "bg-(--accent-soft) hover:bg-(--accent-soft)",
+        )}
+      >
+        <td className="px-3">
+          <Checkbox
+            checked={checked}
+            aria-label={`${t.key} 선택`}
+            onClick={(e) => {
+              e.stopPropagation();
+              ctl.select(t.id, { range: e.shiftKey });
+            }}
+          />
         </td>
-      ))}
-      <td className="px-1">
-        <TaskMenu task={t} onRename={onEdit} />
-      </td>
-    </tr>
+        {cols.map((c) => (
+          <td key={c} className="overflow-hidden px-2">
+            {cell(c)}
+          </td>
+        ))}
+        <td className="px-1">
+          <TaskMenu task={t} onRename={onEdit} />
+        </td>
+      </tr>
+    </TaskContextMenu>
   );
 }

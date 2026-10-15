@@ -1,4 +1,4 @@
-// 루트 분기. 비로그인은 /login, 소속 워크스페이스가 있으면 그 홈, 없으면 /onboarding으로 보낸다(spec R1)
+// 루트 분기. 비로그인은 /login, 소속 워크스페이스가 있으면 그 홈, 없으면 받은 초대(/invites) 또는 /onboarding으로 보낸다(spec R1)
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,5 +28,10 @@ export default async function RootPage() {
         a.workspaces!.slug.localeCompare(b.workspaces!.slug),
     )[0];
 
-  redirect(first ? `/${first.workspaces!.slug}/home` : "/onboarding");
+  if (first) redirect(`/${first.workspaces!.slug}/home`);
+
+  // 소속이 없어도 받은 초대가 있으면 온보딩 대신 초대 수락 화면으로 보낸다
+  const invites = await supabase.rpc("my_invites");
+  if (invites.error) throw new Error("받은 초대를 불러오지 못했습니다.");
+  redirect(invites.data.length > 0 ? "/invites" : "/onboarding");
 }

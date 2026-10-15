@@ -200,35 +200,32 @@ export function Timeline({
     </div>
   );
 
-  if (empty) {
+  // 보일 작업이 없을 때의 안내. 마일스톤이 있으면 그리드와 마일스톤 행은 그대로 두고 작업 자리에만 안내를 보인다
+  const notice = empty ? (
+    <EmptyState
+      icon={ChartGantt}
+      title="타임라인에 표시할 작업이 없습니다"
+      description="작업에 시작일과 기한을 넣으면 여기에 보입니다."
+    />
+  ) : !anyDated ? (
+    <EmptyState
+      icon={SearchX}
+      title="결과가 없습니다"
+      description="이 조건에 맞는 작업이 없습니다."
+      action={
+        filtered && (
+          <Button size="sm" variant="outline" onClick={() => setState({ ...state, filters: [], q: "" })}>
+            필터 지우기
+          </Button>
+        )
+      }
+    />
+  ) : null;
+  if (notice && shownMilestones.length === 0) {
     return (
       <>
         {toolbar}
-        <EmptyState
-          icon={ChartGantt}
-          title="타임라인에 표시할 작업이 없습니다"
-          description="작업에 시작일과 기한을 넣으면 여기에 보입니다."
-        />
-        <TaskDrawerHost />
-      </>
-    );
-  }
-  if (!anyDated) {
-    return (
-      <>
-        {toolbar}
-        <EmptyState
-          icon={SearchX}
-          title="결과가 없습니다"
-          description="이 조건에 맞는 작업이 없습니다."
-          action={
-            filtered && (
-              <Button size="sm" variant="outline" onClick={() => setState({ ...state, filters: [], q: "" })}>
-                필터 지우기
-              </Button>
-            )
-          }
-        />
+        {notice}
         <TaskDrawerHost />
       </>
     );
@@ -464,6 +461,7 @@ export function Timeline({
             </div>
           </div>
         </div>
+        {notice}
       </div>
       <TaskDrawerHost />
     </>
@@ -500,8 +498,9 @@ function Bar({
   const base = { start: t.start_date, due: t.due_date };
   const done = t.status === "done";
 
+  // 편집 권한이 없으면 끌기·키보드 이동 없이 열기만 한다
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || !t.canEdit) return;
     const edge = (e.target as HTMLElement).closest<HTMLElement>("[data-edge]")?.dataset.edge;
     drag.current = { pointerId: e.pointerId, x0: e.clientX, edit: (edge as BarEdit) ?? "move", delta: 0, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -537,7 +536,7 @@ function Bar({
       onPreview(null);
       return;
     }
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || !t.canEdit) return;
     // 스크롤 영역이 함께 밀리지 않게 막는다
     e.preventDefault();
     const step = e.key === "ArrowLeft" ? -1 : 1;
@@ -550,7 +549,7 @@ function Bar({
       type="button"
       data-bar={t.id}
       aria-label={`${t.key} ${t.title}, ${TASK_STATUS_LABELS[t.status]}, ${rangeLabel(dates)}`}
-      aria-describedby={hintId}
+      aria-describedby={t.canEdit ? hintId : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={(e) => end(e, true)}
@@ -563,7 +562,10 @@ function Bar({
         onOpen();
       }}
       onKeyDown={onKeyDown}
-      className="group/bar absolute flex cursor-grab touch-none items-center overflow-hidden rounded-(--r-sm) border text-left outline-none select-none focus-visible:ring-2 focus-visible:ring-(--accent) active:cursor-grabbing"
+      className={cn(
+        "group/bar absolute flex items-center overflow-hidden rounded-(--r-sm) border text-left outline-none select-none focus-visible:ring-2 focus-visible:ring-(--accent)",
+        t.canEdit ? "cursor-grab touch-none active:cursor-grabbing" : "cursor-pointer",
+      )}
       style={{
         left,
         width,
@@ -576,6 +578,7 @@ function Bar({
       <span
         data-edge="start"
         aria-hidden
+        hidden={!t.canEdit}
         className="absolute inset-y-0 left-0 w-2 cursor-ew-resize opacity-0 group-hover/bar:opacity-100"
         style={{ background: `color-mix(in srgb, ${color} 45%, transparent)` }}
       />
@@ -592,6 +595,7 @@ function Bar({
       <span
         data-edge="due"
         aria-hidden
+        hidden={!t.canEdit}
         className="absolute inset-y-0 right-0 w-2 cursor-ew-resize opacity-0 group-hover/bar:opacity-100"
         style={{ background: `color-mix(in srgb, ${color} 45%, transparent)` }}
       />

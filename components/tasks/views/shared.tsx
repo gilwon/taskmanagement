@@ -16,7 +16,7 @@ import type { DropTarget } from "@/components/tasks/views/use-drag";
 import type { GroupField, TaskGroup, TaskItem, ViewState } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
-export type ViewProject = { id: string; key: string; name: string; color: string; icon: string };
+export type ViewProject = { id: string; key: string; name: string; color: string; icon: string; canEdit: boolean };
 
 // 래퍼(TaskViews)가 만들어 각 뷰에 내려 주는 제어 객체
 export type ViewCtl = {
@@ -24,7 +24,7 @@ export type ViewCtl = {
   setState: (next: ViewState) => void;
   now: Date;
   showProject: boolean;
-  // 컴포저가 고를 수 있는 프로젝트. 프로젝트 화면은 그 프로젝트 하나
+  // 컴포저가 고를 수 있는 프로젝트(편집 권한이 있는 것만). 프로젝트 화면은 그 프로젝트 하나 또는 빈 목록
   projects: ViewProject[];
   selected: ReadonlySet<string>;
   select: (id: string, opts: { range: boolean }) => void;
@@ -176,7 +176,39 @@ export function AddTaskButton({ onClick, className }: { onClick: () => void; cla
   );
 }
 
-// 작업 ⋯ 메뉴. 열기·제목 편집·완료/다시 열기·보관·삭제
+// 편집 권한이 있으면 children을 picker 트리거 버튼으로 감싸고, 없으면 같은 모양의 값 표시만 남긴다.
+// 값 표시는 포인터를 받지 않아 행 클릭(드로어 열기)으로 넘어간다
+export function EditCell({
+  canEdit,
+  wrap,
+  label,
+  readLabel,
+  className,
+  children,
+}: {
+  canEdit: boolean;
+  wrap: (trigger: React.ReactElement) => React.ReactNode;
+  // 버튼의 접근성 이름("…, 바꾸기")과 값 표시의 접근성 이름. 텍스트가 보이는 칸은 비워 둔다
+  label?: string;
+  readLabel?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (!canEdit) {
+    return (
+      <span role={readLabel ? "img" : undefined} aria-label={readLabel} className={cn(className, "pointer-events-none")}>
+        {children}
+      </span>
+    );
+  }
+  return wrap(
+    <button type="button" aria-label={label} className={className}>
+      {children}
+    </button>,
+  );
+}
+
+// 작업 ⋯ 메뉴. 열기·제목 편집·완료/다시 열기·보관·삭제. 편집 권한이 없으면 열기만 남긴다
 export function TaskMenu({ task, onRename }: { task: TaskItem; onRename?: () => void }) {
   const { open } = useTaskDrawer();
   const { complete, reopen, update, remove } = useTaskActions();
@@ -194,15 +226,19 @@ export function TaskMenu({ task, onRename }: { task: TaskItem; onRename?: () => 
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuItem onSelect={() => open(task.key)}>열기</DropdownMenuItem>
-        {onRename && <DropdownMenuItem onSelect={onRename}>제목 편집</DropdownMenuItem>}
-        <DropdownMenuItem onSelect={() => void (done ? reopen(task.id) : complete(task.id))}>
-          {done ? "다시 열기" : "완료로 표시"}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => void update(task.id, { archived: true })}>보관</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => void remove(task.id)}>
-          삭제
-        </DropdownMenuItem>
+        {task.canEdit && (
+          <>
+            {onRename && <DropdownMenuItem onSelect={onRename}>제목 편집</DropdownMenuItem>}
+            <DropdownMenuItem onSelect={() => void (done ? reopen(task.id) : complete(task.id))}>
+              {done ? "다시 열기" : "완료로 표시"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void update(task.id, { archived: true })}>보관</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={() => void remove(task.id)}>
+              삭제
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

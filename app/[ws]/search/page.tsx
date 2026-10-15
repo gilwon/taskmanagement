@@ -1,10 +1,50 @@
-// 검색 화면 골격. 작업·프로젝트·사람·파일·댓글을 검색한다. 기능은 이후 단계에서 채운다
+// 검색 화면. 작업·프로젝트·사람·파일·댓글을 ?q=&tab=으로 검색하고 최근 검색어를 칩으로 보인다
 import type { Metadata } from "next";
-import { StubPage } from "@/components/shell/stub-page";
+import { Search } from "lucide-react";
+import { notFound } from "next/navigation";
+import { SearchForm } from "@/components/search/search-form";
+import { SearchResultsView } from "@/components/search/search-results";
+import { EmptyState } from "@/components/shell/empty-state";
+import { PageHeader } from "@/components/shell/page-header";
+import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getRecentSearches } from "@/lib/search/actions";
+import { searchWorkspace } from "@/lib/search/queries";
+import { normalizeQuery } from "@/lib/search/text";
+import { isSearchScope, SEARCH_LIMIT_MAX } from "@/lib/search/types";
 
 export const metadata: Metadata = { title: NAV_LABELS.search };
 
-export default function SearchPage() {
-  return <StubPage title={NAV_LABELS.search} subtitle="작업·프로젝트·사람·파일·댓글을 검색합니다." />;
+type Props = {
+  params: Promise<{ ws: string }>;
+  searchParams: Promise<{ q?: string | string[]; tab?: string | string[] }>;
+};
+
+export default async function SearchPage({ params, searchParams }: Props) {
+  const [{ ws }, sp] = await Promise.all([params, searchParams]);
+  const [, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
+  if (!workspace) notFound();
+  const q = normalizeQuery(sp.q);
+  const tab = isSearchScope(sp.tab) ? sp.tab : "all";
+
+  // 탭 개수를 한 번에 세려고 탭과 상관없이 전 종류를 최대 개수로 읽는다
+  const [recent, results] = await Promise.all([
+    getRecentSearches(workspace.id),
+    q ? searchWorkspace(workspace.id, q, "all", SEARCH_LIMIT_MAX) : null,
+  ]);
+  if (!recent.ok) throw new Error(recent.error);
+
+  return (
+    <>
+      <PageHeader title={NAV_LABELS.search} subtitle="작업·프로젝트·사람·파일·댓글을 검색합니다." />
+      <div className="flex min-w-0 flex-col gap-(--s-4)">
+        <SearchForm key={q} workspace={{ id: workspace.id, slug: workspace.slug }} q={q} tab={tab} recent={recent.data} />
+        {results ? (
+          <SearchResultsView wsSlug={workspace.slug} q={q} tab={tab} results={results} limit={SEARCH_LIMIT_MAX} />
+        ) : (
+          <EmptyState icon={Search} title="검색어를 입력하세요" description="작업·프로젝트·사람·파일·댓글을 찾습니다." />
+        )}
+      </div>
+    </>
+  );
 }

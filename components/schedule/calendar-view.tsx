@@ -25,6 +25,7 @@ export function CalendarView({
   nowIso,
   legend,
   projectId,
+  canEdit = true,
 }: {
   viewKey: ViewKey;
   initialState: ViewState;
@@ -36,6 +37,8 @@ export function CalendarView({
   legend?: { id: string; name: string; color: string }[];
   // 프로젝트 탭이면 그 프로젝트 id. 드로어가 잠시 빌려 넣은 다른 프로젝트 작업을 빼고, 새 작업 기본 프로젝트로 쓴다
   projectId?: string;
+  // 프로젝트 탭에서 그 프로젝트 편집 권한이 없으면 false. + 버튼과 일정 끌기를 숨긴다(작업 끌기는 작업마다 canEdit로 판단)
+  canEdit?: boolean;
 }) {
   const { items: storeItems, workspace } = useTasks();
   const actions = useTaskActions();
@@ -95,8 +98,8 @@ export function CalendarView({
         todayIso={todayIso}
         onOpenTask={open}
         onMoveTask={(id, patch) => actions.update(id, patch)}
-        onMoveEvent={onMoveEvent}
-        onAddTask={(due) => openNewTask(projectId ? { due, projectId } : { due })}
+        onMoveEvent={canEdit ? onMoveEvent : undefined}
+        onAddTask={canEdit ? (due) => openNewTask(projectId ? { due, projectId } : { due }) : undefined}
       />
       <TaskDrawerHost />
     </>

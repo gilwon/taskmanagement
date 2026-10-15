@@ -7,7 +7,7 @@ import { TaskViews, type ViewMode } from "@/components/tasks/views/task-views";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { hasViewState, loadProject, type ProjectParams } from "@/lib/data/project";
 import type { Json } from "@/lib/database.types";
-import { getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
+import { canEditProject, getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 import type { ViewKey } from "@/lib/tasks/types";
 import { parseViewState } from "@/lib/tasks/view";
 
@@ -25,13 +25,18 @@ export async function ProjectTasksPage({
   const [userId, workspace, project] = await Promise.all([requireUserId(), getWorkspace(ws), loadProject(params)]);
   if (!workspace) notFound();
   const viewKey: ViewKey = savedView ? `sv:${savedView.id}` : `p:${project.id}`;
-  const [items, viewState, members, labels, stored] = await Promise.all([
+  const [items, viewState, members, labels, stored, perm] = await Promise.all([
     getTaskItems({ workspaceId: workspace.id, projectId: project.id }),
     getViewState(workspace.id, viewKey),
     getWorkspaceMembers(workspace.id),
     getWorkspaceLabels(workspace.id),
     savedView ? hasViewState(workspace.id, viewKey) : true,
+    canEditProject(project.id),
   ]);
+  if (perm.error) {
+    console.error("[프로젝트 권한]", perm.error.message);
+    throw new Error("프로젝트 권한을 불러오지 못했습니다.");
+  }
   // 저장 뷰를 처음 열면(사용자 설정 행 없음) 저장된 필터로 시작한다. 행이 있으면 사용자가 필터를 모두 지운 상태도 그대로 둔다
   const initialState = stored
     ? viewState
@@ -60,7 +65,16 @@ export async function ProjectTasksPage({
             mode={mode}
             showProject={false}
             projectId={project.id}
-            projects={[{ id: project.id, key: project.key, name: project.name, color: project.color, icon: project.icon }]}
+            projects={[
+              {
+                id: project.id,
+                key: project.key,
+                name: project.name,
+                color: project.color,
+                icon: project.icon,
+                canEdit: perm.data === true,
+              },
+            ]}
             nowIso={new Date().toISOString()}
           />
         </TaskStoreProvider>

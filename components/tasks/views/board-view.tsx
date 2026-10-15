@@ -11,6 +11,9 @@ import {
 import { AssigneeAvatar, DueLabel, LabelChips, PriorityIcon, StatusIcon, TaskKey } from "@/components/tasks/parts";
 import { useTaskActions } from "@/components/tasks/task-store";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
+import { TaskContextMenu } from "@/components/tasks/views/task-context-menu";
+import { ContextMenuItem } from "@/components/ui/context-menu";
+import { KeyContextMenu, type MenuItemComponent } from "@/components/shortcuts/key-context-menu";
 import {
   AddTaskButton,
   DropLine,
@@ -34,6 +37,8 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
   const { bulkUpdate, update } = useTaskActions();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [composing, setComposing] = useState<string | null>(null);
+  // 편집 가능한 프로젝트가 없으면 빠른 추가를 숨긴다
+  const canAdd = ctl.projects.length > 0;
 
   const setCollapse = (key: string, value: boolean) =>
     setCollapsed((prev) => {
@@ -76,7 +81,28 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
           }
           const marks = dropIndexMarks(g.items, dragId, target, g.key);
           const done = status === "done";
-          const open = g.items.filter((t) => t.status !== "done").map((t) => t.id);
+          const open = g.items.filter((t) => t.status !== "done" && t.canEdit).map((t) => t.id);
+          const archivable = g.items.filter((t) => t.canEdit);
+          // 열 메뉴 항목. ⋯ 메뉴와 열 머리 우클릭 메뉴가 같이 쓴다
+          const columnMenu = (Item: MenuItemComponent) => (
+            <>
+              {canAdd && <Item onSelect={() => setComposing(g.key)}>작업 추가</Item>}
+              <Item onSelect={() => setCollapse(g.key, true)}>열 접기</Item>
+              {done ? (
+                <Item
+                  disabled={archivable.length === 0}
+                  onSelect={() => void Promise.all(archivable.map((t) => update(t.id, { archived: true })))}
+                >
+                  완료 항목 보관
+                </Item>
+              ) : (
+                <Item disabled={open.length === 0} onSelect={() => void bulkUpdate(open, { status: "done" })}>
+                  모두 완료로 표시
+                </Item>
+              )}
+              <Item onSelect={() => ctl.setState({ ...ctl.state, sort: { f: "priority", dir: 1 } })}>우선순위로 정렬</Item>
+            </>
+          );
           return (
             <section
               key={g.key}
@@ -87,51 +113,36 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                 target?.group === g.key && dragId && "ring-2 ring-(--accent-line)",
               )}
             >
-              <div className="flex h-10 items-center gap-1.5 px-2.5">
-                <StatusIcon status={status} size={14} />
-                <h2 id={headingId} className="truncate text-(length:--fs-sm) font-semibold text-(--text)">
-                  {g.label}
-                </h2>
-                <span className="text-(length:--fs-xs) text-(--text-3)">{g.items.length}</span>
-                <span className="flex-1" />
-                <button
-                  type="button"
-                  aria-label={`${g.label}에 작업 추가`}
-                  onClick={() => setComposing(g.key)}
-                  className={iconBtn}
-                >
-                  <Plus aria-hidden size={14} strokeWidth={1.8} />
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button type="button" aria-label={`${g.label} 열 메뉴`} className={iconBtn}>
-                      <MoreHorizontal aria-hidden size={15} strokeWidth={1.8} />
+              <KeyContextMenu label={`${g.label} 열 메뉴`} className="w-48" menu={columnMenu(ContextMenuItem)}>
+                <div className="flex h-10 items-center gap-1.5 px-2.5">
+                  <StatusIcon status={status} size={14} />
+                  <h2 id={headingId} className="truncate text-(length:--fs-sm) font-semibold text-(--text)">
+                    {g.label}
+                  </h2>
+                  <span className="text-(length:--fs-xs) text-(--text-3)">{g.items.length}</span>
+                  <span className="flex-1" />
+                  {canAdd && (
+                    <button
+                      type="button"
+                      aria-label={`${g.label}에 작업 추가`}
+                      onClick={() => setComposing(g.key)}
+                      className={iconBtn}
+                    >
+                      <Plus aria-hidden size={14} strokeWidth={1.8} />
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onSelect={() => setComposing(g.key)}>작업 추가</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setCollapse(g.key, true)}>열 접기</DropdownMenuItem>
-                    {done ? (
-                      <DropdownMenuItem
-                        disabled={g.items.length === 0}
-                        onSelect={() => void Promise.all(g.items.map((t) => update(t.id, { archived: true })))}
-                      >
-                        완료 항목 보관
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        disabled={open.length === 0}
-                        onSelect={() => void bulkUpdate(open, { status: "done" })}
-                      >
-                        모두 완료로 표시
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onSelect={() => ctl.setState({ ...ctl.state, sort: { f: "priority", dir: 1 } })}>
-                      우선순위로 정렬
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" aria-label={`${g.label} 열 메뉴`} className={iconBtn}>
+                        <MoreHorizontal aria-hidden size={15} strokeWidth={1.8} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      {columnMenu(DropdownMenuItem)}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </KeyContextMenu>
               <ul className="flex min-h-12 flex-col gap-2 px-2 pb-1">
                 {g.items.map((t, i) => (
                   <Fragment key={t.id}>
@@ -149,13 +160,15 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                   </li>
                 )}
               </ul>
-              <div className="px-2 pt-1 pb-2">
-                {composing === g.key ? (
-                  <InlineComposer ctl={ctl} field="status" groupKey={g.key} onClose={() => setComposing(null)} />
-                ) : (
-                  <AddTaskButton onClick={() => setComposing(g.key)} className="w-full" />
-                )}
-              </div>
+              {canAdd && (
+                <div className="px-2 pt-1 pb-2">
+                  {composing === g.key ? (
+                    <InlineComposer ctl={ctl} field="status" groupKey={g.key} onClose={() => setComposing(null)} />
+                  ) : (
+                    <AddTaskButton onClick={() => setComposing(g.key)} className="w-full" />
+                  )}
+                </div>
+              )}
             </section>
           );
         })}
@@ -181,81 +194,84 @@ function Card({
   const checked = ctl.selected.has(t.id);
   const progress = t.subtaskTotal > 0 ? Math.round((t.subtaskDone / t.subtaskTotal) * 100) : 0;
   return (
-    <li
-      data-drag-id={t.id}
-      tabIndex={0}
-      aria-label={`${t.key} ${t.title}`}
-      aria-describedby={MOVE_HINT_ID}
-      onPointerDown={(e) => onPointerDown(e, t.id)}
-      onClick={(e) => {
-        if (isInnerControl(e.target)) return;
-        // Shift·⌘/Ctrl 클릭은 다중 선택
-        if (e.shiftKey || e.metaKey || e.ctrlKey) ctl.select(t.id, { range: e.shiftKey });
-        else open(t.key);
-      }}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return;
-        if (e.key === "Enter") {
-          e.preventDefault();
-          open(t.key);
-        } else if (e.key === " ") {
-          e.preventDefault();
-          ctl.select(t.id, { range: e.shiftKey });
-        } else {
-          ctl.keyMove(e, t.id, groups, "status");
-        }
-      }}
-      className={cn(
-        "flex cursor-grab flex-col gap-2 rounded-(--r) select-none [-webkit-touch-callout:none] bg-(--surface) p-(--card-pad) shadow-(--shadow-card) outline-none hover:shadow-(--shadow-pop) focus-visible:ring-2 focus-visible:ring-(--accent)",
-        checked && "ring-2 ring-(--accent)",
-        dragging && "opacity-40",
-      )}
-    >
-      {t.labels.length > 0 && <LabelChips labels={t.labels} max={3} />}
-      <p className={cn("text-(length:--fs-base) leading-snug text-(--text)", t.status === "done" && "text-(--text-3) line-through")}>
-        {t.title}
-      </p>
-      {t.subtaskTotal > 0 && (
-        <div className="flex items-center gap-2 text-(length:--fs-2xs) text-(--text-3)">
-          <span className="tabular-nums">
-            {t.subtaskDone}/{t.subtaskTotal}
-          </span>
-          <span
-            role="progressbar"
-            aria-label="서브태스크 진행률"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress}
-            className="h-1 flex-1 overflow-hidden rounded-full bg-(--surface-3)"
-          >
-            <span className="block h-full rounded-full bg-(--green)" style={{ width: `${progress}%` }} />
-          </span>
+    <TaskContextMenu task={t}>
+      <li
+        data-drag-id={t.id}
+        tabIndex={0}
+        aria-label={`${t.key} ${t.title}`}
+        aria-describedby={t.canEdit ? MOVE_HINT_ID : undefined}
+        onPointerDown={t.canEdit ? (e) => onPointerDown(e, t.id) : undefined}
+        onClick={(e) => {
+          if (isInnerControl(e.target)) return;
+          // Shift·⌘/Ctrl 클릭은 다중 선택
+          if (e.shiftKey || e.metaKey || e.ctrlKey) ctl.select(t.id, { range: e.shiftKey });
+          else open(t.key);
+        }}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Enter") {
+            e.preventDefault();
+            open(t.key);
+          } else if (e.key === " ") {
+            e.preventDefault();
+            ctl.select(t.id, { range: e.shiftKey });
+          } else {
+            ctl.keyMove(e, t.id, groups, "status");
+          }
+        }}
+        className={cn(
+          "flex flex-col gap-2 rounded-(--r) select-none [-webkit-touch-callout:none] bg-(--surface) p-(--card-pad) shadow-(--shadow-card) outline-none hover:shadow-(--shadow-pop) focus-visible:ring-2 focus-visible:ring-(--accent)",
+          t.canEdit ? "cursor-grab" : "cursor-pointer",
+          checked && "ring-2 ring-(--accent)",
+          dragging && "opacity-40",
+        )}
+      >
+        {t.labels.length > 0 && <LabelChips labels={t.labels} max={3} />}
+        <p className={cn("text-(length:--fs-base) leading-snug text-(--text)", t.status === "done" && "text-(--text-3) line-through")}>
+          {t.title}
+        </p>
+        {t.subtaskTotal > 0 && (
+          <div className="flex items-center gap-2 text-(length:--fs-2xs) text-(--text-3)">
+            <span className="tabular-nums">
+              {t.subtaskDone}/{t.subtaskTotal}
+            </span>
+            <span
+              role="progressbar"
+              aria-label="서브태스크 진행률"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+              className="h-1 flex-1 overflow-hidden rounded-full bg-(--surface-3)"
+            >
+              <span className="block h-full rounded-full bg-(--green)" style={{ width: `${progress}%` }} />
+            </span>
+          </div>
+        )}
+        <div className="flex items-center gap-2 text-(length:--fs-xs) text-(--text-3)">
+          <TaskKey value={t.key} />
+          <PriorityIcon priority={t.priority} size={13} />
+          {t.due_date && <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />}
+          <span className="flex-1" />
+          {t.commentCount > 0 && (
+            <span className="inline-flex items-center gap-0.5" aria-label={`댓글 ${t.commentCount}개`}>
+              <MessageSquare aria-hidden size={12} strokeWidth={1.8} />
+              {t.commentCount}
+            </span>
+          )}
+          {t.attachmentCount > 0 && (
+            <span className="inline-flex items-center gap-0.5" aria-label={`첨부 ${t.attachmentCount}개`}>
+              <Paperclip aria-hidden size={12} strokeWidth={1.8} />
+              {t.attachmentCount}
+            </span>
+          )}
+          {t.recur !== "none" && (
+            <span role="img" aria-label={`반복 ${REPEAT_LABELS[t.recur]}`} className="inline-flex">
+              <Repeat aria-hidden size={12} strokeWidth={1.8} />
+            </span>
+          )}
+          <AssigneeAvatar assignee={t.assignee} size={20} />
         </div>
-      )}
-      <div className="flex items-center gap-2 text-(length:--fs-xs) text-(--text-3)">
-        <TaskKey value={t.key} />
-        <PriorityIcon priority={t.priority} size={13} />
-        {t.due_date && <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />}
-        <span className="flex-1" />
-        {t.commentCount > 0 && (
-          <span className="inline-flex items-center gap-0.5" aria-label={`댓글 ${t.commentCount}개`}>
-            <MessageSquare aria-hidden size={12} strokeWidth={1.8} />
-            {t.commentCount}
-          </span>
-        )}
-        {t.attachmentCount > 0 && (
-          <span className="inline-flex items-center gap-0.5" aria-label={`첨부 ${t.attachmentCount}개`}>
-            <Paperclip aria-hidden size={12} strokeWidth={1.8} />
-            {t.attachmentCount}
-          </span>
-        )}
-        {t.recur !== "none" && (
-          <span role="img" aria-label={`반복 ${REPEAT_LABELS[t.recur]}`} className="inline-flex">
-            <Repeat aria-hidden size={12} strokeWidth={1.8} />
-          </span>
-        )}
-        <AssigneeAvatar assignee={t.assignee} size={20} />
-      </div>
-    </li>
+      </li>
+    </TaskContextMenu>
   );
 }

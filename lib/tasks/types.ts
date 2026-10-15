@@ -17,6 +17,8 @@ export type TaskItem = TaskRow & {
   attachmentCount: number;
   // 이 작업을 막고 있는 작업 id 목록(task_deps.blocked_by_id)
   blockedBy: string[];
+  // 이 작업 프로젝트의 편집 권한(can_edit_project). false면 화면이 드래그·인라인 편집을 숨긴다
+  canEdit: boolean;
 };
 
 // 담당자 선택·아바타용 구성원. color는 workspace_members.color(없으면 profiles.color)

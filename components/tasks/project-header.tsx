@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { ProjectIcon, ProjectStatusDot } from "@/components/shell/project-icon";
 import { SaveViewDialog } from "@/components/tasks/save-view-dialog";
+import { SavedViewTab } from "@/components/tasks/saved-view-tab";
 import type { Enums } from "@/lib/database.types";
 import { getProjectHeader } from "@/lib/data/project";
 import { PROJECT_STATUS_LABELS, PROJECT_TAB_LABELS, type ProjectTab } from "@/lib/i18n/labels";
@@ -93,10 +94,11 @@ export async function ProjectHeader({
           </Link>
         ))}
         {savedViews.map((v) => (
-          <Link
+          <SavedViewTab
             key={v.id}
             href={`${base}/views/${v.id}`}
-            aria-current={isActive(v.id) ? "page" : undefined}
+            name={v.name}
+            current={isActive(v.id)}
             className={cn(
               tabCls,
               "max-w-40",
@@ -104,9 +106,7 @@ export async function ProjectHeader({
                 ? "border-(--accent) font-medium text-(--text)"
                 : "border-transparent text-(--text-3) hover:text-(--text)",
             )}
-          >
-            <span className="truncate">{v.name}</span>
-          </Link>
+          />
         ))}
         <SaveViewDialog workspaceId={workspaceId} projectId={project.id} baseHref={base} defaultType={defaultType} />
       </nav>

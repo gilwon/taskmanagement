@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProjectIcon } from "@/components/shell/project-icon";
+import { isPlainKey } from "@/components/shortcuts/keys";
 import {
   AssigneeAvatar,
   AssigneePicker,
@@ -130,7 +131,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
   // e 단축키. 편집 모달을 연다
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "e" || e.repeat || ignoreShortcut(e, rootRef.current)) return;
+      if (!isPlainKey(e, "KeyE") || e.repeat || ignoreShortcut(e, rootRef.current)) return;
       e.preventDefault();
       setEditOpen(true);
     };

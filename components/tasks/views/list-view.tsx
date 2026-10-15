@@ -19,9 +19,11 @@ import {
 } from "@/components/tasks/parts";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
+import { TaskContextMenu } from "@/components/tasks/views/task-context-menu";
 import {
   AddTaskButton,
   DropLine,
+  EditCell,
   InlineComposer,
   isInnerControl,
   MOVE_HINT_ID,
@@ -204,114 +206,143 @@ function Row({
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   return (
-    <li
-      data-drag-id={t.id}
-      tabIndex={0}
-      aria-label={`${t.key} ${t.title}`}
-      aria-describedby={MOVE_HINT_ID}
-      onPointerDown={(e) => !editing && onPointerDown(e, t.id)}
-      onClick={(e) => {
-        if (editing || isInnerControl(e.target)) return;
-        open(t.key);
-      }}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return;
-        if (e.key === "Enter") {
-          e.preventDefault();
-          open(t.key);
-        } else if (e.key === " ") {
-          e.preventDefault();
-          ctl.select(t.id, { range: e.shiftKey });
-        } else {
-          ctl.keyMove(e, t.id, groups, field);
-        }
-      }}
-      className={cn(
-        "group/row flex h-(--row-h) cursor-default items-center gap-2 border-b border-(--divider) px-(--gutter) text-(length:--fs-base) outline-none hover:bg-(--surface-2) focus-visible:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-inset max-[640px]:gap-1.5",
-        checked && "bg-(--accent-soft) hover:bg-(--accent-soft)",
-        dragging && "opacity-40",
-      )}
-    >
-      <span
-        data-drag-handle
-        aria-hidden
-        className="-ml-3 flex w-3 shrink-0 cursor-grab touch-none justify-center text-(--text-4) opacity-0 group-hover/row:opacity-100 max-[900px]:opacity-100"
-      >
-        <GripVertical size={13} strokeWidth={1.8} />
-      </span>
-      <Checkbox
-        checked={checked}
-        aria-label={`${t.key} 선택`}
+    <TaskContextMenu task={t}>
+      <li
+        data-drag-id={t.id}
+        tabIndex={0}
+        aria-label={`${t.key} ${t.title}`}
+        aria-describedby={t.canEdit ? MOVE_HINT_ID : undefined}
+        onPointerDown={(e) => !editing && t.canEdit && onPointerDown(e, t.id)}
         onClick={(e) => {
-          e.stopPropagation();
-          ctl.select(t.id, { range: e.shiftKey });
+          if (editing || isInnerControl(e.target)) return;
+          open(t.key);
         }}
-      />
-      <StatusPicker value={t.status} onChange={(s) => s && s !== t.status && void move(t.id, s)}>
-        <button type="button" aria-label={`상태 ${TASK_STATUS_LABELS[t.status]}, 바꾸기`} className={cellBtn}>
-          <StatusIcon status={t.status} size={14} />
-        </button>
-      </StatusPicker>
-      <TaskKey value={t.key} className="hide-m w-16 shrink-0" />
-      {editing ? (
-        <TitleEditor task={t} onDone={onEditDone} />
-      ) : (
-        <span
-          data-no-row-click
-          onClick={() => {
-            if (clickTimer.current) clearTimeout(clickTimer.current);
-            clickTimer.current = setTimeout(() => open(t.key), DBL_WAIT);
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Enter") {
+            e.preventDefault();
+            open(t.key);
+          } else if (e.key === " ") {
+            e.preventDefault();
+            ctl.select(t.id, { range: e.shiftKey });
+          } else {
+            ctl.keyMove(e, t.id, groups, field);
+          }
+        }}
+        className={cn(
+          "group/row flex h-(--row-h) cursor-default items-center gap-2 border-b border-(--divider) px-(--gutter) text-(length:--fs-base) outline-none hover:bg-(--surface-2) focus-visible:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-inset max-[640px]:gap-1.5",
+          checked && "bg-(--accent-soft) hover:bg-(--accent-soft)",
+          dragging && "opacity-40",
+        )}
+      >
+        {t.canEdit ? (
+          <span
+            data-drag-handle
+            aria-hidden
+            className="-ml-3 flex w-3 shrink-0 cursor-grab touch-none justify-center text-(--text-4) opacity-0 group-hover/row:opacity-100 max-[900px]:opacity-100"
+          >
+            <GripVertical size={13} strokeWidth={1.8} />
+          </span>
+        ) : (
+          <span aria-hidden className="-ml-3 w-3 shrink-0" />
+        )}
+        <Checkbox
+          checked={checked}
+          aria-label={`${t.key} 선택`}
+          onClick={(e) => {
+            e.stopPropagation();
+            ctl.select(t.id, { range: e.shiftKey });
           }}
-          onDoubleClick={() => {
-            if (clickTimer.current) clearTimeout(clickTimer.current);
-            onEdit();
-          }}
-          className={cn("min-w-0 flex-1 truncate text-(--text)", t.status === "done" && "text-(--text-3) line-through")}
+        />
+        <EditCell
+          canEdit={t.canEdit}
+          label={`상태 ${TASK_STATUS_LABELS[t.status]}, 바꾸기`}
+          readLabel={`상태 ${TASK_STATUS_LABELS[t.status]}`}
+          className={cellBtn}
+          wrap={(b) => (
+            <StatusPicker value={t.status} onChange={(s) => s && s !== t.status && void move(t.id, s)}>
+              {b}
+            </StatusPicker>
+          )}
         >
-          {t.title}
-        </span>
-      )}
-      {ctl.showProject && (
-        <span className="flex w-36 shrink-0 items-center gap-1.5 truncate text-(length:--fs-sm) text-(--text-3) max-[900px]:hidden">
-          <ProjectIcon icon={t.project.icon} color={t.project.color} size={16} />
-          <span className="truncate">{t.project.name}</span>
-        </span>
-      )}
-      <AssigneePicker
-        value={t.assignee_id}
-        members={members}
-        onChange={(v) => v !== undefined && v !== t.assignee_id && void update(t.id, { assigneeId: v })}
-      >
-        <button type="button" aria-label={`담당자 ${t.assignee?.name ?? UNASSIGNED_LABEL}, 바꾸기`} className={cellBtn}>
+          <StatusIcon status={t.status} size={14} />
+        </EditCell>
+        <TaskKey value={t.key} className="hide-m w-16 shrink-0" />
+        {editing ? (
+          <TitleEditor task={t} onDone={onEditDone} />
+        ) : (
+          <span
+            data-no-row-click
+            onClick={() => {
+              if (clickTimer.current) clearTimeout(clickTimer.current);
+              clickTimer.current = setTimeout(() => open(t.key), DBL_WAIT);
+            }}
+            onDoubleClick={() => {
+              if (clickTimer.current) clearTimeout(clickTimer.current);
+              if (t.canEdit) onEdit();
+            }}
+            className={cn("min-w-0 flex-1 truncate text-(--text)", t.status === "done" && "text-(--text-3) line-through")}
+          >
+            {t.title}
+          </span>
+        )}
+        {ctl.showProject && (
+          <span className="flex w-36 shrink-0 items-center gap-1.5 truncate text-(length:--fs-sm) text-(--text-3) max-[900px]:hidden">
+            <ProjectIcon icon={t.project.icon} color={t.project.color} size={16} />
+            <span className="truncate">{t.project.name}</span>
+          </span>
+        )}
+        <EditCell
+          canEdit={t.canEdit}
+          label={`담당자 ${t.assignee?.name ?? UNASSIGNED_LABEL}, 바꾸기`}
+          readLabel={`담당자 ${t.assignee?.name ?? UNASSIGNED_LABEL}`}
+          className={cellBtn}
+          wrap={(b) => (
+            <AssigneePicker
+              value={t.assignee_id}
+              members={members}
+              onChange={(v) => v !== undefined && v !== t.assignee_id && void update(t.id, { assigneeId: v })}
+            >
+              {b}
+            </AssigneePicker>
+          )}
+        >
           <AssigneeAvatar assignee={t.assignee} size={20} />
-        </button>
-      </AssigneePicker>
-      <PriorityPicker
-        value={t.priority}
-        onChange={(p) => p && p !== t.priority && void update(t.id, { priority: p })}
-      >
-        <button
-          type="button"
-          aria-label={`${t.priority === "none" ? "" : "우선순위 "}${TASK_PRIORITY_LABELS[t.priority]}, 바꾸기`}
+        </EditCell>
+        <EditCell
+          canEdit={t.canEdit}
+          label={`${t.priority === "none" ? "" : "우선순위 "}${TASK_PRIORITY_LABELS[t.priority]}, 바꾸기`}
+          readLabel={`${t.priority === "none" ? "" : "우선순위 "}${TASK_PRIORITY_LABELS[t.priority]}`}
           className={cn(cellBtn, "hide-m")}
+          wrap={(b) => (
+            <PriorityPicker value={t.priority} onChange={(p) => p && p !== t.priority && void update(t.id, { priority: p })}>
+              {b}
+            </PriorityPicker>
+          )}
         >
           <PriorityIcon priority={t.priority} size={14} />
-        </button>
-      </PriorityPicker>
-      <DatePicker label="기한" value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
-        <button
-          type="button"
-          aria-label={`기한 ${t.due_date ? formatDue(t.due_date, ctl.now) : "없음"}, 바꾸기`}
+        </EditCell>
+        <EditCell
+          canEdit={t.canEdit}
+          label={`기한 ${t.due_date ? formatDue(t.due_date, ctl.now) : "없음"}, 바꾸기`}
+          readLabel={t.due_date ? undefined : "기한 없음"}
           className={cn(cellBtn, "w-20 justify-start text-(length:--fs-sm) max-[640px]:w-14")}
+          wrap={(b) => (
+            <DatePicker label="기한" value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
+              {b}
+            </DatePicker>
+          )}
         >
           {t.due_date ? (
             <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />
-          ) : (
+          ) : t.canEdit ? (
             <span className="truncate text-(--text-4)">날짜 지정</span>
+          ) : (
+            <span aria-hidden className="truncate text-(--text-4)">—</span>
           )}
-        </button>
-      </DatePicker>
-      <TaskMenu task={t} onRename={onEdit} />
-    </li>
+        </EditCell>
+        <TaskMenu task={t} onRename={onEdit} />
+      </li>
+    </TaskContextMenu>
   );
 }

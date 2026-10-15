@@ -9,6 +9,7 @@ import {
   FileMeta,
   FileStatus,
   FileTypeIcon,
+  FileContextMenu,
   ICON,
   MENU_CLASS,
   UploadButton,
@@ -235,43 +236,52 @@ function FileCard({
   onLinkRequest: (item: FileItem) => void;
 }) {
   return (
-    <li className="flex min-w-0 flex-col overflow-hidden rounded-(--r) border border-(--border) bg-(--surface)">
-      <div className="flex aspect-[4/3] items-center justify-center bg-(--surface-2)">
-        {preview ? (
-          // 서명 URL(60초)이라 next/image 최적화 캐시에 넣지 않는다
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="" className="size-full object-cover" />
-        ) : (
-          <FileTypeIcon type={item.type} size={28} />
-        )}
-      </div>
-      <div className="flex min-w-0 items-start gap-1 p-2">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-(length:--fs-sm) text-(--text)" title={item.name}>
-            {item.name}
-          </p>
-          {item.task && (
-            <p className="truncate font-mono text-(length:--fs-2xs) text-(--text-3)" title={item.task.title}>
-              {item.task.key}
-            </p>
-          )}
-          {item.status === "ready" ? (
-            <FileMeta item={item} now={now} />
+    <FileContextMenu
+      item={item}
+      transfer={transfer}
+      ctl={ctl}
+      canEdit={canEdit}
+      meId={meId}
+      onLinkRequest={onLinkRequest}
+    >
+      <li className="flex min-w-0 flex-col overflow-hidden rounded-(--r) border border-(--border) bg-(--surface)">
+        <div className="flex aspect-[4/3] items-center justify-center bg-(--surface-2)">
+          {preview ? (
+            // 서명 URL(60초)이라 next/image 최적화 캐시에 넣지 않는다
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={preview} alt="" className="size-full object-cover" />
           ) : (
-            <FileStatus item={item} transfer={transfer} meId={meId} />
+            <FileTypeIcon type={item.type} size={28} />
           )}
         </div>
-        <FileActions
-          item={item}
-          transfer={transfer}
-          ctl={ctl}
-          canEdit={canEdit}
-          canManage={canManage}
-          meId={meId}
-          onLinkRequest={onLinkRequest}
-        />
-      </div>
-    </li>
+        <div className="flex min-w-0 items-start gap-1 p-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-(length:--fs-sm) text-(--text)" title={item.name}>
+              {item.name}
+            </p>
+            {item.task && (
+              <p className="truncate font-mono text-(length:--fs-2xs) text-(--text-3)" title={item.task.title}>
+                {item.task.key}
+              </p>
+            )}
+            {item.status === "ready" ? (
+              <FileMeta item={item} now={now} />
+            ) : (
+              <FileStatus item={item} transfer={transfer} meId={meId} />
+            )}
+          </div>
+          <FileActions
+            item={item}
+            transfer={transfer}
+            ctl={ctl}
+            canEdit={canEdit}
+            canManage={canManage}
+            meId={meId}
+            onLinkRequest={onLinkRequest}
+          />
+        </div>
+      </li>
+    </FileContextMenu>
   );
 }
 
