@@ -796,6 +796,12 @@ isOneToOne: false
               "slug": string,"workspace_id": string
             }[]
                            },
+"decline_invite":
+{ Args: { "p_invite": string }; Returns: undefined
+                           },
+"delete_workspace":
+{ Args: { "p_confirm": string,"p_workspace": string }; Returns: undefined
+                           },
 "fail_file":
 { Args: { "p_file": string }; Returns: {
               "created_at": string,

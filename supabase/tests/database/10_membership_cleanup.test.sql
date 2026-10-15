@@ -87,9 +87,11 @@ select throws_ok(
   $$update public.workspace_invites set status = 'pending' where id = '90000000-0000-0000-0000-00000000ea05'$$,
   'P0001', 'already_member', '수락된 초대를 다시 pending으로 돌리는 것도 같은 규칙을 따른다');
 
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000ea01","role":"authenticated"}', true);
+-- 클라이언트는 invited 상태를 바꿀 수 없으므로(org 마이그레이션 guard_member_invited_status) 픽스처로 만든다
+reset role;
 update public.workspace_members set status = 'deactivated'
 where workspace_id = '10000000-0000-0000-0000-00000000ea00' and user_id = '00000000-0000-0000-0000-00000000ea06';
+set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000ea06","role":"authenticated"}', true);
 select is(
   (select status::text from public.accept_invite('90000000-0000-0000-0000-00000000ea06')),
