@@ -123,6 +123,9 @@
   --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
   /* accent-soft 위 글자용. light에서 blue·teal 등은 accent 그대로면 4.5:1 아래라 검정을 12% 섞는다 */
   --accent-ink: color-mix(in srgb, var(--accent) 88%, black);
+  /* 달력의 이번 달 일요일·토요일 숫자. 다른 달 날짜는 --red·--blue 그대로(4.5:1 이상)라 흐린 단계가 되고, 이 둘은 한 단계 진하게 둔다 */
+  --sun-ink: color-mix(in srgb, var(--red) 85%, black);
+  --sat-ink: color-mix(in srgb, var(--blue) 85%, black);
   --accent-line: color-mix(in srgb, var(--accent) 38%, transparent);
   --green-soft: color-mix(in srgb, var(--green) 11%, transparent);
   --amber-soft: color-mix(in srgb, var(--amber) 12%, transparent);
@@ -232,6 +235,8 @@
   --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
   --accent: var(--acc-d);
   --accent-ink: var(--accent);
+  --sun-ink: color-mix(in srgb, var(--red) 85%, white);
+  --sat-ink: color-mix(in srgb, var(--blue) 85%, white);
   color-scheme: dark;
 }
 
@@ -272,6 +277,8 @@
     --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
     --accent: var(--acc-d);
     --accent-ink: var(--accent);
+    --sun-ink: color-mix(in srgb, var(--red) 85%, white);
+    --sat-ink: color-mix(in srgb, var(--blue) 85%, white);
     color-scheme: dark;
   }
 }

@@ -29,8 +29,8 @@ describe("homeStats", () => {
     const items = [
       task({ due_date: "2026-10-14" }),
       task({ due_date: "2026-10-15", assignee_id: "other" }),
-      task({ status: "done", completed_at: "2026-10-12T00:30:00+09:00", due_date: "2026-10-01" }),
-      task({ status: "done", completed_at: "2026-10-11T23:30:00+09:00" }),
+      task({ status: "done", completed_at: "2026-10-11T00:30:00+09:00", due_date: "2026-10-01" }),
+      task({ status: "done", completed_at: "2026-10-10T23:30:00+09:00" }),
       task({ due_date: "2026-10-10", assignee_id: null }),
     ];
     const projects = [{ status: "active" as const }, { status: "risk" as const }, { status: "hold" as const }];
@@ -70,32 +70,38 @@ describe("묶음", () => {
   ];
   const dues = (list: TaskItem[]) => list.map((t) => t.due_date!.slice(8));
 
-  it("다가오는 마감 이번 주는 모레부터 이번 주 일요일까지, 완료 제외", () => {
+  it("다가오는 마감 이번 주는 모레부터 이번 주 토요일까지, 완료 제외", () => {
     const g = deadlineGroups(spread(), NOW);
-    expect([dues(g.today), dues(g.tomorrow), dues(g.week)]).toEqual([["15"], ["16"], ["17", "18"]]);
+    expect([dues(g.today), dues(g.tomorrow), dues(g.week)]).toEqual([["15"], ["16"], ["17"]]);
   });
 
-  it("토요일이면 내일이 일요일이라 이번 주 묶음은 비어 있다", () => {
-    const sat = new Date("2026-10-17T03:00:00Z");
+  it("금요일이면 내일이 토요일이라 이번 주 묶음은 비어 있다", () => {
+    const fri = new Date("2026-10-16T03:00:00Z");
+    const g = deadlineGroups(spread(), fri);
+    expect([dues(g.today), dues(g.tomorrow), dues(g.week)]).toEqual([["16"], ["17"], []]);
+  });
+
+  it("토요일이면 내일은 다음 주 일요일이고 이번 주 묶음은 비어 있다", () => {
+    // 토요일 23시 KST
+    const sat = new Date("2026-10-17T14:00:00Z");
     const g = deadlineGroups(spread(), sat);
     expect([dues(g.today), dues(g.tomorrow), dues(g.week)]).toEqual([["17"], ["18"], []]);
   });
 
-  it("일요일이면 내일은 다음 주 월요일이고 이번 주 묶음은 비어 있다", () => {
-    // 일요일 23시 KST
-    const sun = new Date("2026-10-18T14:00:00Z");
+  it("일요일이면 이번 주 묶음은 모레부터 그 주 토요일까지다", () => {
+    const sun = new Date("2026-10-18T03:00:00Z");
     const g = deadlineGroups(spread(), sun);
-    expect([dues(g.today), dues(g.tomorrow), dues(g.week)]).toEqual([["18"], ["19"], []]);
+    expect([dues(g.today), dues(g.tomorrow), dues(g.week)]).toEqual([["18"], ["19"], ["20", "21", "22", "23", "24"]]);
   });
 
-  it("이번 주 완료는 서울 기준 월요일 0시부터", () => {
+  it("이번 주 완료는 서울 기준 일요일 0시부터", () => {
     const items = [
-      task({ status: "done", completed_at: "2026-10-18T23:30:00+09:00" }),
-      task({ status: "done", completed_at: "2026-10-19T00:10:00+09:00" }),
+      task({ status: "done", completed_at: "2026-10-17T23:30:00+09:00" }),
+      task({ status: "done", completed_at: "2026-10-18T00:10:00+09:00" }),
     ];
-    // 일요일 23시 KST에는 둘 다 이번 주(10/12~), 월요일 0시 30분 KST부터는 월요일 완료만 이번 주(10/19~)
-    expect(homeStats(items, [], "me", new Date("2026-10-18T14:00:00Z")).doneThisWeek).toBe(2);
-    expect(homeStats(items, [], "me", new Date("2026-10-18T15:30:00Z")).doneThisWeek).toBe(1);
+    // 토요일 23시 KST에는 둘 다 이번 주(10/11~), 일요일 0시 30분 KST부터는 일요일 완료만 이번 주(10/18~)
+    expect(homeStats(items, [], "me", new Date("2026-10-17T14:00:00Z")).doneThisWeek).toBe(2);
+    expect(homeStats(items, [], "me", new Date("2026-10-17T15:30:00Z")).doneThisWeek).toBe(1);
   });
 
   it("진행률은 프로젝트별 완료/전체", () => {

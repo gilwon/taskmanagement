@@ -83,7 +83,7 @@ export default async function SettingsSectionPage({ params }: { params: Params }
           {header}
           <SettingsCard title="날짜 및 시간" description="화면의 날짜와 시각은 Asia/Seoul 기준으로 표시합니다.">
             <TimezoneForm workspaceId={workspace.id} initial={me?.tz ?? "Asia/Seoul"} />
-            <InfoRow label="한 주의 시작" value="월요일" note="변경을 제공하지 않습니다." />
+            <InfoRow label="한 주의 시작" value="일요일" note="변경을 제공하지 않습니다." />
             <InfoRow label="날짜 형식" value="10월 26일" note="변경을 제공하지 않습니다." />
             <InfoRow label="시간 형식" value="24시간제" note="변경을 제공하지 않습니다." />
           </SettingsCard>

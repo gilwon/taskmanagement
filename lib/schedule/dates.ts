@@ -30,13 +30,14 @@ export function diffDays(a: string, b: string) {
   return Math.round((seoulDay(b) - seoulDay(a)) / DAY_MS);
 }
 
-// 월요일 0 … 일요일 6
+// 일요일 0 … 토요일 6. 한 주는 일요일에 시작한다
 export function weekdayIndex(iso: string) {
-  return (new Date(seoulDay(iso)).getUTCDay() + 6) % 7;
+  return new Date(seoulDay(iso)).getUTCDay();
 }
 
 export function isWeekend(iso: string) {
-  return weekdayIndex(iso) >= 5;
+  const d = weekdayIndex(iso);
+  return d === 0 || d === 6;
 }
 
 export function startOfWeek(iso: string) {
@@ -62,7 +63,7 @@ export function addMonths(iso: string, n: number) {
   return toIso(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1));
 }
 
-// 월 그리드. 월요일 시작, 칸 수가 바뀌면 화면이 들썩이므로 항상 6주 42칸이다
+// 월 그리드. 일요일 시작, 칸 수가 바뀌면 화면이 들썩이므로 항상 6주 42칸이다
 export function monthGrid(anchor: string): string[][] {
   const start = startOfWeek(firstOfMonth(anchor));
   return Array.from({ length: 6 }, (_, w) => Array.from({ length: 7 }, (_, d) => addDays(start, w * 7 + d)));
@@ -127,7 +128,7 @@ export function calendarRange(anchor: string, mode: "month" | "week") {
   return { from: grid[0][0], to: grid[5][6] };
 }
 
-// 타임라인 날짜 범위. 날짜들과 오늘을 모두 담고 앞 1주·뒤 3주 여유를 둔 월요일 시작 범위
+// 타임라인 날짜 범위. 날짜들과 오늘을 모두 담고 앞 1주·뒤 3주 여유를 둔 일요일 시작 범위
 export function timelineRange(dates: string[], today: string) {
   let min = today;
   let max = today;

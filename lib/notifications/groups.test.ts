@@ -12,12 +12,19 @@ describe("notificationGroup", () => {
     expect(notificationGroup("2026-10-14T16:00:00Z", now)).toBe("today");
     expect(notificationGroup("2026-10-14T12:00:00+09:00", now)).toBe("yesterday");
     expect(notificationGroup("2026-10-12T12:00:00+09:00", now)).toBe("week");
-    expect(notificationGroup("2026-10-11T23:00:00+09:00", now)).toBe("earlier");
+    // 이번 주 첫날 일요일까지가 이번 주, 그 전 토요일부터 이전
+    expect(notificationGroup("2026-10-11T00:10:00+09:00", now)).toBe("week");
+    expect(notificationGroup("2026-10-10T23:00:00+09:00", now)).toBe("earlier");
   });
-  it("월요일에는 이번 주 묶음이 비고 그제부터 이전이다", () => {
-    const monday = new Date("2026-10-12T03:00:00Z");
-    expect(notificationGroup("2026-10-11T12:00:00+09:00", monday)).toBe("yesterday");
-    expect(notificationGroup("2026-10-10T12:00:00+09:00", monday)).toBe("earlier");
+  it("일요일에는 이번 주 묶음이 비고 그제부터 이전이다", () => {
+    const sunday = new Date("2026-10-11T03:00:00Z");
+    expect(notificationGroup("2026-10-10T12:00:00+09:00", sunday)).toBe("yesterday");
+    expect(notificationGroup("2026-10-09T12:00:00+09:00", sunday)).toBe("earlier");
+  });
+  it("토요일에는 그 주 일요일까지 이번 주다", () => {
+    const saturday = new Date("2026-10-17T03:00:00Z");
+    expect(notificationGroup("2026-10-11T12:00:00+09:00", saturday)).toBe("week");
+    expect(notificationGroup("2026-10-10T12:00:00+09:00", saturday)).toBe("earlier");
   });
 });
 

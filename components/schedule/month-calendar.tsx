@@ -21,7 +21,7 @@ export type MonthCalendarProps = {
   // 이미 필터를 적용한 작업. due_date가 없는 작업은 그리지 않는다
   items: TaskItem[];
   events?: CalendarEvent[];
-  // "YYYY-MM-DD". month면 그 날짜가 속한 달, week면 그 날짜가 속한 주(월요일 시작)
+  // "YYYY-MM-DD". month면 그 날짜가 속한 달, week면 그 날짜가 속한 주(일요일 시작)
   anchor: string;
   mode?: CalendarMode;
   // 서버가 서울 기준으로 만든 오늘 "YYYY-MM-DD". 하이드레이션이 어긋나지 않게 클라이언트에서 계산하지 않는다
@@ -176,7 +176,8 @@ export function MonthCalendar({
               role="columnheader"
               className={cn(
                 "px-2 py-1.5 text-(length:--fs-2xs) font-medium text-(--text-3)",
-                i >= 5 && "text-(--text-4)",
+                i === 0 && "text-(--red)",
+                i === 6 && "text-(--blue)",
               )}
             >
               {w}
@@ -217,7 +218,7 @@ export function MonthCalendar({
                         "group/cell relative flex min-w-0 flex-col gap-0.5 p-1 transition-colors duration-(--dur)",
                         di < 6 && "border-r border-(--divider)",
                         mode === "week" ? "min-h-72 max-[640px]:min-h-24" : "min-h-28 max-[640px]:min-h-14",
-                        di >= 5 && "bg-(--sunken)",
+                        (di === 0 || di === 6) && "bg-(--sunken)",
                         outside && "bg-(--sunken)",
                         target?.group === iso && "bg-(--accent-soft) ring-2 ring-(--accent) ring-inset",
                       )}
@@ -241,8 +242,14 @@ export function MonthCalendar({
                             isToday
                               ? "bg-(--accent) font-semibold text-(--on-accent)"
                               : outside
-                                ? "text-(--text-4) hover:bg-(--surface-2)"
-                                : "text-(--text-2) hover:bg-(--surface-2)",
+                                ? cn(
+                                    "hover:bg-(--surface-2)",
+                                    di === 0 ? "text-(--red)" : di === 6 ? "text-(--blue)" : "text-(--text-4)",
+                                  )
+                                : cn(
+                                    "hover:bg-(--surface-2)",
+                                    di === 0 ? "text-(--sun-ink)" : di === 6 ? "text-(--sat-ink)" : "text-(--text-2)",
+                                  ),
                           )}
                         >
                           {Number(iso.slice(8))}

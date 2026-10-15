@@ -284,8 +284,8 @@ export const UNKNOWN_USER_LABEL = "알 수 없는 사용자";
 // 프로필 이름과 이메일이 모두 없는 구성원의 표시명
 export const NAMELESS_MEMBER_LABEL = "이름 없음";
 
-// 달력 요일 머리글. 월요일 시작
-export const WEEKDAY_SHORT_LABELS = ["월", "화", "수", "목", "금", "토", "일"] as const;
+// 달력 요일 머리글. 일요일 시작
+export const WEEKDAY_SHORT_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 // 홈 stat 카드 이름과 보조 문구
 export const HOME_STAT_LABELS = {

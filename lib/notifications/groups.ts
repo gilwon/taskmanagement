@@ -5,16 +5,16 @@ const DAY_MS = 86_400_000;
 
 export type NotificationGroup = "today" | "yesterday" | "week" | "earlier";
 
-// 알림 묶음. 오늘·어제·이번 주(월요일 시작, 오늘·어제 제외)·이전
+// 알림 묶음. 오늘·어제·이번 주(일요일 시작, 오늘·어제 제외)·이전
 export function notificationGroup(ts: string, now: Date): NotificationGroup {
   const day = seoulDay(ts);
   const today = seoulDay(now);
   const diff = Math.round((today - day) / DAY_MS);
   if (diff <= 0) return "today";
   if (diff === 1) return "yesterday";
-  // UTC 자정 시각의 요일(일 0 ~ 토 6)을 월요일 0으로 바꾼다
-  const sinceMonday = (new Date(today).getUTCDay() + 6) % 7;
-  return diff <= sinceMonday ? "week" : "earlier";
+  // UTC 자정 시각의 요일(일 0 ~ 토 6)이 곧 일요일부터 지난 일수다
+  const sinceSunday = new Date(today).getUTCDay();
+  return diff <= sinceSunday ? "week" : "earlier";
 }
 
 // 연도 유무에 따라 Intl의 요일 괄호 표기가 달라져 요일은 따로 붙인다

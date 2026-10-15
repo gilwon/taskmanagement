@@ -23,7 +23,7 @@ import { TOOLBAR_BTN } from "@/components/tasks/toolbar/task-toolbar";
 import { announce } from "@/components/tasks/views/shared";
 import { seoulDay } from "@/lib/format/date";
 import { colorHex, GROUP_FIELD_LABELS, TASK_STATUS_LABELS } from "@/lib/i18n/labels";
-import { addDays, diffDays, editBar, isWeekend, timelineRange, type BarEdit } from "@/lib/schedule/dates";
+import { addDays, diffDays, editBar, timelineRange, weekdayIndex, type BarEdit } from "@/lib/schedule/dates";
 import type { Milestone } from "@/lib/schedule/types";
 import type { GroupField, TaskItem, TaskPatch, ViewKey, ViewState } from "@/lib/tasks/types";
 import { applyView } from "@/lib/tasks/view";
@@ -340,7 +340,9 @@ export function Timeline({
                       key={d}
                       className={cn(
                         "absolute bottom-1.5 text-center tabular-nums",
-                        isWeekend(d) && "text-(--text-4)",
+                        // 7일마다 찍히는 단계의 숫자는 주 시작 표시라 요일 색을 칠하지 않는다
+                        zoom === "week" && weekdayIndex(d) === 0 && "text-(--red)",
+                        zoom === "week" && weekdayIndex(d) === 6 && "text-(--blue)",
                         d === todayIso && "font-semibold text-(--accent)",
                       )}
                       style={zoom === "week" ? { left: x(d), width: colW } : { left: x(d) + 2 }}
@@ -355,8 +357,8 @@ export function Timeline({
                 className="relative"
                 style={{
                   height: bodyH,
-                  // 범위가 월요일에 시작하므로 매주 6·7번째 칸이 주말이다
-                  backgroundImage: `repeating-linear-gradient(to right, transparent 0 ${5 * colW}px, var(--sunken) ${5 * colW}px ${7 * colW}px)`,
+                  // 범위가 일요일에 시작하므로 매주 1·7번째 칸이 주말이다
+                  backgroundImage: `repeating-linear-gradient(to right, var(--sunken) 0 ${colW}px, transparent ${colW}px ${6 * colW}px, var(--sunken) ${6 * colW}px ${7 * colW}px)`,
                 }}
               >
                 {/* 행 구분선과 그룹 행 배경 */}

@@ -27,7 +27,7 @@ export const metadata: Metadata = process.env.NODE_ENV === "production" ? {} : {
 const COLOR_GROUPS: { title: string; kind: "fill" | "text" | "line"; names: string[] }[] = [
   { title: "배경·표면", kind: "fill", names: ["--bg", "--bg-side", "--surface", "--surface-2", "--surface-3", "--sunken", "--overlay"] },
   { title: "테두리", kind: "line", names: ["--border", "--border-strong", "--divider"] },
-  { title: "텍스트", kind: "text", names: ["--text", "--text-2", "--text-3", "--text-4", "--on-accent", "--accent-ink"] },
+  { title: "텍스트", kind: "text", names: ["--text", "--text-2", "--text-3", "--text-4", "--on-accent", "--accent-ink", "--sun-ink", "--sat-ink"] },
   { title: "강조", kind: "fill", names: ["--accent", "--accent-soft", "--accent-line"] },
   {
     title: "의미 색",

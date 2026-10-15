@@ -305,7 +305,7 @@ export function LabelPicker({ value, onChange, children, disabled, align }: Pick
 }
 
 // ─────────────────────────────────────────────
-// 날짜. 날짜 라이브러리 없이 Intl로 월 그리드를 그린다. 월요일 시작, Asia/Seoul 기준 오늘
+// 날짜. 날짜 라이브러리 없이 Intl로 월 그리드를 그린다. 일요일 시작, Asia/Seoul 기준 오늘
 // 날짜는 DB date와 같은 "YYYY-MM-DD" 문자열이고 계산은 UTC 자정 ms로 한다
 // ─────────────────────────────────────────────
 
@@ -361,7 +361,7 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
   const year = new Date(f).getUTCFullYear();
   const month = new Date(f).getUTCMonth();
   const first = Date.UTC(year, month, 1);
-  const offset = (new Date(first).getUTCDay() + 6) % 7;
+  const offset = new Date(first).getUTCDay();
   const start = first - offset * DAY_MS;
   const weeks = Array.from({ length: 6 }, (_, w) =>
     Array.from({ length: 7 }, (_, d) => toIso(start + (w * 7 + d) * DAY_MS)),
@@ -409,8 +409,15 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
       <table ref={gridRef} role="grid" aria-label={label} onKeyDown={onKeyDown} className="border-collapse">
         <thead>
           <tr>
-            {WEEKDAY_SHORT_LABELS.map((w) => (
-              <th key={w} scope="col" className="size-8 text-(length:--fs-2xs) font-normal text-(--text-4)">
+            {WEEKDAY_SHORT_LABELS.map((w, i) => (
+              <th
+                key={w}
+                scope="col"
+                className={cn(
+                  "size-8 text-(length:--fs-2xs) font-normal",
+                  i === 0 ? "text-(--red)" : i === 6 ? "text-(--blue)" : "text-(--text-4)",
+                )}
+              >
                 {w}
               </th>
             ))}
@@ -419,7 +426,7 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
         <tbody>
           {weeks.map((week) => (
             <tr key={week[0]}>
-              {week.map((day) => {
+              {week.map((day, di) => {
                 const inMonth = new Date(fromIso(day)).getUTCMonth() === month;
                 const selected = day === value;
                 return (
@@ -435,7 +442,10 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
                       className={cn(
                         "inline-flex size-8 items-center justify-center rounded-full text-(length:--fs-sm) outline-none",
                         "hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)",
-                        inMonth ? "text-(--text)" : "text-(--text-4)",
+                        // 일요일 빨강·토요일 파랑. 다른 달은 한 단계 흐린 --red·--blue
+                        inMonth
+                          ? di === 0 ? "text-(--sun-ink)" : di === 6 ? "text-(--sat-ink)" : "text-(--text)"
+                          : di === 0 ? "text-(--red)" : di === 6 ? "text-(--blue)" : "text-(--text-4)",
                         day === today && !selected && "font-semibold text-(--accent)",
                         selected && "bg-(--accent) text-(--on-accent) hover:bg-(--accent)",
                       )}

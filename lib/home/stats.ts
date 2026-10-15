@@ -42,8 +42,8 @@ export function homeStats(
   meId: string,
   now: Date,
 ): HomeStats {
-  // 주는 월요일 시작(prefs weekStart 1). "YYYY-MM-DD"라 문자열 비교가 날짜 비교다
-  const monday = startOfWeek(todayIso(now));
+  // 주는 일요일 시작. "YYYY-MM-DD"라 문자열 비교가 날짜 비교다
+  const weekStart = startOfWeek(todayIso(now));
   const open = items.filter(isOpen);
   return {
     activeProjects: projects.filter((p) => p.status === "active" || p.status === "risk").length,
@@ -51,7 +51,7 @@ export function homeStats(
     openTasks: open.length,
     myOpenTasks: open.filter((t) => t.assignee_id === meId).length,
     doneThisWeek: items.filter(
-      (t) => t.status === "done" && t.completed_at && todayIso(new Date(t.completed_at)) >= monday,
+      (t) => t.status === "done" && t.completed_at && todayIso(new Date(t.completed_at)) >= weekStart,
     ).length,
     overdue: items.filter((t) => isOverdue(t, now)).length,
   };
@@ -76,17 +76,17 @@ export function myTaskBucket(t: TaskItem, now: Date): MyTaskBucket {
   return diff === 0 ? "today" : "overdue";
 }
 
-// 다가오는 마감. 워크스페이스 전체의 열린 작업 중 오늘·내일·이번 주(모레부터 이번 주 일요일까지, 월요일 시작).
-// 토요일이면 이번 주 묶음은 비고, 일요일이면 내일이 다음 주 월요일이라 이번 주 묶음은 비어 있다
+// 다가오는 마감. 워크스페이스 전체의 열린 작업 중 오늘·내일·이번 주(모레부터 이번 주 토요일까지, 일요일 시작).
+// 금요일이면 이번 주 묶음은 비고, 토요일이면 내일이 다음 주 일요일이라 이번 주 묶음은 비어 있다
 export function deadlineGroups(items: readonly TaskItem[], now: Date) {
   const today = todayIso(now);
-  const sunday = addDays(startOfWeek(today), 6);
+  const saturday = addDays(startOfWeek(today), 6);
   const open = items.filter(isOpen).sort(byDue);
   const within = (lo: string, hi: string) => open.filter((t) => t.due_date !== null && t.due_date >= lo && t.due_date <= hi);
   return {
     today: within(today, today),
     tomorrow: within(addDays(today, 1), addDays(today, 1)),
-    week: within(addDays(today, 2), sunday),
+    week: within(addDays(today, 2), saturday),
   };
 }
 

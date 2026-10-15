@@ -18,17 +18,17 @@ import {
 } from "./dates";
 
 describe("monthGrid", () => {
-  it("2026년 10월은 1일이 목요일이라 9월 28일 월요일부터 시작한다", () => {
+  it("2026년 10월은 1일이 목요일이라 9월 27일 일요일부터 시작한다", () => {
     const grid = monthGrid("2026-10-15");
     expect(grid).toHaveLength(6);
     expect(grid.every((w) => w.length === 7)).toBe(true);
-    expect(grid[0][0]).toBe("2026-09-28");
-    expect(grid[0][3]).toBe("2026-10-01");
-    expect(grid[5][6]).toBe("2026-11-08");
+    expect(grid[0][0]).toBe("2026-09-27");
+    expect(grid[0][4]).toBe("2026-10-01");
+    expect(grid[5][6]).toBe("2026-11-07");
   });
 
-  it("1일이 월요일이면 그날부터 시작한다", () => {
-    expect(monthGrid("2026-06-10")[0][0]).toBe("2026-06-01");
+  it("1일이 일요일이면 그날부터 시작한다", () => {
+    expect(monthGrid("2026-11-10")[0][0]).toBe("2026-11-01");
   });
 
   it("윤년 2월 29일이 들어간다", () => {
@@ -48,17 +48,19 @@ describe("날짜 산술", () => {
     expect(addMonths("2026-01-31", -1)).toBe("2025-12-01");
   });
 
-  it("주는 월요일에 시작하고 토·일이 주말이다", () => {
-    expect(startOfWeek("2026-10-18")).toBe("2026-10-12");
-    expect(startOfWeek("2026-10-12")).toBe("2026-10-12");
+  it("주는 일요일에 시작하고 토·일이 주말이다", () => {
+    // 일요일 당일은 그날이 주 시작, 토요일 당일은 그 주의 마지막 날
+    expect(startOfWeek("2026-10-11")).toBe("2026-10-11");
+    expect(startOfWeek("2026-10-17")).toBe("2026-10-11");
+    expect(startOfWeek("2026-10-18")).toBe("2026-10-18");
     expect(weekOf("2026-10-15")).toEqual([
+      "2026-10-11",
       "2026-10-12",
       "2026-10-13",
       "2026-10-14",
       "2026-10-15",
       "2026-10-16",
       "2026-10-17",
-      "2026-10-18",
     ]);
     expect(isWeekend("2026-10-17")).toBe(true);
     expect(isWeekend("2026-10-18")).toBe(true);
@@ -122,7 +124,7 @@ describe("editBar", () => {
 describe("parseCalendarParams", () => {
   const today = "2026-10-15";
   it("주·월·기본값", () => {
-    expect(parseCalendarParams({ w: "2026-10-15" }, today)).toEqual({ anchor: "2026-10-12", mode: "week" });
+    expect(parseCalendarParams({ w: "2026-10-15" }, today)).toEqual({ anchor: "2026-10-11", mode: "week" });
     expect(parseCalendarParams({ m: "2026-11" }, today)).toEqual({ anchor: "2026-11-01", mode: "month" });
     expect(parseCalendarParams({}, today)).toEqual({ anchor: today, mode: "month" });
   });
@@ -135,23 +137,23 @@ describe("parseCalendarParams", () => {
 });
 
 describe("timelineRange", () => {
-  it("오늘과 모든 날짜를 담고 월요일에 시작한다", () => {
+  it("오늘과 모든 날짜를 담고 일요일에 시작한다", () => {
     const r = timelineRange(["2026-10-20", "2026-11-30"], "2026-10-15");
-    expect(r.start).toBe("2026-10-05");
+    expect(r.start).toBe("2026-10-04");
     expect(addDays(r.start, r.days - 1)).toBe("2026-12-21");
   });
 
   it("날짜가 없으면 오늘 주변만", () => {
     const r = timelineRange([], "2026-10-15");
-    expect(r.start).toBe("2026-10-05");
-    expect(r.days).toBe(diffDays("2026-10-05", "2026-11-05") + 1);
+    expect(r.start).toBe("2026-10-04");
+    expect(r.days).toBe(diffDays("2026-10-04", "2026-11-05") + 1);
   });
 });
 
 describe("weekTitle", () => {
   it("한 달 안, 두 달에 걸침, 해가 바뀜", () => {
-    expect(weekTitle("2026-10-12")).toBe("2026년 10월");
-    expect(weekTitle("2026-09-28")).toBe("2026년 9월 – 10월");
-    expect(weekTitle("2026-12-28")).toBe("2026년 12월 – 2027년 1월");
+    expect(weekTitle("2026-10-11")).toBe("2026년 10월");
+    expect(weekTitle("2026-09-27")).toBe("2026년 9월 – 10월");
+    expect(weekTitle("2026-12-27")).toBe("2026년 12월 – 2027년 1월");
   });
 });
