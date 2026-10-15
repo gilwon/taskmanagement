@@ -14,6 +14,7 @@ import {
   type ActionState,
   type OnboardingInput,
 } from "@/lib/auth/rules";
+import { demoCredentials, isDemoUser } from "@/lib/demo/config";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
@@ -61,6 +62,21 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: authErrorMessage(error.code) };
   redirect(safeNext(text(formData, "next")));
+}
+
+// 데모 계정 로그인. 자격은 서버 환경변수에서만 읽고 결과·로그에 담지 않는다
+export async function signInDemo(): Promise<ActionState> {
+  const demo = demoCredentials();
+  if (!demo) return fail(undefined, MSG.demoDisabled);
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword(demo);
+  if (error) {
+    console.error("[데모 로그인]", error.code);
+    // 시드 전이면 계정이 없어 자격 오류가 난다
+    return error.code === "invalid_credentials" ? fail(undefined, MSG.demoNotReady) : { error: authErrorMessage(error.code) };
+  }
+  redirect("/demo/home");
 }
 
 export async function signUp(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -120,6 +136,7 @@ export async function updatePassword(_prev: ActionState, formData: FormData): Pr
   if (!isRecoverySession(data?.claims, auth.user?.recovery_sent_at)) {
     return fail(undefined, MSG.recoveryExpired);
   }
+  if (isDemoUser(auth.user?.email)) return fail(undefined, MSG.demoRestricted);
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: authErrorMessage(error.code) };
@@ -169,6 +186,8 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) return fail(undefined, MSG.sessionExpired);
+  // 데모 계정이 만든 워크스페이스는 pnpm db:demo 초기화로 지워지지 않아 만들지 못하게 한다
+  if (isDemoUser(auth.claims.email)) return fail(undefined, MSG.demoRestricted);
 
   const { data, error } = await supabase.rpc("create_workspace_onboarding", {
     p_name: name,

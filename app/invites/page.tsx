@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
 import { RouteAnnouncer } from "@/components/auth/route-announcer";
 import { InvitesList } from "@/components/org/invites-list";
+import { isDemoUser } from "@/lib/demo/config";
 import { getMyInvites } from "@/lib/org/queries";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,9 +28,12 @@ export default async function InvitesPage() {
         description="이 계정의 이메일로 온 워크스페이스 초대입니다."
         footer={
           <span className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-            <Link href="/onboarding" className={linkClass}>
-              새 워크스페이스 만들기
-            </Link>
+            {/* 데모 계정은 워크스페이스를 만들 수 없어 진입점을 숨긴다 */}
+            {!isDemoUser(data.claims.email) && (
+              <Link href="/onboarding" className={linkClass}>
+                새 워크스페이스 만들기
+              </Link>
+            )}
             {(mine.count ?? 0) > 0 && (
               <Link href="/" className={linkClass}>
                 내 워크스페이스로 가기

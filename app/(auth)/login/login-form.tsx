@@ -1,11 +1,11 @@
 "use client";
-// 로그인 폼. 이메일·비밀번호를 signIn Server Action으로 보낸다
+// 로그인 폼. 이메일·비밀번호를 signIn Server Action으로 보내고, 데모가 켜져 있으면 데모 로그인 버튼을 둔다
 import Link from "next/link";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
 import { Field, FormAlert, SubmitButton, useAuthAction } from "@/components/auth/form-parts";
-import { signIn } from "@/lib/auth/actions";
+import { signIn, signInDemo } from "@/lib/auth/actions";
 
-export function LoginForm({ next, linkError }: { next: string; linkError?: string }) {
+export function LoginForm({ next, linkError, demo }: { next: string; linkError?: string; demo: boolean }) {
   const { pending, formRef, onSubmit, fieldError, formError, state } = useAuthAction(signIn);
   // 제출 뒤 폼 전체 오류는 이메일·비밀번호 조합에 대한 것이라 두 칸 모두 오류로 표시하고 문구를 잇는다
   const credError = state && formError ? "login-error" : undefined;
@@ -53,6 +53,29 @@ export function LoginForm({ next, linkError }: { next: string; linkError?: strin
         </div>
         <SubmitButton pending={pending}>{pending ? "로그인 중…" : "로그인"}</SubmitButton>
       </form>
+      {demo && <DemoLogin />}
     </AuthCard>
+  );
+}
+
+// 데모 계정 로그인. 자격은 서버가 환경변수에서 넣으므로 폼은 아무 값도 보내지 않는다
+function DemoLogin() {
+  const { pending, formRef, onSubmit, formError } = useAuthAction(signInDemo);
+  return (
+    <form
+      ref={formRef}
+      method="post"
+      onSubmit={onSubmit}
+      aria-describedby="demo-note"
+      className="mt-[var(--s-4)] flex flex-col gap-[var(--s-2)] border-t border-[var(--border)] pt-[var(--s-4)]"
+    >
+      <FormAlert id="demo-error" message={formError} />
+      <SubmitButton pending={pending} variant="outline">
+        {pending ? "데모 준비 중…" : "데모로 둘러보기"}
+      </SubmitButton>
+      <p id="demo-note" className="text-center text-[length:var(--fs-xs)] text-[var(--text-3)]">
+        데모 데이터는 모두가 함께 쓰며 언제든 초기화될 수 있습니다.
+      </p>
+    </form>
   );
 }

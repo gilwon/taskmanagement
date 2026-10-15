@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { MSG, authErrorMessage } from "@/lib/auth/errors";
 import { MIN_PASSWORD_LENGTH, SLUG_RE } from "@/lib/auth/rules";
+import { isDemoUser } from "@/lib/demo/config";
 import { PROJECT_COLORS } from "@/lib/i18n/labels";
 import { orgErrorMessage } from "@/lib/org/errors";
 import { INVITE_ROLES, MAX_INVITES, NOTIF_KEYS, TEAM_ICONS, parseInviteEmails, type Role } from "@/lib/org/rules";
@@ -30,7 +31,7 @@ async function session() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const uid = data?.claims?.sub;
-  return uid ? { supabase, uid } : null;
+  return uid ? { supabase, uid, email: data.claims.email } : null;
 }
 
 // ─────────────────────────────────────────────
@@ -91,6 +92,8 @@ export async function acceptInvite(inviteId: string): Promise<ActionResult<{ slu
   if (!isId(inviteId)) return err(INVALID);
   const s = await session();
   if (!s) return err(MSG.sessionExpired);
+  // 데모 계정은 데모 워크스페이스 밖으로 나가지 않는다
+  if (isDemoUser(s.email)) return err(MSG.demoRestricted);
   const { data, error } = await s.supabase.rpc("accept_invite", { p_invite: inviteId });
   if (error) return dbErr("초대 수락", error);
   if (data.status !== "active") return err("이 워크스페이스에서 비활성화된 계정이라 들어갈 수 없습니다. 관리자에게 문의해 주세요.");
@@ -387,6 +390,8 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
   if (password !== confirm) return { error: { field: "confirm", message: MSG.passwordMismatch } };
   const s = await session();
   if (!s) return { error: { message: MSG.sessionExpired } };
+  // 공용 데모 계정은 비밀번호를 바꾸지 못한다. 재인증 요청도 여기서 함께 막힌다
+  if (isDemoUser(s.email)) return { error: { message: MSG.demoRestricted } };
 
   const { error } = await s.supabase.auth.updateUser(nonce ? { password, nonce } : { password });
   if (!error) return { ok: true };
@@ -405,6 +410,8 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
 export async function signOutOthers(): Promise<ActionResult<null>> {
   const s = await session();
   if (!s) return err(MSG.sessionExpired);
+  // 데모 계정은 여러 사람이 함께 쓰므로 다른 사람의 세션을 끊지 못하게 한다
+  if (isDemoUser(s.email)) return err(MSG.demoRestricted);
   const { error } = await s.supabase.auth.signOut({ scope: "others" });
   if (error) {
     console.error("[다른 기기 로그아웃]", error.code, error.message);
