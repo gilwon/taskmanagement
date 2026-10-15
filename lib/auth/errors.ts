@@ -21,6 +21,7 @@ export const MSG = {
   projectNameRequired: "프로젝트 이름을 입력해 주세요.",
   templateRequired: "템플릿을 선택해 주세요.",
   tooManyInvites: "초대는 3명까지 할 수 있습니다.",
+  emailTaken: "이미 가입된 이메일입니다. 로그인해 주세요.",
   demoDisabled: "데모가 꺼져 있습니다.",
   demoNotReady: "데모가 아직 준비되지 않았습니다.",
   demoRestricted: "데모 계정에서는 쓸 수 없는 기능입니다.",

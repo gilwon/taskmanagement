@@ -89,7 +89,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   if (invalid) return invalid;
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -97,10 +97,13 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
       emailRedirectTo: redirectTo("/auth/confirm?next=/onboarding"),
     },
   });
-  // 이미 가입된 이메일은 오류 없이 오거나 user_already_exists·email_exists로 온다.
-  // 어느 쪽이든 가입 성공과 같은 안내 화면으로 보내 계정 존재를 숨긴다
   const exists = error?.code === "user_already_exists" || error?.code === "email_exists";
-  if (error && !exists) return { error: authErrorMessage(error.code) };
+  // 메일 확인을 끈 설정(auth.email.enable_confirmations = false)에서는 가입 즉시 세션이 생겨 온보딩으로 간다.
+  // 이때 기존 이메일은 오류로 오고, 확인 없이 로그인할 수 있어 계정 존재를 숨길 수 없으므로 로그인을 안내한다
+  if (data.session) redirect("/onboarding");
+  if (exists) return fail("email", MSG.emailTaken);
+  if (error) return { error: authErrorMessage(error.code) };
+  // 메일 확인을 켠 설정에서는 세션 없이 오므로 확인 메일 안내 화면으로 보낸다
   redirect(`/verify?email=${encodeURIComponent(email)}`);
 }
 

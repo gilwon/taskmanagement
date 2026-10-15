@@ -224,7 +224,8 @@ enable_signup = true
 # 비활성화하면 새 이메일만 확인하면 된다.
 double_confirm_changes = true
 # 활성화하면 사용자는 로그인 전에 이메일 주소를 확인해야 한다.
-enable_confirmations = true
+# 가입 즉시 쓸 수 있게 끈다(2026-10-16 사용자 결정). 비밀번호 재설정 메일은 그대로 보낸다.
+enable_confirmations = false
 # 활성화하면 비밀번호를 변경할 때 재인증하거나 최근에 로그인한 상태여야 한다.
 # 로그인 세션만으로 비밀번호를 바꾸지 못하게 켠다. 재설정 링크로 막 만든 세션은 최근 로그인이라 영향이 없다.
 secure_password_change = true
