@@ -16,7 +16,9 @@ import {
   restoreTask,
   updateTask,
 } from "@/lib/tasks/actions";
+import { taskErrorMessage } from "@/lib/tasks/errors";
 import type {
+  ActionResult,
   BulkPatch,
   CreateTaskInput,
   TaskItem,
@@ -54,6 +56,16 @@ type TaskActions = {
 
 const DataContext = createContext<TaskData | null>(null);
 const ActionsContext = createContext<TaskActions | null>(null);
+
+// Server Action 호출이 예외를 던지면(네트워크 끊김 등) 실패 결과로 바꿔 되돌림·오류 토스트 경로를 그대로 타게 한다
+async function call<T>(action: () => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+  try {
+    return await action();
+  } catch (e) {
+    console.error("[작업 store]", e);
+    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }) };
+  }
+}
 
 // 반복 회차 예약일. "10월 26일"
 const nextDateFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", month: "long", day: "numeric" });
@@ -146,7 +158,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
     };
 
     const restoreOne = async (id: string, token: string) => {
-      const r = await restoreTask(id, token);
+      const r = await call(() => restoreTask(id, token));
       if (!r.ok) return void toast.error(r.error);
       setItems((list) => replaceOrAppend(list, r.data));
       toast.success("작업을 되돌렸습니다");
@@ -158,7 +170,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
       removeLocal,
 
       async create(input) {
-        const r = await createTask(input);
+        const r = await call(() => createTask(input));
         if (!r.ok) {
           toast.error(r.error);
           return null;
@@ -173,7 +185,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         // 보관하면 목록에서 빠진다(서버 목록 조회와 같은 기준)
         if (patch.archived) setItems((list) => list.filter((t) => t.id !== id));
         else setItems((list) => list.map((t) => (t.id === id ? optimistic(t, patch) : t)));
-        const r = await updateTask(id, patch);
+        const r = await call(() => updateTask(id, patch));
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -188,7 +200,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         setItems((list) =>
           list.map((t) => (t.id === id ? { ...t, status, sort_order: sortOrder ?? t.sort_order } : t)),
         );
-        const r = await moveTask(id, status, sortOrder);
+        const r = await call(() => moveTask(id, status, sortOrder));
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -201,7 +213,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         const before = find(id);
         if (!before) return false;
         setItems((list) => list.map((t) => (t.id === id ? { ...t, status: "done" } : t)));
-        const r = await completeTask(id);
+        const r = await call(() => completeTask(id));
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -216,7 +228,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         setItems((list) =>
           list.map((t) => (t.id === id ? { ...t, status: t.prev_status ?? "todo", completed_at: null } : t)),
         );
-        const r = await reopenTask(id);
+        const r = await call(() => reopenTask(id));
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -230,7 +242,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         const before = find(id);
         if (!before) return false;
         setItems((list) => list.filter((t) => t.id !== id));
-        const r = await deleteTask(id);
+        const r = await call(() => deleteTask(id));
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -261,7 +273,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
               : t,
           ),
         );
-        const r = await bulkUpdateAction(ids, patch);
+        const r = await call(() => bulkUpdateAction(ids, patch));
         if (!r.ok) {
           revert(before, r.error);
           return false;
@@ -284,7 +296,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         if (before.length === 0) return false;
         const set = new Set(ids);
         setItems((list) => list.filter((t) => !set.has(t.id)));
-        const r = await bulkDelete(ids);
+        const r = await call(() => bulkDelete(ids));
         if (!r.ok) {
           revert(before, r.error);
           return false;
@@ -301,7 +313,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
           action: {
             label: "실행 취소",
             onClick: async () => {
-              const res = await bulkRestore(tokens);
+              const res = await call(() => bulkRestore(tokens));
               if (!res.ok) return void toast.error(res.error);
               const { restored, failedIds: notRestored, conflictIds, error } = res.data;
               setItems((list) => restored.reduce(replaceOrAppend, list));
