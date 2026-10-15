@@ -250,7 +250,7 @@ export function OnboardingWizard() {
                 <Field
                   id="name"
                   label="워크스페이스 이름"
-                  placeholder="예: 한빛 스튜디오"
+                  placeholder="예: 컴퍼니"
                   autoComplete="organization"
                   maxLength={80}
                   required
@@ -264,7 +264,7 @@ export function OnboardingWizard() {
                 <Field
                   id="slug"
                   label="워크스페이스 URL"
-                  placeholder="예: hanbit-studio"
+                  placeholder="예: company"
                   autoCapitalize="none"
                   spellCheck={false}
                   maxLength={39}
