@@ -11,6 +11,7 @@ import { useGlobalShortcuts } from "@/components/shortcuts/use-global-shortcuts"
 import { useNewTask } from "@/components/tasks/new-task";
 import { signOut } from "@/lib/auth/actions";
 import type { ShellData } from "@/lib/data/workspace";
+import { canOpenOrgScreens } from "@/lib/org/rules";
 import { usePrefs } from "@/lib/prefs/provider";
 
 type Ctx = {
@@ -95,7 +96,8 @@ export function CommandProvider({ data, children }: { data: ShellData; children:
     newProject: () => data.me.role !== null && data.me.role !== "guest" && openNewProject(),
     help: openShortcuts,
     sidebar: toggleSidebar,
-    go: (path) => router.push(`/${ws}/${path}`),
+    // 게스트는 구성원 화면이 403이라 G M을 무시한다
+    go: (path) => (path !== "members" || canOpenOrgScreens(data.me.role)) && router.push(`/${ws}/${path}`),
   });
 
   // 팔레트를 닫고, 포커스가 돌아간 뒤(onCloseAutoFocus) fn을 실행한다

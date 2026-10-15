@@ -1,7 +1,7 @@
-// 설정 섹션. 허용 목록 밖의 섹션은 404. 동작하는 항목만 입력을 두고, 바꿀 수 없는 값은 읽기 전용, 미제공 항목은 미제공으로 보인다(spec R23)
+// 설정 섹션. 허용 목록 밖의 섹션은 404, 역할로 막는 섹션(게스트의 구성원·팀·권한)은 403. 동작하는 항목만 입력을 두고, 바꿀 수 없는 값은 읽기 전용, 미제공 항목은 미제공으로 보인다(spec R23)
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { forbidden, notFound } from "next/navigation";
 import {
   AppearanceForm,
   DangerZone,
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { NAV_LABELS, SETTINGS_SECTIONS, type SettingsSection } from "@/lib/i18n/labels";
 import { getNotifPrefs, getOrgMembers, getTeams } from "@/lib/org/queries";
-import { isAdminRole } from "@/lib/org/rules";
+import { canOpenSettingsSection, isAdminRole } from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
 
 type Params = Promise<{ ws: string; section: string }>;
@@ -43,6 +43,7 @@ export default async function SettingsSectionPage({ params }: { params: Params }
   const header = <SettingsTitle title={found.label} subtitle={`${NAV_LABELS.settings} · ${found.group}`} />;
   const members = await getOrgMembers(workspace.id);
   const me = members.find((m) => m.id === userId);
+  if (!canOpenSettingsSection(me?.role, key)) forbidden();
   const link = (href: string, label: string) => (
     <div>
       <Button asChild variant="outline">

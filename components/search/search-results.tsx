@@ -19,7 +19,22 @@ const rowClass =
   "flex min-w-0 items-center gap-2 rounded-(--r-sm) px-2 py-1.5 text-(length:--fs-base) text-(--text) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)";
 const metaClass = "shrink-0 text-(length:--fs-sm) text-(--text-3)";
 
-function Rows({ kind, results, wsSlug, q, max }: { kind: Kind; results: SearchResults; wsSlug: string; q: string; max?: number }) {
+function Rows({
+  kind,
+  results,
+  wsSlug,
+  q,
+  max,
+  canOpenPeople,
+}: {
+  kind: Kind;
+  results: SearchResults;
+  wsSlug: string;
+  q: string;
+  max?: number;
+  // 게스트는 구성원 화면이 403이라 사람 항목을 링크 없이 보인다
+  canOpenPeople: boolean;
+}) {
   const rows = (() => {
     switch (kind) {
       case "tasks":
@@ -48,18 +63,29 @@ function Rows({ kind, results, wsSlug, q, max }: { kind: Kind; results: SearchRe
           </Link>
         ));
       case "people":
-        return results.people.slice(0, max).map((m) => (
-          <Link key={m.id} href={`/${wsSlug}/members/${m.id}`} className={rowClass}>
-            <MemberAvatar name={m.name} color={m.color} size={22} />
-            <span className="min-w-0 shrink truncate">
-              <Highlight text={m.name} q={q} />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-(length:--fs-sm) text-(--text-3)">
-              <Highlight text={m.email} q={q} />
-            </span>
-            <span className={metaClass}>{ROLE_LABELS[m.role]}</span>
-          </Link>
-        ));
+        return results.people.slice(0, max).map((m) => {
+          const body = (
+            <>
+              <MemberAvatar name={m.name} color={m.color} size={22} />
+              <span className="min-w-0 shrink truncate">
+                <Highlight text={m.name} q={q} />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-(length:--fs-sm) text-(--text-3)">
+                <Highlight text={m.email} q={q} />
+              </span>
+              <span className={metaClass}>{ROLE_LABELS[m.role]}</span>
+            </>
+          );
+          return canOpenPeople ? (
+            <Link key={m.id} href={`/${wsSlug}/members/${m.id}`} className={rowClass}>
+              {body}
+            </Link>
+          ) : (
+            <div key={m.id} className="flex min-w-0 items-center gap-2 px-2 py-1.5 text-(length:--fs-base) text-(--text)">
+              {body}
+            </div>
+          );
+        });
       case "files":
         return results.files.slice(0, max).map((f) => (
           <Link
@@ -103,12 +129,14 @@ export function SearchResultsView({
   tab,
   results,
   limit,
+  canOpenPeople,
 }: {
   wsSlug: string;
   q: string;
   tab: SearchScope;
   results: SearchResults;
   limit: number;
+  canOpenPeople: boolean;
 }) {
   const count = (k: SearchScope) => (k === "all" ? KINDS.reduce((n, kk) => n + results[kk].length, 0) : results[k].length);
   // shortcut: 개수는 종류마다 limit개에서 잘린다. 정확한 총계가 필요해지면 count 쿼리를 따로 둔다
@@ -166,13 +194,13 @@ export function SearchResultsView({
                     </Link>
                   )}
                 </div>
-                <Rows kind={k} results={results} wsSlug={wsSlug} q={q} max={SECTION_SIZE} />
+                <Rows kind={k} results={results} wsSlug={wsSlug} q={q} max={SECTION_SIZE} canOpenPeople={canOpenPeople} />
               </section>
             ))}
           </div>
         ) : (
           <div className="px-(--gutter)">
-            <Rows kind={tab} results={results} wsSlug={wsSlug} q={q} />
+            <Rows kind={tab} results={results} wsSlug={wsSlug} q={q} canOpenPeople={canOpenPeople} />
           </div>
         )}
       </div>

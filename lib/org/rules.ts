@@ -1,6 +1,7 @@
 // 조직 화면 입력 규칙. 초대 이메일 파싱, 역할 변경 가능 범위, 알림 설정 키를 클라이언트와 Server Action이 함께 쓴다
 import { EMAIL_RE } from "@/lib/auth/rules";
 import type { Enums } from "@/lib/database.types";
+import type { SettingsSection } from "@/lib/i18n/labels";
 
 export type Role = Enums<"ws_role">;
 
@@ -35,6 +36,20 @@ export function assignableRoles(actor: Role | null, target: Role, isSelf: boolea
 
 export function isAdminRole(role: Role | null | undefined) {
   return role === "owner" || role === "admin";
+}
+
+// 역할 때문에 막는(403) 화면 판정. 볼 수 없는 데이터는 이 판정과 별개로 404로 숨긴다.
+// 게스트는 구성원·팀·역할과 권한 화면을 열 수 없다. 소속이 아니면(null) 모두 막는다
+export function canOpenOrgScreens(role: Role | null | undefined) {
+  return role != null && role !== "guest";
+}
+
+// 게스트가 열 수 없는 설정 섹션. 위 조직 화면으로 가는 섹션과 같은 범위다.
+// 관리자 전용 섹션은 없다. 일반(워크스페이스)은 소유자·관리자가 아니면 화면 안에서 읽기 전용으로 보인다
+const GUEST_BLOCKED_SECTIONS: readonly SettingsSection[] = ["members", "teams", "permissions"];
+
+export function canOpenSettingsSection(role: Role | null | undefined, section: SettingsSection) {
+  return canOpenOrgScreens(role) || (role === "guest" && !GUEST_BLOCKED_SECTIONS.includes(section));
 }
 
 // 역할별 권한 표(spec R8, DB 판정과 같은 내용). 값이 문자열이면 조건부로 가능하다는 설명이다.

@@ -1,6 +1,6 @@
 // 구성원 프로필. 사용자 id로 이 워크스페이스의 구성원을 찾고(없으면 404) 프로필·stat·담당 작업·최근 활동을 보인다
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { forbidden, notFound } from "next/navigation";
 import { CountUp } from "@/components/home/parts";
 import { MemberProfileBody } from "@/components/org/member-profile";
 import { MemberAvatar } from "@/components/shell/member-avatar";
@@ -8,7 +8,7 @@ import { selectActivities } from "@/lib/activity/queries";
 import { getMember, getWorkspace } from "@/lib/data/workspace";
 import { MEMBER_STATUS_LABELS, ROLE_LABELS } from "@/lib/i18n/labels";
 import { orgErrorMessage } from "@/lib/org/errors";
-import { getMemberTasks, getOrgMembers, getTeams } from "@/lib/org/queries";
+import { canOpenOrg, getMemberTasks, getOrgMembers, getTeams } from "@/lib/org/queries";
 import { createClient } from "@/lib/supabase/server";
 import { dueBucket } from "@/lib/tasks/view";
 
@@ -16,6 +16,8 @@ type Params = Promise<{ ws: string; id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { ws, id } = await params;
+  // 403 응답의 제목에 구성원 이름이 실리지 않게 역할부터 본다
+  if (!(await canOpenOrg(ws))) return {};
   const member = await getMember(ws, id);
   return member ? { title: member.profiles?.name || "구성원" } : {};
 }
@@ -34,7 +36,10 @@ function timeIn(tz: string, now: Date) {
 export default async function MemberPage({ params }: { params: Params }) {
   const { ws, id } = await params;
   const [workspace, found] = await Promise.all([getWorkspace(ws), getMember(ws, id)]);
-  if (!workspace || !found) notFound();
+  // 워크스페이스 404 → 역할 403 → 구성원 404 순서로 본다. 게스트에게 사용자 id의 존재를 드러내지 않는다
+  if (!workspace) notFound();
+  if (!(await canOpenOrg(ws))) forbidden();
+  if (!found) notFound();
 
   const supabase = await createClient();
   const [members, teams, tasks, activity] = await Promise.all([

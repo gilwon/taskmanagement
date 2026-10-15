@@ -51,7 +51,7 @@ import { StatusIcon } from "@/components/tasks/parts";
 import type { ShellData } from "@/lib/data/workspace";
 import { FILE_TYPE_LABELS, NAV_LABELS, ROLE_LABELS, SEARCH_TAB_LABELS } from "@/lib/i18n/labels";
 import { getRecentSearches, saveRecentSearch, searchWorkspaceAction } from "@/lib/search/actions";
-import { isAdminRole } from "@/lib/org/rules";
+import { canOpenOrgScreens, isAdminRole } from "@/lib/org/rules";
 import { normalizeQuery } from "@/lib/search/text";
 import { SEARCH_SCOPES, type SearchResults, type SearchScope } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
@@ -155,6 +155,8 @@ export function CommandPalette({
   const ws = data.workspace.slug;
   // 게스트는 프로젝트를 만들 수 없다
   const canCreateProject = data.me.role !== null && data.me.role !== "guest";
+  // 게스트는 구성원 화면이 403이라 구성원 이동과 사람 검색 결과를 보이지 않는다
+  const showOrgLinks = canOpenOrgScreens(data.me.role);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState<"root" | "workspaces" | "overdue">("root");
   // 기한 지난 작업. null이면 읽는 중
@@ -206,8 +208,9 @@ export function CommandPalette({
         if (!alive) return;
         setSearching(false);
         if (r.ok) {
-          setResults(r.data);
-          if (mode === "search") setSelected(firstValue(r.data));
+          const found = showOrgLinks ? r.data : { ...r.data, people: [] };
+          setResults(found);
+          if (mode === "search") setSelected(firstValue(found));
           setSearchError(null);
         } else {
           setResults(EMPTY);
@@ -219,7 +222,7 @@ export function CommandPalette({
       alive = false;
       clearTimeout(timer);
     };
-  }, [wantSearch, q, searchScope, mode, data.workspace.id]);
+  }, [wantSearch, q, searchScope, mode, data.workspace.id, showOrgLinks]);
   const shown = wantSearch ? results : EMPTY;
   const busy = wantSearch && searching;
 
@@ -469,7 +472,7 @@ export function CommandPalette({
                 )}
 
                 <CommandGroup heading="이동" className={groupClass}>
-                  {nav.map((n) => (
+                  {nav.filter((n) => showOrgLinks || n.path !== "members").map((n) => (
                     <Item
                       key={n.path}
                       value={`${n.label}(으)로 이동`}

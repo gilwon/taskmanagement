@@ -1,11 +1,18 @@
 // 조직 화면(구성원·팀·설정·초대) 서버 조회. 범위는 RLS가 자르고, 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다
 import "server-only";
 import { cache } from "react";
+import { getMember, requireUserId } from "@/lib/data/workspace";
 import type { Enums } from "@/lib/database.types";
 import { NAMELESS_MEMBER_LABEL } from "@/lib/i18n/labels";
 import { orgErrorMessage } from "@/lib/org/errors";
-import { NOTIF_KEYS } from "@/lib/org/rules";
+import { NOTIF_KEYS, canOpenOrgScreens } from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
+
+// 내 역할로 조직 화면(구성원·팀·역할과 권한)을 열 수 있는지. 페이지는 false면 forbidden()을 부른다
+export async function canOpenOrg(ws: string) {
+  const me = await getMember(ws, await requireUserId());
+  return canOpenOrgScreens(me?.role);
+}
 
 function fail(what: string, error: { code?: string; message: string }): never {
   console.error(`[${what}]`, error.code, error.message);

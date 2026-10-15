@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/shell/empty-state";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { NAV_LABELS } from "@/lib/i18n/labels";
+import { canOpenOrg } from "@/lib/org/queries";
 import { getRecentSearches } from "@/lib/search/actions";
 import { searchWorkspace } from "@/lib/search/queries";
 import { normalizeQuery } from "@/lib/search/text";
@@ -28,9 +29,10 @@ export default async function SearchPage({ params, searchParams }: Props) {
   const tab = isSearchScope(sp.tab) ? sp.tab : "all";
 
   // 탭 개수를 한 번에 세려고 탭과 상관없이 전 종류를 최대 개수로 읽는다
-  const [recent, results] = await Promise.all([
+  const [recent, results, canOpenPeople] = await Promise.all([
     getRecentSearches(workspace.id),
     q ? searchWorkspace(workspace.id, q, "all", SEARCH_LIMIT_MAX) : null,
+    canOpenOrg(ws),
   ]);
   if (!recent.ok) throw new Error(recent.error);
 
@@ -40,7 +42,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
       <div className="flex min-w-0 flex-col gap-(--s-4)">
         <SearchForm key={q} workspace={{ id: workspace.id, slug: workspace.slug }} q={q} tab={tab} recent={recent.data} />
         {results ? (
-          <SearchResultsView wsSlug={workspace.slug} q={q} tab={tab} results={results} limit={SEARCH_LIMIT_MAX} />
+          <SearchResultsView wsSlug={workspace.slug} q={q} tab={tab} results={results} limit={SEARCH_LIMIT_MAX} canOpenPeople={canOpenPeople} />
         ) : (
           <EmptyState icon={Search} title="검색어를 입력하세요" description="작업·프로젝트·사람·파일·댓글을 찾습니다." />
         )}

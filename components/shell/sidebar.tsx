@@ -54,7 +54,7 @@ import { ProjectIcon, ProjectStatusDot } from "@/components/shell/project-icon";
 import { announce } from "@/components/tasks/views/shared";
 import { useTaskDrag } from "@/components/tasks/views/use-drag";
 import { moveId } from "@/lib/data/project-order";
-import { isAdminRole } from "@/lib/org/rules";
+import { canOpenOrgScreens, isAdminRole } from "@/lib/org/rules";
 import { setProjectFavorite } from "@/lib/projects/actions";
 import type { ShellData, ShellProject } from "@/lib/data/workspace";
 import { NAV_LABELS, PROJECT_TAB_LABELS, colorHex } from "@/lib/i18n/labels";
@@ -235,7 +235,7 @@ function ProjectItem({
             aria-controls={subId}
             aria-label={`${project.name} 하위 메뉴`}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex size-5 shrink-0 items-center justify-center rounded-(--r-xs) text-(--text-3) outline-none hover:bg-(--surface-3) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
+            className="relative inline-flex size-5 shrink-0 items-center justify-center rounded-(--r-xs) text-(--text-3) outline-none after:absolute after:-inset-0.5 hover:bg-(--surface-3) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
           >
             <ChevronRight
               size={12}
@@ -454,7 +454,10 @@ export function Sidebar({
             <NavItem href={p("tasks")} icon={ListChecks} label={NAV_LABELS.tasks} onNavigate={onNavigate} />
             <NavItem href={p("calendar")} icon={Calendar} label={NAV_LABELS.calendar} onNavigate={onNavigate} />
             <NavItem href={p("timeline")} icon={ChartGantt} label={NAV_LABELS.timeline} onNavigate={onNavigate} />
-            <NavItem href={p("members")} icon={Users} label={NAV_LABELS.members} onNavigate={onNavigate} />
+            {/* 게스트는 구성원·팀 화면이 403이라 링크를 숨긴다 */}
+            {canOpenOrgScreens(data.me.role) && (
+              <NavItem href={p("members")} icon={Users} label={NAV_LABELS.members} onNavigate={onNavigate} />
+            )}
             <NavItem href={p("activity")} icon={Activity} label={NAV_LABELS.activity} onNavigate={onNavigate} />
           </ul>
         </section>
@@ -497,13 +500,14 @@ export function Sidebar({
           </ul>
         </section>
 
+        {canOpenOrgScreens(data.me.role) && (
         <section aria-label={NAV_LABELS.teams}>
           <SectionTitle action={canCreateTeam && <AddButton label={NAV_LABELS.newTeam} onClick={() => setTeamOpen(true)} />}>
             <Link
               href={p("teams")}
               aria-current={pathname === p("teams") ? "page" : undefined}
               onClick={onNavigate}
-              className="rounded-(--r-xs) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent) aria-[current=page]:text-(--text)"
+              className="relative rounded-(--r-xs) outline-none after:absolute after:-inset-x-2 after:-inset-y-[5px] hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent) aria-[current=page]:text-(--text)"
             >
               {NAV_LABELS.teams}
             </Link>
@@ -530,6 +534,7 @@ export function Sidebar({
             <TeamDialog key={String(teamOpen)} workspace={data.workspace} open={teamOpen} onOpenChange={setTeamOpen} />
           )}
         </section>
+        )}
       </nav>
 
       <div className="shrink-0 space-y-px border-t border-(--border) px-2 py-2">
