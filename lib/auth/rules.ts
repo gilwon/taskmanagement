@@ -14,18 +14,27 @@ export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const RECOVERY_WINDOW_SEC = 10 * 60;
 
 // 재설정 링크 세션인지 판단한다. 로컬 GoTrue에서 PKCE code 교환 뒤 amr은 [{ method: "recovery", timestamp }]이고
-// 토큰을 갱신해도 그대로 남으므로 timestamp로 유효 시간을 제한한다. 일반 로그인은 method가 "password"다
+// 토큰을 갱신해도 그대로 남으므로 timestamp로 유효 시간을 제한한다. 일반 로그인은 method가 "password"다.
+// 메일의 token_hash 링크(verifyOtp)로 만든 세션은 amr이 "otp"라 가입 확인 세션과 구별되지 않는다.
+// 그래서 "otp"는 Auth 서버 값인 user.recovery_sent_at(재설정 메일을 보낸 시각)도 유효 시간 안일 때만 인정한다
 export function isRecoverySession(
   claims: { amr?: ({ method: string; timestamp: number } | string)[] } | null | undefined,
+  recoverySentAt: string | null | undefined,
   nowSec = Math.floor(Date.now() / 1000),
 ) {
+  const within = (sec: number) => nowSec - sec >= 0 && nowSec - sec <= RECOVERY_WINDOW_SEC;
+  const sentSec = recoverySentAt ? Math.floor(Date.parse(recoverySentAt) / 1000) : NaN;
   return (claims?.amr ?? []).some(
     (entry) =>
       typeof entry === "object" &&
-      entry.method === "recovery" &&
-      nowSec - entry.timestamp >= 0 &&
-      nowSec - entry.timestamp <= RECOVERY_WINDOW_SEC,
+      within(entry.timestamp) &&
+      (entry.method === "recovery" || (entry.method === "otp" && within(sentSec))),
   );
+}
+
+// JWT 서명은 유효하지만 Auth 서버에 사용자(지워진 계정)나 세션(끊긴 세션)이 없다는 getUser 오류 코드
+export function isGoneSession(code: string | undefined) {
+  return code === "user_not_found" || code === "session_not_found";
 }
 
 // 워크스페이스 이름에서 URL 후보를 만든다. 영문·숫자 외 문자는 지우고 형식에 맞지 않으면 빈 값이다

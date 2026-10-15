@@ -115,9 +115,9 @@ export async function updatePassword(_prev: ActionState, formData: FormData): Pr
   if (password !== confirm) return fail("confirm", MSG.passwordMismatch);
 
   const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
+  const [{ data }, { data: auth }] = await Promise.all([supabase.auth.getClaims(), supabase.auth.getUser()]);
   // 로그인만으로는 바꿀 수 없다. 재설정 링크로 만든 세션이어야 한다
-  if (!isRecoverySession(data?.claims)) {
+  if (!isRecoverySession(data?.claims, auth.user?.recovery_sent_at)) {
     return fail(undefined, MSG.recoveryExpired);
   }
 

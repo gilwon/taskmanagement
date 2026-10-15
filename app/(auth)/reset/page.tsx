@@ -10,9 +10,9 @@ export const metadata: Metadata = { title: "비밀번호 재설정" };
 
 export default async function ResetPage() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
+  const [{ data }, { data: auth }] = await Promise.all([supabase.auth.getClaims(), supabase.auth.getUser()]);
   // 일반 로그인 세션은 거부한다. /forgot로 보내면 로그인 사용자는 proxy가 /로 다시 보내 안내가 사라지므로 이 자리에서 알린다
-  if (!isRecoverySession(data?.claims)) {
+  if (!isRecoverySession(data?.claims, auth.user?.recovery_sent_at)) {
     return (
       <AuthCard
         title="링크가 만료되었습니다"

@@ -274,7 +274,7 @@ export function OnboardingWizard() {
                     setSlugTouched(true);
                     set({ slug: e.target.value.toLowerCase() });
                   }}
-                  hint={`주소는 /${values.slug || "url"}/home 형태가 됩니다. 영문 소문자·숫자·하이픈만 쓸 수 있습니다.`}
+                  hint={`주소는 /${values.slug || "주소"}/home 형태가 됩니다. 영문 소문자·숫자·하이픈만 쓸 수 있습니다.`}
                   error={errors.slug}
                 />
               </>

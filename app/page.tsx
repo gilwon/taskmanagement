@@ -1,5 +1,6 @@
 // 루트 분기. 비로그인은 /login, 소속 워크스페이스가 있으면 그 홈, 없으면 받은 초대(/invites) 또는 /onboarding으로 보낸다(spec R1)
 import { redirect } from "next/navigation";
+import { isGoneSession } from "@/lib/auth/rules";
 import { createClient } from "@/lib/supabase/server";
 
 const ROLE_RANK = { owner: 0, admin: 1, member: 2, guest: 3 } as const;
@@ -29,6 +30,10 @@ export default async function RootPage() {
     )[0];
 
   if (first) redirect(`/${first.workspaces!.slug}/home`);
+
+  // 소속이 없으면 계정이 지워졌을 수 있다(소속은 계정과 함께 지워진다). getClaims는 JWT 서명만 보므로 Auth 서버에 확인한다
+  const { error: userError } = await supabase.auth.getUser();
+  if (isGoneSession(userError?.code)) redirect("/auth/signout");
 
   // 소속이 없어도 받은 초대가 있으면 온보딩 대신 초대 수락 화면으로 보낸다
   const invites = await supabase.rpc("my_invites");

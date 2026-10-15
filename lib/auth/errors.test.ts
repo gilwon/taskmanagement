@@ -1,7 +1,7 @@
 // 인증·RPC 오류 한국어 변환과 온보딩 입력 규칙을 검증한다
 import { describe, expect, it } from "vitest";
 import { GENERIC_ERROR, authErrorMessage, rpcErrorMessage } from "@/lib/auth/errors";
-import { RECOVERY_WINDOW_SEC, SLUG_RE, isRecoverySession, suggestSlug } from "@/lib/auth/rules";
+import { RECOVERY_WINDOW_SEC, SLUG_RE, isGoneSession, isRecoverySession, suggestSlug } from "@/lib/auth/rules";
 
 describe("authErrorMessage", () => {
   it("아는 코드는 한국어 안내와 칸을 돌려준다", () => {
@@ -59,15 +59,33 @@ describe("isRecoverySession", () => {
   const now = 1_800_000_000;
 
   it("재설정 링크로 만든 세션은 유효 시간 안에서만 통과한다", () => {
-    expect(isRecoverySession({ amr: [{ method: "recovery", timestamp: now - 60 }] }, now)).toBe(true);
-    expect(isRecoverySession({ amr: [{ method: "recovery", timestamp: now - RECOVERY_WINDOW_SEC - 1 }] }, now)).toBe(false);
+    expect(isRecoverySession({ amr: [{ method: "recovery", timestamp: now - 60 }] }, null, now)).toBe(true);
+    expect(isRecoverySession({ amr: [{ method: "recovery", timestamp: now - RECOVERY_WINDOW_SEC - 1 }] }, null, now)).toBe(false);
   });
 
   it("일반 로그인·가입 확인 세션과 클레임 없음은 거부한다", () => {
-    expect(isRecoverySession({ amr: [{ method: "password", timestamp: now }] }, now)).toBe(false);
-    expect(isRecoverySession({ amr: [{ method: "email/signup", timestamp: now }] }, now)).toBe(false);
-    expect(isRecoverySession({ amr: [{ method: "mfa/recovery_code", timestamp: now }] }, now)).toBe(false);
-    expect(isRecoverySession({ amr: ["recovery"] }, now)).toBe(false);
-    expect(isRecoverySession(null, now)).toBe(false);
+    expect(isRecoverySession({ amr: [{ method: "password", timestamp: now }] }, null, now)).toBe(false);
+    expect(isRecoverySession({ amr: [{ method: "email/signup", timestamp: now }] }, null, now)).toBe(false);
+    expect(isRecoverySession({ amr: [{ method: "mfa/recovery_code", timestamp: now }] }, null, now)).toBe(false);
+    expect(isRecoverySession({ amr: ["recovery"] }, null, now)).toBe(false);
+    expect(isRecoverySession(null, null, now)).toBe(false);
+  });
+
+  // token_hash 링크 세션(amr otp)은 재설정 메일을 보낸 시각이 유효 시간 안일 때만 통과한다
+  it("otp 세션은 최근 재설정 메일이 있을 때만 통과한다", () => {
+    const otp = { amr: [{ method: "otp", timestamp: now - 30 }] };
+    const sentAt = (sec: number) => new Date(sec * 1000).toISOString();
+    expect(isRecoverySession(otp, sentAt(now - 60), now)).toBe(true);
+    expect(isRecoverySession(otp, null, now)).toBe(false);
+    expect(isRecoverySession(otp, sentAt(now - RECOVERY_WINDOW_SEC - 1), now)).toBe(false);
+  });
+});
+
+describe("isGoneSession", () => {
+  it("사용자·세션이 사라진 오류만 참이다", () => {
+    expect(isGoneSession("user_not_found")).toBe(true);
+    expect(isGoneSession("session_not_found")).toBe(true);
+    expect(isGoneSession("bad_jwt")).toBe(false);
+    expect(isGoneSession(undefined)).toBe(false);
   });
 });

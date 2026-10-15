@@ -250,6 +250,20 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
+# 앱이 보내는 인증 메일을 한국어로 바꾼다. 가입 확인(signUp·resend), 비밀번호 재설정(resetPasswordForEmail), 재인증 코드(reauthenticate)만 쓴다.
+# 초대는 앱 자체 테이블로 하고 매직 링크·이메일 변경은 쓰지 않아 기본 템플릿으로 둔다
+[auth.email.template.confirmation]
+subject = "[작업 공간] 이메일 주소를 확인해 주세요"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "[작업 공간] 비밀번호 재설정 안내"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.reauthentication]
+subject = "[작업 공간] 비밀번호 변경 인증 코드"
+content_path = "./supabase/templates/reauthentication.html"
+
 # 주석을 해제하면 알림 이메일 템플릿을 사용자 지정한다.
 # [auth.email.notification.password_changed]
 # enabled = true
