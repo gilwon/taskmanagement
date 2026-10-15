@@ -376,3 +376,9 @@ export const NOTIFICATION_GROUP_LABELS = {
 // 알림 화면 탭(전체·읽지 않음)과 수신함 탭(전체 + 알림 종류)
 export const NOTIFICATION_FILTER_LABELS = { all: "전체", unread: "읽지 않음" } as const;
 export const INBOX_TAB_LABELS = { all: "전체", ...NOTIFICATION_TYPE_LABELS } as const;
+
+// 파일 형식 필터의 모든 형식
+export const FILE_TYPE_ALL_LABEL = "전체";
+
+// 반응 툴팁 등에서 나 자신을 가리키는 이름
+export const ME_LABEL = "나";

@@ -24,7 +24,11 @@ export function filterMentionCandidates<T extends MentionMember>(members: T[], q
 
 export type MentionSegment = { text: string; memberId?: string };
 
-// 본문을 일반 글과 멘션 조각으로 나눈다. @ 앞은 줄 처음이나 공백이어야 하고, 같은 자리에서는 긴 이름을 먼저 맞춘다(김지 < 김지윤).
+// 이름 바로 뒤에 오면 이름의 일부로 보는 글자. 라틴 문자·숫자·밑줄(@Ann이 @Annabel에 걸리지 않게). 한글 조사(@김지윤님께)는 허용한다
+const NAME_CONTINUES = /[A-Za-z0-9_]/;
+
+// 본문을 일반 글과 멘션 조각으로 나눈다. @ 앞은 줄 처음이나 공백이어야 하고, 같은 자리에서는 긴 이름을 먼저 맞추며(김지 < 김지윤)
+// 이름 바로 뒤가 NAME_CONTINUES면 그 이름으로 보지 않는다.
 // shortcut: 이름으로만 찾으므로 구성원이 이름을 바꾸면 옛 댓글의 멘션은 강조되지 않는다. 댓글에 멘션 id를 저장하게 되면 그 값으로 바꾼다
 export function splitMentions(text: string, members: MentionMember[]): MentionSegment[] {
   const names = members.filter((m) => m.name).sort((a, b) => b.name.length - a.name.length);
@@ -33,7 +37,10 @@ export function splitMentions(text: string, members: MentionMember[]): MentionSe
   let i = 0;
   while (i < text.length) {
     if (text[i] === "@" && (i === 0 || /\s/.test(text[i - 1]))) {
-      const hit = names.find((m) => text.startsWith(m.name, i + 1));
+      const hit = names.find((m) => {
+        const end = i + 1 + m.name.length;
+        return text.startsWith(m.name, i + 1) && !NAME_CONTINUES.test(text[end] ?? "");
+      });
       if (hit) {
         if (buf) out.push({ text: buf });
         buf = "";

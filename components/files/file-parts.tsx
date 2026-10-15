@@ -27,7 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { FilesCtl, Transfer } from "@/components/files/use-files";
+import type { Transfer } from "@/components/files/upload-store";
+import type { FilesCtl } from "@/components/files/use-files";
 import { UPLOAD_UNFINISHED } from "@/lib/files/errors";
 import { formatRelative } from "@/lib/format/date";
 import { ACCEPT_ATTR, ALLOWED_EXT_LABEL, formatSize, MAX_FILE_LABEL, type FileType } from "@/lib/files/mime";
@@ -57,18 +58,30 @@ const TYPE_TONES: Record<FileType, string> = {
   other: "text-(--text-3)",
 };
 
-const MENU_CLASS = "min-w-44 rounded-(--r) bg-(--surface) text-(--text) shadow-(--shadow-pop) ring-0";
-const ICON = { size: 14, strokeWidth: 1.8, "aria-hidden": true } as const;
+export const MENU_CLASS = "min-w-44 rounded-(--r) bg-(--surface) text-(--text) shadow-(--shadow-pop) ring-0";
+export const ICON = { size: 14, strokeWidth: 1.8, "aria-hidden": true } as const;
 
 export function FileTypeIcon({ type, size = 16, className }: { type: FileType; size?: number; className?: string }) {
   const Icon = TYPE_ICONS[type];
   return <Icon aria-hidden size={size} strokeWidth={1.8} className={cn("shrink-0", TYPE_TONES[type], className)} />;
 }
 
-// 완료가 아닌 행의 상태. 이 브라우저의 전송이면 진행률, 실패면 사유, 그 밖의 pending은 미완료 안내
-export function FileStatus({ item, transfer }: { item: FileItem; transfer?: Transfer }) {
-  if (item.status === "ready") return null;
-  if (transfer && !transfer.error && item.status === "pending") {
+// 행의 업로드 단계. active는 이 탭에서 전송 중, stalled는 이 탭 저장소에 없는 내 pending(중단됨),
+// remote는 남이 올리는 중인 pending
+type Phase = "ready" | "active" | "failed" | "stalled" | "remote";
+
+function phaseOf(item: FileItem, transfer: Transfer | undefined, meId: string): Phase {
+  if (item.status === "ready") return "ready";
+  if (item.status === "failed") return "failed";
+  if (transfer && !transfer.error && !transfer.done) return "active";
+  return item.uploaded_by === meId ? "stalled" : "remote";
+}
+
+// 완료가 아닌 행의 상태. 전송 중이면 진행률, 실패면 사유, 중단된 내 업로드·남의 업로드는 안내
+export function FileStatus({ item, transfer, meId }: { item: FileItem; transfer?: Transfer; meId: string }) {
+  const phase = phaseOf(item, transfer, meId);
+  if (phase === "ready") return null;
+  if (phase === "active" && transfer) {
     return (
       <div className="flex min-w-0 items-center gap-2">
         <div
@@ -85,22 +98,27 @@ export function FileStatus({ item, transfer }: { item: FileItem; transfer?: Tran
       </div>
     );
   }
-  if (item.status === "failed" || transfer?.error) {
+  if (phase === "failed") {
+    const reason = transfer?.error ?? UPLOAD_UNFINISHED;
     return (
-      <p className="truncate text-(length:--fs-xs) text-(--red)" title={transfer?.error ?? UPLOAD_UNFINISHED}>
-        {FILE_STATUS_LABELS.failed} · {transfer?.error ?? UPLOAD_UNFINISHED}
+      <p className={cn("truncate text-(length:--fs-xs)", transfer?.canceled ? "text-(--text-3)" : "text-(--red)")} title={reason}>
+        {transfer?.canceled ? reason : `${FILE_STATUS_LABELS.failed} · ${reason}`}
       </p>
     );
+  }
+  if (phase === "stalled") {
+    return <p className="truncate text-(length:--fs-xs) text-(--red)">업로드 중단됨 · 다시 시도하거나 삭제해 주세요</p>;
   }
   return <p className="truncate text-(length:--fs-xs) text-(--text-3)">{FILE_STATUS_LABELS.pending} · 아직 완료되지 않았습니다</p>;
 }
 
-// 행 동작. 업로드 중이면 취소, 실패(또는 끊긴 내 업로드)면 재시도, 완료면 ⋯ 메뉴의 다운로드·작업 연결
+// 행 동작. 전송 중이면 취소(완료 확인 대기 중에는 숨김), 실패·중단된 행은 재시도, ⋯ 메뉴의 다운로드·작업 연결·삭제
 export function FileActions({
   item,
   transfer,
   ctl,
   canEdit,
+  canManage,
   meId,
   onLinkRequest,
 }: {
@@ -108,20 +126,21 @@ export function FileActions({
   transfer?: Transfer;
   ctl: FilesCtl;
   canEdit: boolean;
+  // 남이 올리다 실패한 행의 재시도(retry_file은 업로더 본인 또는 can_manage_project만 받는다)
+  canManage: boolean;
   meId: string;
   // 프로젝트 파일 화면에서만 준다(작업 고르기 창을 연다)
   onLinkRequest?: (item: FileItem) => void;
 }) {
-  const uploading = !!transfer && !transfer.error && item.status === "pending";
-  const ready = item.status === "ready";
-  // 남이 올리는 중인 pending 행은 재시도하지 않는다
+  const phase = phaseOf(item, transfer, meId);
+  const ready = phase === "ready";
   const canRetry =
-    canEdit && !uploading && (item.status === "failed" || (item.status === "pending" && item.uploaded_by === meId));
-  const hasMenu = ready || (canEdit && !uploading);
+    canEdit && (phase === "stalled" || (phase === "failed" && (item.uploaded_by === meId || canManage)));
+  const hasMenu = ready || (canEdit && phase !== "active");
 
   return (
     <div className="flex shrink-0 items-center gap-0.5">
-      {uploading && (
+      {phase === "active" && transfer && transfer.pct < 100 && (
         <Button variant="ghost" size="icon-xs" aria-label={`${item.name} 업로드 취소`} onClick={() => ctl.cancel(item.id)}>
           <X {...ICON} />
         </Button>
@@ -262,6 +281,7 @@ export function FileListRow({
   transfer,
   ctl,
   canEdit,
+  canManage,
   meId,
   now,
   showTask = false,
@@ -271,6 +291,7 @@ export function FileListRow({
   transfer?: Transfer;
   ctl: FilesCtl;
   canEdit: boolean;
+  canManage: boolean;
   meId: string;
   now: Date;
   showTask?: boolean;
@@ -293,13 +314,18 @@ export function FileListRow({
             </span>
           )}
         </div>
-        {item.status === "ready" ? <FileMeta item={item} now={now} /> : <FileStatus item={item} transfer={transfer} />}
+        {item.status === "ready" ? (
+          <FileMeta item={item} now={now} />
+        ) : (
+          <FileStatus item={item} transfer={transfer} meId={meId} />
+        )}
       </div>
       <FileActions
         item={item}
         transfer={transfer}
         ctl={ctl}
         canEdit={canEdit}
+        canManage={canManage}
         meId={meId}
         onLinkRequest={onLinkRequest}
       />

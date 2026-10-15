@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MemberAvatar } from "@/components/shell/member-avatar";
+import { announce } from "@/components/tasks/views/shared";
 import { formatRelative } from "@/lib/format/date";
-import { NOTIFICATION_TYPE_LABELS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { DELETED_TASK_LABEL, NOTIFICATION_TYPE_LABELS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
 import { markAllNotificationsRead, markNotifications } from "@/lib/notifications/actions";
 import type { NotificationItem } from "@/lib/notifications/queries";
 import { taskErrorMessage } from "@/lib/tasks/errors";
@@ -16,11 +17,6 @@ export function notificationHref(ws: string, n: NotificationItem) {
   if (n.task && !n.task.deleted) return `/${ws}/task/${n.task.key}`;
   if (!n.task && n.project) return `/${ws}/projects/${n.project.key}/overview`;
   return null;
-}
-
-function announce(text: string) {
-  const live = document.getElementById("sr-live");
-  if (live) live.textContent = text;
 }
 
 // 서버 목록에 화면의 읽음 상태를 덧씌운다. 서버가 새 목록을 주면(refresh) 덧씌운 값을 버린다
@@ -96,7 +92,7 @@ export function NotificationLine({
         </p>
         {(n.task || n.project) && (
           <p className="truncate text-(length:--fs-sm) font-medium text-(--text)">
-            {n.task ? (n.task.deleted ? "삭제된 작업" : n.task.title) : n.project?.name}
+            {n.task ? (n.task.deleted ? DELETED_TASK_LABEL : n.task.title) : n.project?.name}
             {n.task && <span className="ml-1.5 font-mono text-(length:--fs-xs) font-normal text-(--text-3)">{n.task.key}</span>}
           </p>
         )}

@@ -2,6 +2,7 @@
 // 작업 댓글 탭. 목록(작성자·상대 시간·수정됨·반응)과 입력창. 본인 댓글 수정·삭제, 관리 권한자의 삭제, 실행 취소 토스트.
 // 보기 권한만 있으면 입력창·반응 버튼을 숨긴다(실제 거부는 RLS·RPC). 댓글 수가 바뀌면 작업 store의 개수도 맞춘다
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MessageSquare, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { CommentComposer } from "@/components/comments/comment-composer";
 import { Reactions } from "@/components/comments/reactions";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
+import { announce } from "@/components/tasks/views/shared";
 import {
   addComment,
   deleteComment,
@@ -41,17 +43,13 @@ async function call<T>(action: () => Promise<ActionResult<T>>): Promise<ActionRe
   }
 }
 
-function announce(text: string) {
-  const live = document.getElementById("sr-live");
-  if (live) live.textContent = text;
-}
-
 // 수정 여부. shortcut: updated_at은 소프트 삭제·복원에도 바뀌어 복원한 댓글도 수정됨으로 보인다. 수정 시각 컬럼이 생기면 그것으로 바꾼다
 const edited = (c: CommentItem) => new Date(c.updated_at).getTime() - new Date(c.created_at).getTime() > 1000;
 
 const byCreated = (a: CommentItem, b: CommentItem) => a.created_at.localeCompare(b.created_at);
 
-export function TaskComments({ task }: { task: TaskItem }) {
+// onActivityCount는 이 작업의 활동 전체 개수가 정해지거나 바뀔 때 부른다(드로어 활동 탭 이름)
+export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActivityCount?: (n: number) => void }) {
   const { members, meId } = useTasks();
   const { patchLocal } = useTaskActions();
   const [thread, setThread] = useState<CommentThread | null>(null);
@@ -59,12 +57,14 @@ export function TaskComments({ task }: { task: TaskItem }) {
   const [reload, setReload] = useState(0);
   const [editing, setEditing] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  // 수신함 "답글"로 들어오면(?compose=1) 입력창에 포커스한다. 입력창은 댓글을 읽은 뒤에 그려지므로 autoFocus로 충분하다
+  const compose = useSearchParams().get("compose") === "1";
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const me = byId.get(meId);
 
   useEffect(() => {
     let alive = true;
-    void call(() => loadComments(task.id, task.project.id)).then((r) => {
+    void call(() => loadComments(task.id)).then((r) => {
       if (!alive) return;
       setNow(new Date());
       if (r.ok) {
@@ -75,7 +75,12 @@ export function TaskComments({ task }: { task: TaskItem }) {
     return () => {
       alive = false;
     };
-  }, [task.id, task.project.id, reload]);
+  }, [task.id, reload]);
+
+  const activityCount = thread?.activityCount;
+  useEffect(() => {
+    if (activityCount !== undefined) onActivityCount?.(activityCount);
+  }, [activityCount, onActivityCount]);
 
   const setComments = useCallback(
     (update: (list: CommentItem[]) => CommentItem[]) => setThread((t) => (t ? { ...t, comments: update(t.comments) } : t)),
@@ -118,7 +123,16 @@ export function TaskComments({ task }: { task: TaskItem }) {
       return false;
     }
     setNow(new Date());
-    setComments((list) => [...list, { ...r.data, authorId: meId, authorName: me?.name ?? null, reactions: [] }]);
+    // 댓글 작성은 활동 "댓글을 남겼습니다"를 하나 만든다
+    setThread((t) =>
+      t
+        ? {
+            ...t,
+            activityCount: t.activityCount + 1,
+            comments: [...t.comments, { ...r.data, authorId: meId, authorName: me?.name ?? null, reactions: [] }],
+          }
+        : t,
+    );
     bump(1);
     announce("댓글을 남겼습니다");
     return true;
@@ -260,7 +274,7 @@ export function TaskComments({ task }: { task: TaskItem }) {
         </ul>
       )}
       {canComment ? (
-        <CommentComposer members={members} label="댓글 입력" onSubmit={submit} />
+        <CommentComposer members={members} label="댓글 입력" onSubmit={submit} autoFocus={compose} />
       ) : (
         <p className="rounded-(--r) bg-(--surface-2) px-3 py-2 text-(length:--fs-sm) text-(--text-3)">
           보기 권한만 있어 댓글을 남길 수 없습니다.

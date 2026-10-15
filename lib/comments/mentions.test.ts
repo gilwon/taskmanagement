@@ -63,6 +63,35 @@ describe("splitMentions", () => {
   });
 });
 
+describe("멘션 경계", () => {
+  const people = [
+    { id: "ann", name: "Ann" },
+    { id: "annabel", name: "Annabel" },
+    { id: "kim", name: "김지윤" },
+  ];
+  it("라틴 이름 뒤에 글자가 이어지면 짧은 이름으로 잡지 않는다", () => {
+    expect(mentionIds("@Annabel 확인", people)).toEqual(["annabel"]);
+    expect(mentionIds("@Ann 확인", people)).toEqual(["ann"]);
+    expect(mentionIds("@Annie 확인", people)).toEqual([]);
+    expect(mentionIds("@Ann_x @Ann2", people)).toEqual([]);
+  });
+  it("한글 조사는 허용한다", () => {
+    expect(splitMentions("@김지윤님께 전달", people)).toEqual([
+      { text: "@김지윤", memberId: "kim" },
+      { text: "님께 전달" },
+    ]);
+  });
+  it("문장 끝과 문장부호 앞에서도 잡는다", () => {
+    expect(mentionIds("부탁해요 @Ann", people)).toEqual(["ann"]);
+    expect(mentionIds("부탁해요 @Ann.", people)).toEqual(["ann"]);
+  });
+  it("공백으로 이어진 연속 멘션을 모두 잡는다", () => {
+    expect(mentionIds("@Ann @Annabel @김지윤", people)).toEqual(["ann", "annabel", "kim"]);
+    // 붙여 쓴 두 번째 @는 앞이 공백이 아니라 멘션이 아니다
+    expect(mentionIds("@Ann@Annabel", people)).toEqual(["ann"]);
+  });
+});
+
 describe("mentionIds", () => {
   it("중복 없이 나온 순서대로 id를 돌려준다", () => {
     expect(mentionIds("@김지윤 @Sarah Chen @김지윤", members)).toEqual(["b", "c"]);

@@ -40,6 +40,8 @@ export async function selectActivities(
   filter: ActivityFilter,
   cursor: ActivityCursor | null,
 ): Promise<{ data: ActivityPage; error: null } | { data: null; error: { code?: string; message: string } }> {
+  // 커서는 아래 or 필터 문자열에 그대로 들어가므로 호출부와 상관없이 여기서도 형식을 다시 확인한다
+  if (cursor !== null && !isCursor(cursor)) return { data: null, error: { code: "22P02", message: "invalid cursor" } };
   let q = supabase
     .from("activities")
     .select(

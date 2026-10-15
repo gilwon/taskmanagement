@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Reaction } from "@/lib/comments/queries";
-import { REACTION_EMOJIS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { ME_LABEL, REACTION_EMOJIS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
 import { cn } from "@/lib/utils";
 
 type Emoji = (typeof REACTION_EMOJIS)[number];
@@ -22,12 +22,12 @@ export function Reactions({ reactions, meId, nameOf, canReact, onToggle }: Props
   if (reactions.length === 0 && !canReact) return null;
   const mine = (r: Reaction) => r.userIds.includes(meId);
   const chip =
-    "inline-flex h-6 items-center gap-1 rounded-(--r-full) border px-2 text-(length:--fs-xs) outline-none focus-visible:ring-2 focus-visible:ring-(--accent)";
+    "inline-flex h-(--h-xs) items-center gap-1 rounded-(--r-full) border px-2 text-(length:--fs-xs) outline-none focus-visible:ring-2 focus-visible:ring-(--accent)";
 
   return (
     <div className="flex flex-wrap items-center gap-1">
       {reactions.map((r) => {
-        const names = r.userIds.map((id) => (id === meId ? "나" : (nameOf(id) ?? UNKNOWN_USER_LABEL))).join(", ");
+        const names = r.userIds.map((id) => (id === meId ? ME_LABEL : (nameOf(id) ?? UNKNOWN_USER_LABEL))).join(", ");
         const label = `${r.emoji} 반응 ${r.userIds.length}개: ${names}`;
         return (
           <Tooltip key={r.emoji}>
@@ -81,7 +81,7 @@ export function Reactions({ reactions, meId, nameOf, canReact, onToggle }: Props
                   aria-label={`${emoji} 반응`}
                   onClick={() => onToggle(emoji, !on)}
                   className={cn(
-                    "inline-flex size-8 items-center justify-center rounded-(--r-sm) text-base outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)",
+                    "inline-flex size-(--h-md) items-center justify-center rounded-(--r-sm) text-(length:--fs-lg) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)",
                     on && "bg-(--accent-soft)",
                   )}
                 >

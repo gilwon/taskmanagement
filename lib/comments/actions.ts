@@ -1,7 +1,8 @@
 "use server";
 // 댓글·반응 Server Action과 드로어용 댓글·활동 읽기. 입력을 다시 검증하고 범위는 RLS·RPC가 판정한다. 오류는 한국어 결과로 돌려준다
 import { MSG } from "@/lib/auth/errors";
-import { REACTION_EMOJIS } from "@/lib/i18n/labels";
+import { mentionIds } from "@/lib/comments/mentions";
+import { NAMELESS_MEMBER_LABEL, REACTION_EMOJIS } from "@/lib/i18n/labels";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import type { ActionResult } from "@/lib/tasks/types";
@@ -56,33 +57,81 @@ export type CommentThread = {
   canComment: boolean;
   // 남의 댓글을 지울 수 있는지(full)
   canManage: boolean;
+  // 이 작업의 활동 전체 개수. 드로어 활동 탭 이름에 쓴다
+  activityCount: number;
 };
 
-export async function loadComments(taskId: string, projectId: string): Promise<ActionResult<CommentThread>> {
-  if (!isId(taskId) || !isId(projectId)) return { ok: false, error: INVALID };
+type Session = NonNullable<Awaited<ReturnType<typeof session>>>;
+
+// 작업의 프로젝트·워크스페이스. 클라이언트가 보낸 값은 믿지 않고 RLS가 보이는 작업 행에서 읽는다
+async function taskScope(s: Session, taskId: string) {
+  return s.supabase.from("tasks").select("project_id, workspace_id").eq("id", taskId).maybeSingle();
+}
+
+function countActivities(s: Session, taskId: string) {
+  return s.supabase.from("activities").select("id", { count: "exact", head: true }).eq("task_id", taskId);
+}
+
+export async function loadComments(taskId: string): Promise<ActionResult<CommentThread>> {
+  if (!isId(taskId)) return { ok: false, error: INVALID };
   const s = await session();
   if (!s) return { ok: false, error: MSG.sessionExpired };
-  const [comments, canComment, canManage] = await Promise.all([
+  const task = await taskScope(s, taskId);
+  if (task.error) return { ok: false, error: commentError("댓글 읽기", task.error) };
+  if (!task.data) return { ok: false, error: taskErrorMessage({ code: "PGRST116" }) };
+  const projectId = task.data.project_id;
+  const [comments, canComment, canManage, activities] = await Promise.all([
     selectTaskComments(s.supabase, taskId),
     s.supabase.rpc("can_comment_project_rows", { p: projectId }),
     s.supabase.rpc("can_manage_project", { p: projectId }),
+    countActivities(s, taskId),
   ]);
   if (comments.error) return { ok: false, error: commentError("댓글 읽기", comments.error) };
   if (canComment.error) return { ok: false, error: commentError("댓글 권한", canComment.error) };
   if (canManage.error) return { ok: false, error: commentError("댓글 권한", canManage.error) };
-  return { ok: true, data: { comments: comments.data, canComment: !!canComment.data, canManage: !!canManage.data } };
+  if (activities.error) return { ok: false, error: commentError("활동 개수", activities.error) };
+  return {
+    ok: true,
+    data: {
+      comments: comments.data,
+      canComment: !!canComment.data,
+      canManage: !!canManage.data,
+      activityCount: activities.count ?? 0,
+    },
+  };
 }
 
-export async function loadTaskActivities(taskId: string): Promise<ActionResult<TaskActivity[]>> {
+// 최근 활동(상한 있음)과 전체 개수
+export async function loadTaskActivities(
+  taskId: string,
+): Promise<ActionResult<{ rows: TaskActivity[]; total: number }>> {
   if (!isId(taskId)) return { ok: false, error: INVALID };
   const s = await session();
   if (!s) return { ok: false, error: MSG.sessionExpired };
-  const r = await selectTaskActivities(s.supabase, taskId);
+  const [r, count] = await Promise.all([selectTaskActivities(s.supabase, taskId), countActivities(s, taskId)]);
   if (r.error) return { ok: false, error: commentError("작업 활동 읽기", r.error) };
-  return { ok: true, data: r.data };
+  if (count.error) return { ok: false, error: commentError("활동 개수", count.error) };
+  return { ok: true, data: { rows: r.data, total: count.count ?? r.data.length } };
 }
 
 type SavedComment = { id: string; body: string; created_at: string; updated_at: string };
+
+// 본문에 "@이름"(mentions.ts 경계 규칙)으로 실제 들어 있는 구성원만 남긴다. 이름은 워크스페이스 구성원 전체로 맞춰
+// 짧은 이름이 긴 이름의 앞부분에 걸리지 않게 한다. 본문에 없는 id는 조용히 뺀다
+async function verifiedMentions(s: Session, workspaceId: string, body: string, requested: string[]) {
+  if (requested.length === 0) return { data: [] as string[], error: null };
+  const { data, error } = await s.supabase
+    .from("workspace_members")
+    .select("user_id, profiles(name, email)")
+    .eq("workspace_id", workspaceId);
+  if (error) return { data: null, error };
+  const members = data.map((m) => ({
+    id: m.user_id,
+    name: m.profiles?.name || m.profiles?.email || NAMELESS_MEMBER_LABEL,
+  }));
+  const found = new Set(mentionIds(body, members));
+  return { data: [...new Set(requested)].filter((id) => found.has(id)), error: null };
+}
 
 // add_comment가 작성자를 호출자로 고정하고 멘션 대상 중 그 프로젝트를 볼 수 있는 사람에게만 알림을 보낸다
 export async function addComment(taskId: string, body: string, mentions: string[]): Promise<ActionResult<SavedComment>> {
@@ -92,7 +141,16 @@ export async function addComment(taskId: string, body: string, mentions: string[
   }
   const s = await session();
   if (!s) return { ok: false, error: MSG.sessionExpired };
-  const { data, error } = await s.supabase.rpc("add_comment", { p_task: taskId, p_body: text, p_mentions: mentions });
+  const task = await taskScope(s, taskId);
+  if (task.error) return { ok: false, error: commentError("댓글 작성", task.error) };
+  if (!task.data) return { ok: false, error: taskErrorMessage({ code: "PGRST116" }) };
+  const verified = await verifiedMentions(s, task.data.workspace_id, text, mentions);
+  if (verified.error) return { ok: false, error: commentError("멘션 확인", verified.error) };
+  const { data, error } = await s.supabase.rpc("add_comment", {
+    p_task: taskId,
+    p_body: text,
+    p_mentions: verified.data,
+  });
   if (error) return { ok: false, error: commentError("댓글 작성", error) };
   return { ok: true, data: { id: data.id, body: data.body, created_at: data.created_at, updated_at: data.updated_at } };
 }

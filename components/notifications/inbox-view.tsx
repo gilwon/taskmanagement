@@ -122,9 +122,9 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
                 </Button>
               )}
               {href && selected.task && (
-                // 답글은 작업 페이지의 댓글 입력창에서 쓴다
+                // 답글은 작업 페이지의 댓글 입력창에서 쓴다. ?compose=1이면 입력창에 포커스한다(task-comments)
                 <Button asChild size="sm" variant="outline">
-                  <Link href={href}>
+                  <Link href={`${href}?compose=1`}>
                     <MessageSquareReply size={14} strokeWidth={1.8} aria-hidden />
                     답글
                   </Link>

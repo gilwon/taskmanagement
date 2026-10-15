@@ -2,8 +2,20 @@
 // 프로젝트 파일 화면 본문. 검색·형식 필터·정렬·목록/격자 전환, 끌어 놓기·선택 업로드(여러 파일 동시, 진행률), 행 메뉴(다운로드·작업 연결·삭제)
 import { ArrowDownWideNarrow, FolderOpen, ListFilter, Search, SearchX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DropZone, FileActions, FileListRow, FileMeta, FileStatus, FileTypeIcon, UploadButton } from "@/components/files/file-parts";
-import { useFiles, type FilesCtl, type Transfer } from "@/components/files/use-files";
+import {
+  DropZone,
+  FileActions,
+  FileListRow,
+  FileMeta,
+  FileStatus,
+  FileTypeIcon,
+  ICON,
+  MENU_CLASS,
+  UploadButton,
+} from "@/components/files/file-parts";
+import type { Transfer } from "@/components/files/upload-store";
+import { useFiles, type FilesCtl } from "@/components/files/use-files";
+import { TOOLBAR_BTN } from "@/components/tasks/toolbar/task-toolbar";
 import { EmptyState } from "@/components/shell/empty-state";
 import { Button } from "@/components/ui/button";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -19,17 +31,13 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { previewUrls } from "@/lib/files/actions";
 import type { FileType } from "@/lib/files/mime";
 import type { FileItem, LinkableTask } from "@/lib/files/types";
-import { FILE_SORT_LABELS, FILE_TYPE_LABELS, FILE_VIEW_LABELS } from "@/lib/i18n/labels";
+import { FILE_SORT_LABELS, FILE_TYPE_ALL_LABEL, FILE_TYPE_LABELS, FILE_VIEW_LABELS } from "@/lib/i18n/labels";
 import { cn } from "@/lib/utils";
 
 type SortKey = keyof typeof FILE_SORT_LABELS;
 type ViewMode = keyof typeof FILE_VIEW_LABELS;
 type TypeFilter = FileType | "all";
 
-const TOOLBAR_BTN =
-  "h-(--h-sm) gap-1.5 rounded-(--r-sm) px-2 text-(length:--fs-sm) font-normal text-(--text-2) hover:bg-(--surface-2) hover:text-(--text) aria-expanded:bg-(--surface-2)";
-const MENU_CLASS = "min-w-44 rounded-(--r) bg-(--surface) text-(--text) shadow-(--shadow-pop) ring-0";
-const ICON = { size: 14, strokeWidth: 1.8, "aria-hidden": true } as const;
 
 const SORTERS: Record<SortKey, (a: FileItem, b: FileItem) => number> = {
   newest: (a, b) => b.created_at.localeCompare(a.created_at),
@@ -41,6 +49,7 @@ const SORTERS: Record<SortKey, (a: FileItem, b: FileItem) => number> = {
 export function FilesView({
   projectId,
   canEdit,
+  canManage,
   meId,
   nowIso,
   initialFiles,
@@ -48,6 +57,7 @@ export function FilesView({
 }: {
   projectId: string;
   canEdit: boolean;
+  canManage: boolean;
   meId: string;
   nowIso: string;
   initialFiles: FileItem[];
@@ -76,7 +86,7 @@ export function FilesView({
     setLinking(null);
     if (id) setTimeout(() => document.querySelector<HTMLElement>(`[data-file-menu="${id}"]`)?.focus(), 0);
   };
-  const rowProps = { ctl, canEdit, meId, onLinkRequest: setLinking };
+  const rowProps = { ctl, canEdit, canManage, meId, onLinkRequest: setLinking };
 
   return (
     <div className="flex flex-col gap-(--s-3) pt-(--s-3) pb-(--s-6)">
@@ -102,13 +112,13 @@ export function FilesView({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={TOOLBAR_BTN}>
               <ListFilter {...ICON} />
-              형식: {type === "all" ? "전체" : FILE_TYPE_LABELS[type]}
+              형식: {type === "all" ? FILE_TYPE_ALL_LABEL : FILE_TYPE_LABELS[type]}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className={MENU_CLASS}>
             <DropdownMenuLabel>파일 형식</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={type} onValueChange={(v) => setType(v as TypeFilter)}>
-              <DropdownMenuRadioItem value="all">전체</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="all">{FILE_TYPE_ALL_LABEL}</DropdownMenuRadioItem>
               {(Object.keys(FILE_TYPE_LABELS) as FileType[]).map((t) => (
                 <DropdownMenuRadioItem key={t} value={t}>
                   {FILE_TYPE_LABELS[t]}
@@ -210,6 +220,7 @@ function FileCard({
   now,
   ctl,
   canEdit,
+  canManage,
   meId,
   onLinkRequest,
 }: {
@@ -219,6 +230,7 @@ function FileCard({
   now: Date;
   ctl: FilesCtl;
   canEdit: boolean;
+  canManage: boolean;
   meId: string;
   onLinkRequest: (item: FileItem) => void;
 }) {
@@ -243,9 +255,21 @@ function FileCard({
               {item.task.key}
             </p>
           )}
-          {item.status === "ready" ? <FileMeta item={item} now={now} /> : <FileStatus item={item} transfer={transfer} />}
+          {item.status === "ready" ? (
+            <FileMeta item={item} now={now} />
+          ) : (
+            <FileStatus item={item} transfer={transfer} meId={meId} />
+          )}
         </div>
-        <FileActions item={item} transfer={transfer} ctl={ctl} canEdit={canEdit} meId={meId} onLinkRequest={onLinkRequest} />
+        <FileActions
+          item={item}
+          transfer={transfer}
+          ctl={ctl}
+          canEdit={canEdit}
+          canManage={canManage}
+          meId={meId}
+          onLinkRequest={onLinkRequest}
+        />
       </div>
     </li>
   );

@@ -4,7 +4,7 @@
 import { MSG } from "@/lib/auth/errors";
 import { fileErrorMessage } from "@/lib/files/errors";
 import { checkUpload } from "@/lib/files/mime";
-import { FILE_SELECT, selectFiles, toFileItem } from "@/lib/files/queries";
+import { FILE_SELECT, selectFilePerms, selectFiles, toFileItem } from "@/lib/files/queries";
 import type { FileItem, UploadTicket } from "@/lib/files/types";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/tasks/types";
@@ -266,20 +266,20 @@ export async function linkFileTask(fileId: string, taskId: string | null): Promi
   });
 }
 
-// 드로어 첨부 목록. 작업 파일, 편집 권한, 내 id(내 업로드만 재시도 버튼을 보인다)
+// 드로어 첨부 목록. 작업 파일(최신 200건, queries의 shortcut 참고), 편집·관리 권한, 내 id(재시도 버튼 판단)
 export async function listTaskFiles(
   taskId: string,
-): Promise<ActionResult<{ files: FileItem[]; canEdit: boolean; meId: string }>> {
+): Promise<ActionResult<{ files: FileItem[]; canEdit: boolean; canManage: boolean; meId: string }>> {
   return run("작업 첨부 목록", async ({ supabase, uid }) => {
     const tid = uuid(taskId);
     const task = await supabase.from("tasks").select("project_id").eq("id", tid).single();
     if (task.error) return dbErr("작업 첨부 작업", task.error);
-    const [files, canEdit] = await Promise.all([
+    const [files, perms] = await Promise.all([
       selectFiles(supabase, { taskId: tid }),
-      supabase.rpc("can_edit_project", { p: task.data.project_id }),
+      selectFilePerms(supabase, task.data.project_id),
     ]);
     if (files.error) return dbErr("작업 첨부 목록", files.error);
-    if (canEdit.error) return dbErr("작업 첨부 권한", canEdit.error);
-    return ok({ files: files.files, canEdit: canEdit.data === true, meId: uid });
+    if (perms.error) return dbErr("작업 첨부 권한", perms.error);
+    return ok({ files: files.files, canEdit: perms.canEdit, canManage: perms.canManage, meId: uid });
   });
 }

@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/shell/empty-state";
 import { TaskDrawerHost } from "@/components/tasks/drawer";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
 import { useTasks } from "@/components/tasks/task-store";
+import { announce } from "@/components/tasks/views/shared";
 import { loadMoreActivities } from "@/lib/activity/actions";
 import type { ActivityFilter, ActivityKind, ActivityPage } from "@/lib/activity/queries";
 import { ACTIVITY_KIND_LABELS, EVERYONE_LABEL } from "@/lib/i18n/labels";
@@ -74,8 +75,7 @@ function Feed({ initial, projectId, filter, nowIso }: Props) {
     if (!r.ok) return void toast.error(r.error);
     setItems((list) => [...list, ...r.data.items]);
     setNext(r.data.next);
-    const live = document.getElementById("sr-live");
-    if (live) live.textContent = `활동 ${r.data.items.length}건을 더 불러왔습니다`;
+    announce(`활동 ${r.data.items.length}건을 더 불러왔습니다`);
   };
 
   const groups = groupInOrder(items, (a) => dayGroup(a.created_at, now).key);

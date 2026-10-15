@@ -1,4 +1,4 @@
-// 프로젝트 파일 탭. key로 프로젝트를 찾고 없으면 404. 파일 목록·연결할 작업·편집 권한을 서버에서 한 번 읽어 넘긴다
+// 프로젝트 파일 탭. key로 프로젝트를 찾고 없으면 404. 파일 목록·연결할 작업·편집·관리 권한을 서버에서 한 번 읽어 넘긴다
 import { notFound } from "next/navigation";
 import { FilesView } from "@/components/files/files-view";
 import { ProjectHeader } from "@/components/tasks/project-header";
@@ -14,7 +14,7 @@ export default async function ProjectFilesPage({ params }: { params: ProjectPara
   const { ws } = await params;
   const [userId, workspace, project] = await Promise.all([requireUserId(), getWorkspace(ws), loadProject(params)]);
   if (!workspace) notFound();
-  const { files, tasks, canEdit } = await getProjectFilesPage(project.id);
+  const { files, tasks, canEdit, canManage } = await getProjectFilesPage(project.id);
 
   return (
     <>
@@ -28,6 +28,7 @@ export default async function ProjectFilesPage({ params }: { params: ProjectPara
       <FilesView
         projectId={project.id}
         canEdit={canEdit}
+        canManage={canManage}
         meId={userId}
         nowIso={new Date().toISOString()}
         initialFiles={files}

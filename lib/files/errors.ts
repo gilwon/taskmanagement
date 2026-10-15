@@ -11,6 +11,7 @@ const FILE_RPC_MESSAGES: Record<string, string> = {
   conflict: "삭제한 뒤 바뀐 파일이라 되돌릴 수 없습니다.",
   upload_incomplete: "업로드가 끝나지 않았습니다. 다시 시도해 주세요.",
   size_mismatch: "올라간 파일 크기가 맞지 않습니다. 다시 시도해 주세요.",
+  mime_mismatch: "올라간 파일 형식이 확장자와 맞지 않습니다. 원본 파일로 다시 시도해 주세요.",
 };
 
 export const UPLOAD_CANCELED = "업로드를 취소했습니다.";

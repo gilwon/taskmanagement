@@ -14,10 +14,10 @@ export function DetailTabs({ task }: { task: TaskItem }) {
   const { patchLocal } = useTaskActions();
   // 첨부 수가 바뀌면 목록 카드의 첨부 수도 맞춘다
   const onFileCount = useCallback((n: number) => patchLocal(task.id, { attachmentCount: n }), [patchLocal, task.id]);
-  // 활동 수는 탭을 처음 열어 읽은 뒤에 보인다
+  // 활동 수는 댓글 탭이 처음 읽을 때 함께 받는다(활동 탭을 열면 다시 맞춘다)
   const [activityCount, setActivityCount] = useState<{ id: string; n: number } | null>(null);
   const shownActivity = activityCount?.id === task.id ? activityCount.n : null;
-  // 활동 탭의 읽기 효과가 이 함수에 걸려 있어 작업이 바뀔 때만 새로 만든다
+  // 두 탭의 효과가 이 함수에 걸려 있어 작업이 바뀔 때만 새로 만든다
   const onActivityCount = useCallback((n: number) => setActivityCount({ id: task.id, n }), [task.id]);
 
   return (
@@ -35,7 +35,7 @@ export function DetailTabs({ task }: { task: TaskItem }) {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="comments">
-        <TaskComments key={task.id} task={task} />
+        <TaskComments key={task.id} task={task} onActivityCount={onActivityCount} />
       </TabsContent>
       <TabsContent value="activity">
         <TaskActivity key={task.id} task={task} onCount={onActivityCount} />

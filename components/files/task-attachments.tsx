@@ -8,7 +8,7 @@ import { listTaskFiles } from "@/lib/files/actions";
 import type { FileItem } from "@/lib/files/types";
 import { NETWORK_ERROR } from "@/lib/tasks/errors";
 
-type Loaded = { files: FileItem[]; canEdit: boolean; meId: string };
+type Loaded = { files: FileItem[]; canEdit: boolean; canManage: boolean; meId: string };
 type LoadState = { taskId: string; data: Loaded } | { taskId: string; error: string };
 
 export function TaskAttachments({
@@ -128,6 +128,7 @@ function AttachmentList({
               transfer={ctl.transfers[item.id]}
               ctl={ctl}
               canEdit={canEdit}
+              canManage={data.canManage}
               meId={data.meId}
               now={now}
             />
