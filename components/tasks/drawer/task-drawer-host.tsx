@@ -145,6 +145,8 @@ function Host() {
             if (!small) e.preventDefault();
           }}
           onEscapeKeyDown={(e) => {
+            // 댓글 입력창은 Esc를 스스로 처리한다(멘션 → 입력창). Radix가 캡처 단계에서 먼저 받으므로 여기서 거른다
+            if (e.target instanceof Element && e.target.closest("[data-esc-local]")) return e.preventDefault();
             if (escRef.current?.()) e.preventDefault();
           }}
         >

@@ -1,6 +1,6 @@
 "use client";
 // 작업 상세 본문. 드로어와 전체 페이지가 함께 쓴다. 헤더 동작, 완료·기한 초과 배너, 제목, 속성 목록, 설명, 하위 작업,
-// 첨부(다음 단계 자리), 댓글·활동 탭(다음 단계 자리). 모든 쓰기는 작업 store를 거쳐 목록과 같은 값을 본다
+// 댓글·활동·파일 탭(detail-tabs). 모든 쓰기는 작업 store를 거쳐 목록과 같은 값을 본다
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -8,16 +8,12 @@ import {
   CheckCircle2,
   Link2,
   Maximize2,
-  MessageSquare,
   MoreHorizontal,
   PanelRight,
-  Paperclip,
   Pencil,
   Star,
   Trash2,
-  Upload,
   X,
-  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,8 +24,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmptyState } from "@/components/shell/empty-state";
 import { ProjectIcon } from "@/components/shell/project-icon";
 import {
   AssigneeAvatar,
@@ -47,6 +41,7 @@ import {
 } from "@/components/tasks/parts";
 import { getTaskFavorite, setTaskFavorite } from "@/components/tasks/drawer/actions";
 import { BlockedBy } from "@/components/tasks/drawer/blocked-by";
+import { DetailTabs } from "@/components/tasks/drawer/detail-tabs";
 import { DescriptionEditor } from "@/components/tasks/drawer/description-editor";
 import { overdueDays } from "@/components/tasks/drawer/rules";
 import { SubtaskSection } from "@/components/tasks/drawer/subtasks";
@@ -480,46 +475,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
             </p>
           )}
 
-          <section aria-labelledby={`files-${task.id}`} className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <h3 id={`files-${task.id}`} className="text-(length:--fs-sm) font-semibold text-(--text)">
-                첨부 파일
-              </h3>
-              <span className="font-mono text-(length:--fs-xs) text-(--text-3)">{task.attachmentCount}</span>
-              <Button variant="ghost" size="xs" className="ml-auto" disabled aria-describedby={`files-note-${task.id}`}>
-                <Upload size={12} strokeWidth={1.8} aria-hidden />
-                올리기
-              </Button>
-            </div>
-            <p
-              id={`files-note-${task.id}`}
-              className="flex items-center gap-2 rounded-(--r) border border-dashed border-(--border-strong) px-3 py-3 text-(length:--fs-sm) text-(--text-3)"
-            >
-              <Paperclip size={14} strokeWidth={1.8} aria-hidden />
-              파일 올리기와 목록은 다음 단계에서 제공됩니다.
-            </p>
-          </section>
-
-          <Tabs defaultValue="comments" className="gap-3">
-            <TabsList>
-              <TabsTrigger value="comments">댓글 ({task.commentCount})</TabsTrigger>
-              <TabsTrigger value="activity">활동</TabsTrigger>
-            </TabsList>
-            <TabsContent value="comments">
-              <EmptyState
-                icon={MessageSquare}
-                title="댓글은 다음 단계에서 표시됩니다"
-                description="댓글 읽기·쓰기 기능을 준비하고 있습니다."
-              />
-            </TabsContent>
-            <TabsContent value="activity">
-              <EmptyState
-                icon={History}
-                title="활동 기록은 다음 단계에서 표시됩니다"
-                description="변경 내역은 저장되고 있으며 곧 여기에서 볼 수 있습니다."
-              />
-            </TabsContent>
-          </Tabs>
+          <DetailTabs task={task} />
         </div>
       </div>
 

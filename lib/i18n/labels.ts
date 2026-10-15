@@ -328,3 +328,51 @@ export const PROJECT_PROGRESS_COLUMN_LABELS = {
 
 // 영구 삭제됐거나 볼 수 없는 작업의 표시명(활동 문장 등)
 export const DELETED_TASK_LABEL = "삭제된 작업";
+
+// 파일 업로드 상태. ready만 완료로 보인다
+export const FILE_STATUS_LABELS: Record<Enums<"file_status">, string> = {
+  pending: "업로드 중",
+  ready: "완료",
+  failed: "업로드 실패",
+};
+
+// 프로젝트 파일 화면 정렬
+export const FILE_SORT_LABELS = {
+  newest: "최신순",
+  name: "이름",
+  type: "형식",
+  size: "크기",
+} as const;
+
+// 프로젝트 파일 화면 보기 방식
+export const FILE_VIEW_LABELS = {
+  list: "목록",
+  grid: "격자",
+} as const;
+
+// 댓글 반응 이모지. comment_reactions.emoji check 제약과 같은 값·순서다(❤️는 U+2764 U+FE0F)
+export const REACTION_EMOJIS = ["👍", "🎉", "❤️", "👀", "🚀", "✅"] as const;
+
+// 작업 상세 탭
+export const DETAIL_TAB_LABELS = { comments: "댓글", activity: "활동", files: "파일" } as const;
+
+// 활동 화면 종류 필터와 사람 필터의 전체 항목
+export const ACTIVITY_KIND_LABELS = {
+  all: "전체",
+  status: "상태 변경",
+  comments: "댓글",
+  projects: "프로젝트",
+} as const;
+export const EVERYONE_LABEL = "모든 사람";
+
+// 알림 날짜 묶음
+export const NOTIFICATION_GROUP_LABELS = {
+  today: "오늘",
+  yesterday: "어제",
+  week: "이번 주",
+  earlier: "이전",
+} as const;
+
+// 알림 화면 탭(전체·읽지 않음)과 수신함 탭(전체 + 알림 종류)
+export const NOTIFICATION_FILTER_LABELS = { all: "전체", unread: "읽지 않음" } as const;
+export const INBOX_TAB_LABELS = { all: "전체", ...NOTIFICATION_TYPE_LABELS } as const;
