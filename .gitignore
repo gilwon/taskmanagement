@@ -1,0 +1,32 @@
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+/intent/
+
+
+# 의존성·빌드 산출물
+/node_modules/
+/.next/
+/out/
+*.tsbuildinfo
+next-env.d.ts
+
+# 환경변수 (예시 파일만 커밋)
+.env*
+!.env.example
+
+# Supabase 로컬 임시 파일
+/supabase/.temp/
+/supabase/.branches/
+
+.DS_Store
+
+# 테스트·배포·디버그 산출물
+/coverage/
+/build/
+.vercel
+*.pem
+npm-debug.log*
+.pnpm-debug.log*
+
+META_PROMPT.md
+CLAUDE.md
