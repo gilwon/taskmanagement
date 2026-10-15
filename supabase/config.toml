@@ -1,0 +1,415 @@
+# 자세한 설정 레퍼런스 문서는 아래 주소에서 확인한다.
+# https://supabase.com/docs/guides/local-development/cli/config
+# 같은 호스트에서 서로 다른 Supabase 프로젝트를 구분하는 문자열. 기본값은
+# `supabase init`을 실행한 작업 디렉터리 이름이다.
+project_id = "taskmanagement"
+
+[api]
+enabled = true
+# API URL에 사용할 포트.
+port = 54321
+# API에 노출할 스키마. 이 스키마의 테이블, 뷰, 저장 프로시저에 API 엔드포인트가
+# 생성된다. `public`과 `graphql_public` 스키마는 기본으로 포함된다.
+schemas = ["public", "graphql_public"]
+# 모든 요청의 search_path에 추가할 스키마.
+extra_search_path = ["public", "extensions"]
+# 뷰, 테이블, 저장 프로시저에서 반환하는 최대 행 수. 실수나 악의적인 요청의
+# 페이로드 크기를 제한한다.
+max_rows = 1000
+# `postgres`가 `public` 스키마에 새로 만든 테이블, 뷰, 시퀀스, 함수를 명시적 GRANT 없이
+# Data API 역할(`anon`, `authenticated`, `service_role`)로 접근할 수 있게 할지 정한다.
+# 클라우드 기본값과 같은 동작이다. `false`로 설정하면 명시적 GRANT가 필요하다.
+# 설정하지 않으면 새 프로젝트는 `true`를 사용한다.
+# auto_expose_new_tables = true
+
+[api.tls]
+# 자체 서명 인증서로 로컬 HTTPS 엔드포인트를 활성화한다.
+enabled = false
+# 자체 서명 인증서 쌍의 경로.
+# cert_path = "../certs/my-cert.pem"
+# key_path = "../certs/my-key.pem"
+
+[db]
+# 로컬 데이터베이스 URL에 사용할 포트.
+port = 54322
+# db diff 명령이 섀도 데이터베이스를 초기화할 때 사용하는 포트.
+shadow_port = 54320
+# 로컬 데이터베이스를 시작할 때 헬스 체크를 기다리는 최대 시간.
+health_timeout = "2m"
+# 사용할 데이터베이스 메이저 버전. 원격 데이터베이스의 버전과 같아야 한다.
+# 원격 데이터베이스에서 `SHOW server_version;`을 실행해 확인한다.
+major_version = 17
+# Postgres 스토리지 엔진으로 사용할 OrioleDB 버전. 비워 두면 기본 엔진을 사용한다.
+orioledb_version = ""
+
+[db.pooler]
+enabled = false
+# 로컬 커넥션 풀러에 사용할 포트.
+port = 54329
+# 서버 커넥션을 다른 클라이언트가 재사용할 수 있는 시점을 지정한다.
+# 지원하는 풀러 모드 중 하나를 설정한다. `transaction`, `session`.
+pool_mode = "transaction"
+# 사용자/데이터베이스 쌍마다 허용할 서버 커넥션 수.
+default_pool_size = 20
+# 허용할 최대 클라이언트 커넥션 수.
+max_client_conn = 100
+
+# [db.vault]
+# secret_key = "env(SECRET_VALUE)"
+
+[db.migrations]
+# 비활성화하면 db push 또는 reset 중에 마이그레이션을 건너뛴다.
+enabled = true
+# 데이터베이스를 정의하는 스키마 파일, 디렉터리, glob 패턴의 순서 있는 목록을 지정한다.
+# supabase 디렉터리 기준 상대 경로를 지원한다. 예 "./schemas/*.sql", "./database".
+schema_paths = []
+
+[db.seed]
+# 활성화하면 db reset 중 마이그레이션 다음에 데이터베이스에 시드 데이터를 넣는다.
+enabled = false
+# db reset 중에 불러올 시드 파일의 순서 있는 목록을 지정한다.
+# supabase 디렉터리 기준 glob 패턴을 지원한다. 예 "./seeds/*.sql"
+sql_paths = ["./seed.sql"]
+
+[db.network_restrictions]
+# 네트워크 제한 관리를 활성화한다.
+enabled = false
+# 데이터베이스 연결을 허용할 IPv4 CIDR 블록 목록.
+# 기본값은 모든 IPv4 연결 허용이다. 빈 배열로 설정하면 모든 IP를 차단한다.
+allowed_cidrs = ["0.0.0.0/0"]
+# 데이터베이스 연결을 허용할 IPv6 CIDR 블록 목록.
+# 기본값은 모든 IPv6 연결 허용이다. 빈 배열로 설정하면 모든 IP를 차단한다.
+allowed_cidrs_v6 = ["::/0"]
+
+# 주석을 해제하면 데이터베이스에 대한 비보안 연결을 거부한다.
+# [db.ssl_enforcement]
+# enabled = true
+
+[realtime]
+enabled = true
+# realtime을 IPv4 또는 IPv6로 바인딩한다. (기본값 IPv4)
+# ip_version = "IPv6"
+# HTTP 요청 헤더의 최대 길이(바이트). (기본값 4096)
+# max_header_length = 4096
+
+[studio]
+enabled = true
+# Supabase Studio에 사용할 포트.
+port = 54323
+# 프런트엔드가 연결할 API 서버의 외부 URL.
+api_url = "http://127.0.0.1"
+# Supabase Studio의 Supabase AI에 사용할 OpenAI API 키.
+openai_api_key = "env(OPENAI_API_KEY)"
+
+# 이메일 테스트 서버. 로컬 개발 환경에서 보낸 이메일은 실제로 발송되지 않고
+# 수집되며, 발송됐을 이메일을 웹 인터페이스에서 볼 수 있다.
+[local_smtp]
+enabled = true
+# 이메일 테스트 서버 웹 인터페이스에 사용할 포트.
+port = 54324
+# 이메일을 보내는 사용자 애플리케이션을 테스트하려면 주석을 해제해 추가 포트를 노출한다.
+# smtp_port = 54325
+# pop3_port = 54326
+# admin_email = "admin@email.com"
+# sender_name = "Admin"
+
+[storage]
+enabled = true
+# 허용할 최대 파일 크기(예 "5MB", "500KB").
+file_size_limit = "50MiB"
+
+# 주석을 해제하면 로컬 스토리지 버킷을 설정한다.
+# [storage.buckets.images]
+# public = false
+# file_size_limit = "50MiB"
+# allowed_mime_types = ["image/png", "image/jpeg"]
+# objects_path = "./images"
+
+# S3 호환 클라이언트의 연결을 허용한다.
+[storage.s3_protocol]
+enabled = true
+
+# 이미지 변환 API는 Supabase Pro 플랜에서 사용할 수 있다.
+# [storage.image_transformation]
+# enabled = true
+
+# Iceberg Catalog 위에서 ETL 작업을 실행할 수 있도록 분석 데이터를 S3에 저장한다.
+# 이 기능은 호스팅 플랫폼에서만 사용할 수 있다.
+[storage.analytics]
+enabled = false
+max_namespaces = 5
+max_tables = 10
+max_catalogs = 2
+
+# Analytics Buckets는 Supabase Pro 플랜에서 사용할 수 있다.
+# [storage.analytics.buckets.my-warehouse]
+
+# 대용량이고 오래 보관할 데이터셋을 위해 벡터 임베딩을 S3에 저장한다.
+[storage.vector]
+enabled = true
+max_buckets = 10
+max_indexes = 5
+
+# Vector Buckets는 Supabase Pro 플랜에서 사용할 수 있다.
+# [storage.vector.buckets.documents-openai]
+
+[auth]
+enabled = true
+# 웹사이트의 기본 URL. 리다이렉트 허용 목록과 이메일에 들어가는 URL을 만들 때
+# 사용한다.
+site_url = "http://localhost:3000"
+# Auth가 제공되는 공개 URL. 기본값은 API 외부 URL 뒤에 `/auth/v1`을 붙인 값이다.
+# external_url = ""
+# 인증 후 auth 제공자가 리다이렉트할 수 있는 *정확한* URL 목록.
+additional_redirect_urls = ["http://localhost:3000/auth/confirm", "http://127.0.0.1:3000/auth/confirm"]
+# 토큰 유효 시간(초). 기본값 3600(1시간), 최대 604,800(1주).
+jwt_expiry = 3600
+# JWT 발급자 URL. 설정하지 않으면 auth.external_url을 사용한다.
+# jwt_issuer = ""
+# JWT 서명 키 경로. 서명 키 파일을 git에 커밋하지 않는다.
+# signing_keys_path = "./signing_keys.json"
+# 비활성화하면 리프레시 토큰이 만료되지 않는다.
+enable_refresh_token_rotation = true
+# 만료된 리프레시 토큰을 지정한 간격(초) 안에서 재사용할 수 있게 한다.
+# enable_refresh_token_rotation = true가 필요하다.
+refresh_token_reuse_interval = 10
+# 프로젝트의 신규 사용자 가입을 허용/차단한다.
+enable_signup = true
+# 프로젝트의 익명 로그인을 허용/차단한다.
+enable_anonymous_sign_ins = false
+# 계정 수동 연결 테스트를 허용/차단한다.
+enable_manual_linking = false
+# 이 값보다 짧은 비밀번호는 약한 비밀번호로 거부한다. 최소 6, 권장 8 이상.
+minimum_password_length = 6
+# 다음 요구 사항을 충족하지 않는 비밀번호는 약한 비밀번호로 거부한다. 지원 값은
+# `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`이다.
+password_requirements = ""
+
+# 패스키 로그인을 설정한다.
+# [auth.passkey]
+# enabled = false
+
+# WebAuthn 신뢰 당사자(relying party) 설정을 구성한다(패스키를 활성화하면 필요).
+# [auth.webauthn]
+# rp_display_name = "Supabase"
+# rp_id = "localhost"
+# rp_origins = ["http://127.0.0.1:3000"]
+
+[auth.rate_limit]
+# 시간당 보낼 수 있는 이메일 수. auth.email.smtp가 활성화돼 있어야 한다.
+email_sent = 2
+# 시간당 보낼 수 있는 SMS 메시지 수. auth.sms가 활성화돼 있어야 한다.
+sms_sent = 30
+# IP 주소당 시간당 가능한 익명 로그인 수. enable_anonymous_sign_ins = true가 필요하다.
+anonymous_users = 30
+# IP 주소당 5분 동안 갱신할 수 있는 세션 수.
+token_refresh = 150
+# IP 주소당 5분 동안 가능한 가입·로그인 요청 수(익명 사용자 제외).
+sign_in_sign_ups = 30
+# IP 주소당 5분 동안 가능한 OTP / 매직 링크 인증 수.
+token_verifications = 30
+# IP 주소당 5분 동안 가능한 Web3 로그인 수.
+web3 = 30
+
+# 지원하는 captcha 제공자 중 하나를 설정한다. `hcaptcha`, `turnstile`.
+# [auth.captcha]
+# enabled = true
+# provider = "hcaptcha"
+# secret = ""
+
+[auth.email]
+# 프로젝트의 이메일 신규 가입을 허용/차단한다.
+enable_signup = true
+# 활성화하면 이메일을 변경할 때 기존 이메일과 새 이메일 주소 모두에서 확인을 받아야 한다.
+# 비활성화하면 새 이메일만 확인하면 된다.
+double_confirm_changes = true
+# 활성화하면 사용자는 로그인 전에 이메일 주소를 확인해야 한다.
+enable_confirmations = true
+# 활성화하면 비밀번호를 변경할 때 재인증하거나 최근에 로그인한 상태여야 한다.
+secure_password_change = false
+# 가입 확인 이메일이나 비밀번호 재설정 이메일을 다시 보내기 전에 지나야 하는 최소 시간.
+max_frequency = "1s"
+# 이메일 OTP의 문자 수.
+otp_length = 6
+# 이메일 OTP가 만료되기까지의 시간(초, 기본값 1시간).
+otp_expiry = 3600
+
+# 프로덕션용 SMTP 서버를 사용한다.
+# [auth.email.smtp]
+# enabled = true
+# host = "smtp.sendgrid.net"
+# port = 587
+# user = "apikey"
+# pass = "env(SENDGRID_API_KEY)"
+# admin_email = "admin@email.com"
+# sender_name = "Admin"
+
+# 주석을 해제하면 이메일 템플릿을 사용자 지정한다.
+# [auth.email.template.invite]
+# subject = "You have been invited"
+# content_path = "./supabase/templates/invite.html"
+
+# 주석을 해제하면 알림 이메일 템플릿을 사용자 지정한다.
+# [auth.email.notification.password_changed]
+# enabled = true
+# subject = "Your password has been changed"
+# content_path = "./supabase/templates/password_changed_notification.html"
+
+[auth.sms]
+# 프로젝트의 SMS 신규 가입을 허용/차단한다.
+enable_signup = false
+# 활성화하면 사용자는 로그인 전에 전화번호를 확인해야 한다.
+enable_confirmations = false
+# 사용자에게 OTP를 보낼 때 쓰는 템플릿.
+template = "Your code is {{ .Code }}"
+# SMS OTP를 다시 보내기 전에 지나야 하는 최소 시간.
+max_frequency = "5s"
+
+# 테스트용으로 전화번호별 OTP를 미리 정한 맵을 사용한다.
+# [auth.sms.test_otp]
+# 4152127777 = "123456"
+
+# 로그인 세션 타임아웃을 설정한다.
+# [auth.sessions]
+# 지정한 시간이 지나면 강제로 로그아웃한다.
+# timebox = "24h"
+# 사용자가 지정한 시간보다 오래 활동하지 않으면 강제로 로그아웃한다.
+# inactivity_timeout = "8h"
+
+# 이 훅은 새 사용자를 만들기 전에 실행되며, 들어온 user 객체를 보고 요청을 거부할 수 있다.
+# [auth.hook.before_user_created]
+# enabled = true
+# uri = "pg-functions://postgres/auth/before-user-created-hook"
+
+# 이 훅은 토큰을 발급하기 전에 실행되며, 사용한 인증 방식에 따라 클레임을 추가할 수 있다.
+# [auth.hook.custom_access_token]
+# enabled = true
+# uri = "pg-functions://<database>/<schema>/<hook_name>"
+
+# 지원하는 SMS 제공자 중 하나를 설정한다. `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+[auth.sms.twilio]
+enabled = false
+account_sid = ""
+message_service_sid = ""
+# Twilio 인증 토큰을 git에 커밋하지 않는다. 대신 환경 변수 치환을 사용한다.
+auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+
+# 다중 인증(MFA)은 Supabase Pro 플랜에서 사용할 수 있다.
+[auth.mfa]
+# 사용자당 동시에 등록할 수 있는 MFA 요소 수.
+max_enrolled_factors = 10
+
+# 앱 인증기(TOTP)를 통한 MFA를 설정한다.
+[auth.mfa.totp]
+enroll_enabled = false
+verify_enabled = false
+
+# 휴대폰 메시지를 통한 MFA를 설정한다.
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+otp_length = 6
+template = "Your code is {{ .Code }}"
+max_frequency = "5s"
+
+# WebAuthn을 통한 MFA를 설정한다.
+# [auth.mfa.web_authn]
+# enroll_enabled = true
+# verify_enabled = true
+
+# 외부 OAuth 제공자를 사용한다. 지원하는 제공자 전체 목록은 `apple`, `azure`, `bitbucket`,
+# `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
+# `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`이다.
+[auth.external.apple]
+enabled = false
+client_id = ""
+# OAuth 제공자 시크릿을 git에 커밋하지 않는다. 대신 환경 변수 치환을 사용한다.
+secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
+# auth.external_url에서 만든 기본 auth 콜백 URL을 덮어쓴다.
+redirect_uri = ""
+# 기본 auth 제공자 URL을 덮어쓴다. 자체 호스팅 gitlab, 단일 테넌트 Azure,
+# 기타 서드파티 OIDC 제공자를 지원할 때 사용한다.
+url = ""
+# 활성화하면 nonce 검사를 건너뛴다. Google 인증으로 로컬 로그인할 때 필요하다.
+skip_nonce_check = false
+# 활성화하면 제공자가 이메일 주소를 반환하지 않아도 사용자가 인증에 성공할 수 있다.
+email_optional = false
+
+# Solana 지갑 보유자가 Sign in with Solana(SIWS, EIP-4361) 표준으로 프로젝트에 로그인할 수 있게 한다.
+# 자체 호스팅 시 [auth.rate_limit] 섹션에서 "web3" 레이트 리밋을 설정하고 [auth.captcha]를 구성할 수 있다.
+[auth.web3.solana]
+enabled = false
+
+# Supabase Auth와 함께 Firebase Auth를 서드파티 제공자로 사용한다.
+[auth.third_party.firebase]
+enabled = false
+# project_id = "my-firebase-project"
+
+# Supabase Auth와 함께 Auth0를 서드파티 제공자로 사용한다.
+[auth.third_party.auth0]
+enabled = false
+# tenant = "my-auth0-tenant"
+# tenant_region = "us"
+
+# Supabase Auth와 함께 AWS Cognito(Amplify)를 서드파티 제공자로 사용한다.
+[auth.third_party.aws_cognito]
+enabled = false
+# user_pool_id = "my-user-pool-id"
+# user_pool_region = "us-east-1"
+
+# Supabase Auth와 함께 Clerk를 서드파티 제공자로 사용한다.
+[auth.third_party.clerk]
+enabled = false
+# https://clerk.com/setup/supabase 에서 값을 받는다.
+# domain = "example.clerk.accounts.dev"
+
+# OAuth 서버를 설정한다.
+[auth.oauth_server]
+# OAuth 서버 기능을 활성화한다.
+enabled = false
+# OAuth 동의 흐름 UI 경로.
+authorization_url_path = "/oauth/consent"
+# 동적 클라이언트 등록을 허용한다.
+allow_dynamic_registration = false
+
+[edge_runtime]
+enabled = true
+# 지원하는 요청 정책은 `oneshot`, `per_worker`이다.
+# `per_worker`(기본값) — 로컬 개발 중 핫 리로드를 활성화한다.
+# `oneshot` — 핫 리로드에 문제가 생길 때(예 큰 저장소나 심볼릭 링크 사용 시) 쓰는 대체 모드.
+policy = "per_worker"
+# 엣지 함수 디버깅용 Chrome 인스펙터를 연결할 포트.
+inspector_port = 8083
+# 사용할 Deno 메이저 버전.
+deno_version = 2
+
+# [edge_runtime.secrets]
+# secret_key = "env(SECRET_VALUE)"
+
+[analytics]
+enabled = true
+port = 54327
+# 지원하는 백엔드 중 하나를 설정한다. `postgres`, `bigquery`.
+backend = "postgres"
+
+# 실험 기능은 언제든 지원이 중단될 수 있다.
+[experimental]
+# S3 버킷 URL을 설정한다. 예 <bucket_name>.s3-<region>.amazonaws.com
+s3_host = "env(S3_HOST)"
+# S3 버킷 리전을 설정한다. 예 us-east-1
+s3_region = "env(S3_REGION)"
+# S3 버킷의 AWS_ACCESS_KEY_ID를 설정한다.
+s3_access_key = "env(S3_ACCESS_KEY)"
+# S3 버킷의 AWS_SECRET_ACCESS_KEY를 설정한다.
+s3_secret_key = "env(S3_SECRET_KEY)"
+
+# pg-delta는 db diff / db pull / db remote commit에 쓰는 스키마 diff 엔진이다.
+# enabled = false로 설정하면 기존 migra 엔진을 사용한다.
+[experimental.pgdelta]
+enabled = true
+# 선언적 파일을 쓰는 `supabase/` 아래 디렉터리.
+# declarative_schema_path = "./schemas"
+# pg-delta SQL 포맷팅에 그대로 전달하는 JSON 문자열. 생략하면 SQL을
+# 대문자 키워드, 들여쓰기 2, 최대 너비 180, 뒤쪽 쉼표, 컬럼/키 정렬로 포맷한다.
+# "null"로 설정하면 포맷하지 않은 원본 SQL을 출력한다.
+# format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
