@@ -101,7 +101,7 @@ where pf.id = pg_temp.u(sp.local);
 -- 워크스페이스·팀·구성원
 -- ─────────────────────────────────────────────
 insert into public.workspaces (name, slug, color, team_size, created_by) values
-  ('한빛 스튜디오', 'hanbit', 'indigo', '2-10', pg_temp.u('jiyoon.kim')),
+  ('컴퍼니', 'hanbit', 'indigo', '2-10', pg_temp.u('jiyoon.kim')),
   ('달빛 랩스',     'dalbit', 'teal',   '2-10', pg_temp.u('serin.oh')),
   ('별빛 커머스',   'byeol',  'rose',   'solo', pg_temp.u('jaewon.lim'));
 

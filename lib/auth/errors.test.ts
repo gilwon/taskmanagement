@@ -44,7 +44,7 @@ describe("suggestSlug", () => {
   });
 
   it("형식에 맞지 않으면 빈 값이다", () => {
-    expect(suggestSlug("한빛 스튜디오")).toBe("");
+    expect(suggestSlug("컴퍼니")).toBe("");
     expect(suggestSlug("a")).toBe("");
   });
 
