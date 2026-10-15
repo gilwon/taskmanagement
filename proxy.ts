@@ -10,7 +10,7 @@ export async function proxy(request: NextRequest) {
     console.error(error);
     return new NextResponse("서버 설정 오류로 페이지를 열 수 없습니다. 관리자에게 문의해 주세요.", {
       status: 500,
-      headers: { "content-type": "text/plain; charset=utf-8" },
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
     });
   }
 }
