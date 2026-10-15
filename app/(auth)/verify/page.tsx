@@ -2,9 +2,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
+import { getT } from "@/lib/i18n/server";
 import { ResendForm } from "./resend-form";
 
-export const metadata: Metadata = { title: "메일 확인" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("auth.verify.metaTitle") };
+}
 
 export default async function VerifyPage({
   searchParams,
@@ -13,22 +16,26 @@ export default async function VerifyPage({
 }) {
   const { email } = await searchParams;
   const address = typeof email === "string" ? email : "";
+  const t = await getT();
+  // 주소만 굵게 보이려고 문장 틀을 {email} 앞뒤로 나눈다
+  const [before, after] = t("auth.verify.sentTo", { email: "{email}" }).split("{email}");
   return (
     <AuthCard
-      title="메일함을 확인해 주세요"
+      title={t("auth.verify.title")}
       description={
         address ? (
           <>
-            <strong className="font-medium break-all text-[var(--text)]">{address}</strong>(으)로 확인 링크를 보냈습니다.
-            링크를 누르면 가입이 완료됩니다.
+            {before}
+            <strong className="font-medium break-all text-[var(--text)]">{address}</strong>
+            {after}
           </>
         ) : (
-          "가입한 이메일로 확인 링크를 보냈습니다. 링크를 누르면 가입이 완료됩니다."
+          t("auth.verify.sentGeneric")
         )
       }
       footer={
         <Link href="/login" className={linkClass}>
-          로그인으로 돌아가기
+          {t("auth.backToLogin")}
         </Link>
       }
     >

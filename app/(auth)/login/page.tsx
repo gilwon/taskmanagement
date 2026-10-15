@@ -2,16 +2,20 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
 import { isDemoEnabled } from "@/lib/demo/config";
+import { getT } from "@/lib/i18n/server";
 import { safeNext } from "@/lib/safe-next";
 
-export const metadata: Metadata = { title: "로그인" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("auth.login.title") };
+}
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { next, error } = await searchParams;
+  const t = await getT();
   return (
     <LoginForm
       next={safeNext(typeof next === "string" ? next : null)}
-      linkError={error === "link" ? "링크가 만료되었거나 이미 사용되었습니다. 다시 요청해 주세요." : undefined}
+      linkError={error === "link" ? t("auth.linkError") : undefined}
       demo={isDemoEnabled()}
     />
   );

@@ -6,7 +6,11 @@ import { isDemoEnabled, isDemoUser } from "@/lib/demo/config";
 
 const createClient = vi.fn();
 vi.mock("server-only", () => ({}));
-vi.mock("next/headers", () => ({ headers: vi.fn() }));
+// 로캘은 쿠키·Accept-Language가 없어 기본값 ko로 정해진다
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => new Headers()),
+  cookies: vi.fn(async () => ({ get: () => undefined, set: vi.fn() })),
+}));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: () => createClient() }));
 
@@ -44,9 +48,10 @@ describe("데모 설정", () => {
 describe("데모 시작", () => {
   it("익명 로그인 후 사본 slug의 홈으로 보낸다", async () => {
     vi.stubEnv("DEMO_ENABLED", "true");
-    const signInAnonymously = vi.fn(async () => ({ error: null }));
+    const signInAnonymously = vi.fn(async () => ({ data: { user: { id: "u1" } }, error: null }));
     const rpc = vi.fn(async () => ({ data: "demo-abc12345", error: null }));
-    createClient.mockResolvedValue({ auth: { getClaims: async () => ({ data: null }), signInAnonymously }, rpc });
+    const from = () => ({ update: () => ({ eq: async () => ({ error: null }) }) });
+    createClient.mockResolvedValue({ auth: { getClaims: async () => ({ data: null }), signInAnonymously }, rpc, from });
     const { signInDemo } = await import("@/lib/auth/actions");
     await signInDemo();
     expect(signInAnonymously).toHaveBeenCalledWith({ options: { data: { name: "데모 사용자" } } });
@@ -61,6 +66,7 @@ describe("데모 시작", () => {
     createClient.mockResolvedValue({
       auth: { getClaims: async () => ({ data: { claims: { sub: "u1", is_anonymous: true } } }), signInAnonymously },
       rpc,
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { locale: "ko" } }) }) }) }),
     });
     const { signInDemo } = await import("@/lib/auth/actions");
     expect(await signInDemo()).toEqual({ error: { field: undefined, message: MSG.demoFull } });

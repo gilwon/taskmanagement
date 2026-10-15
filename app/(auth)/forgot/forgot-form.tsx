@@ -4,16 +4,18 @@ import Link from "next/link";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
 import { Field, FormAlert, SubmitButton, useAuthAction } from "@/components/auth/form-parts";
 import { requestPasswordReset } from "@/lib/auth/actions";
+import { useT } from "@/lib/i18n/client";
 
 export function ForgotForm() {
   const { pending, formRef, onSubmit, fieldError, formError } = useAuthAction(requestPasswordReset);
+  const t = useT();
   return (
     <AuthCard
-      title="비밀번호 찾기"
-      description="가입한 이메일을 입력하면 비밀번호를 다시 정할 수 있는 링크를 보내 드립니다."
+      title={t("auth.forgot.title")}
+      description={t("auth.forgot.description")}
       footer={
         <Link href="/login" className={linkClass}>
-          로그인으로 돌아가기
+          {t("auth.backToLogin")}
         </Link>
       }
     >
@@ -21,14 +23,14 @@ export function ForgotForm() {
         <FormAlert message={formError} />
         <Field
           id="email"
-          label="이메일"
+          label={t("auth.field.email")}
           type="email"
           autoComplete="email"
-          placeholder="name@example.com"
+          placeholder={t("auth.field.emailPlaceholder")}
           required
           error={fieldError("email")}
         />
-        <SubmitButton pending={pending}>{pending ? "보내는 중…" : "재설정 링크 보내기"}</SubmitButton>
+        <SubmitButton pending={pending}>{pending ? t("auth.sending") : t("auth.forgot.submit")}</SubmitButton>
       </form>
     </AuthCard>
   );

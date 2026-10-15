@@ -3,14 +3,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard, buttonClass, primaryHover } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "비밀번호 변경 완료" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("auth.resetDone.metaTitle") };
+}
 
-export default function ResetDonePage() {
+export default async function ResetDonePage() {
+  const t = await getT();
   return (
-    <AuthCard title="비밀번호를 바꿨습니다" description="새 비밀번호로 계속 이용할 수 있습니다.">
+    <AuthCard title={t("auth.resetDone.title")} description={t("auth.resetDone.description")}>
       <Button asChild className={`${buttonClass} ${primaryHover}`}>
-        <Link href="/">작업 공간으로 이동</Link>
+        <Link href="/">{t("auth.resetDone.go")}</Link>
       </Button>
     </AuthCard>
   );

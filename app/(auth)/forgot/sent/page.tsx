@@ -2,22 +2,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "메일 발송" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("auth.forgotSent.metaTitle") };
+}
 
-export default function ForgotSentPage() {
+export default async function ForgotSentPage() {
+  const t = await getT();
   return (
     <AuthCard
-      title="메일함을 확인해 주세요"
-      description="입력한 이메일로 가입된 계정이 있으면 비밀번호 재설정 링크를 보냈습니다. 링크는 요청한 브라우저에서 열어 주세요."
+      title={t("auth.forgotSent.title")}
+      description={t("auth.forgotSent.description")}
       footer={
         <>
           <Link href="/forgot" className={linkClass}>
-            다시 요청하기
+            {t("auth.forgotSent.again")}
           </Link>
           <span aria-hidden> · </span>
           <Link href="/login" className={linkClass}>
-            로그인으로 돌아가기
+            {t("auth.backToLogin")}
           </Link>
         </>
       }

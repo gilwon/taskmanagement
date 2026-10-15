@@ -57,7 +57,8 @@ import { moveId } from "@/lib/data/project-order";
 import { canOpenOrgScreens, isAdminRole } from "@/lib/org/rules";
 import { setProjectFavorite } from "@/lib/projects/actions";
 import type { ShellData, ShellProject } from "@/lib/data/workspace";
-import { NAV_LABELS, PROJECT_TAB_LABELS, colorHex } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { colorHex } from "@/lib/i18n/labels";
 import { usePrefs } from "@/lib/prefs/provider";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +84,7 @@ function NavItem({
   emphasis?: boolean;
   onNavigate?: () => void;
 }) {
+  const t = useT();
   const pathname = usePathname();
   return (
     <li>
@@ -99,13 +101,13 @@ function NavItem({
             <Badge variant="count" className="ml-auto">
               <span className="sr-only">, </span>
               {count}
-              <span className="sr-only">개</span>
+              <span className="sr-only">{t("shell.countSuffix")}</span>
             </Badge>
           ) : (
             <span className="ml-auto shrink-0 text-(length:--fs-2xs) text-(--text-3) tabular-nums">
               <span className="sr-only">, </span>
               {count}
-              <span className="sr-only">개</span>
+              <span className="sr-only">{t("shell.countSuffix")}</span>
             </span>
           ))}
       </Link>
@@ -139,15 +141,16 @@ function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
 // 아직 동작하지 않는 메뉴 항목. 항목 안에 "준비 중"을 보이고 마우스를 올리면 이유를 툴팁으로 알린다.
 // 키보드 포커스로 툴팁을 열면 Esc가 툴팁만 닫고 메뉴가 남으므로 포커스로는 열지 않는다
 export function PendingMenuItem({ label, side }: { label: string; side: "left" | "right" }) {
+  const t = useT();
   return (
     <Tooltip>
       <TooltipTrigger asChild onFocus={(e) => e.preventDefault()}>
         <DropdownMenuItem aria-disabled="true" onSelect={(e) => e.preventDefault()} className="text-(--text-3)">
           {label}
-          <span className="ml-auto text-(length:--fs-2xs) text-(--text-3)">준비 중</span>
+          <span className="ml-auto text-(length:--fs-2xs) text-(--text-3)">{t("shell.pending")}</span>
         </DropdownMenuItem>
       </TooltipTrigger>
-      <TooltipContent side={side}>{PENDING_HINT}</TooltipContent>
+      <TooltipContent side={side}>{t("shell.pendingHint")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -182,6 +185,7 @@ function ProjectItem({
   last: boolean;
   onToggleFavorite: (project: ShellProject) => void;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
@@ -193,7 +197,7 @@ function ProjectItem({
   return (
     <li data-drag-id={project.id} className={cn("group/proj", dragging && "opacity-40")}>
       <KeyContextMenu
-        label={`${project.name} 프로젝트 메뉴`}
+        label={t("shell.project.menu", { name: project.name })}
         blockTouch
         menu={
           <>
@@ -203,20 +207,20 @@ function ProjectItem({
                 router.push(overview);
               }}
             >
-              열기
+              {t("shell.project.open")}
             </ContextMenuItem>
             <ContextMenuItem onSelect={() => onToggleFavorite(project)}>
-              {project.favorite ? "즐겨찾기에서 빼기" : "즐겨찾기에 추가"}
+              {project.favorite ? t("shell.project.removeFavorite") : t("shell.project.addFavorite")}
             </ContextMenuItem>
-            <ContextMenuItem onSelect={() => void copyText(`${window.location.origin}${overview}`, "링크")}>
-              링크 복사
+            <ContextMenuItem onSelect={() => void copyText(`${window.location.origin}${overview}`, t("shell.project.linkNoun"))}>
+              {t("shell.project.copyLink")}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem disabled={first} onSelect={() => onMoveKey(project.id, -1)}>
-              위로 옮기기
+              {t("shell.project.moveUp")}
             </ContextMenuItem>
             <ContextMenuItem disabled={last} onSelect={() => onMoveKey(project.id, 1)}>
-              아래로 옮기기
+              {t("shell.project.moveDown")}
             </ContextMenuItem>
           </>
         }
@@ -233,7 +237,7 @@ function ProjectItem({
             type="button"
             aria-expanded={open}
             aria-controls={subId}
-            aria-label={`${project.name} 하위 메뉴`}
+            aria-label={t("shell.project.submenu", { name: project.name })}
             onClick={() => setOpen((v) => !v)}
             className="relative inline-flex size-5 shrink-0 items-center justify-center rounded-(--r-xs) text-(--text-3) outline-none after:absolute after:-inset-0.5 hover:bg-(--surface-3) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
           >
@@ -261,11 +265,11 @@ function ProjectItem({
             <ProjectIcon icon={project.icon} color={project.color} size={18} />
             <span className="truncate">{project.name}</span>
             {project.access === "private" && (
-              <Lock size={12} strokeWidth={1.8} aria-label="비공개" role="img" className="shrink-0 text-(--text-3)" />
+              <Lock size={12} strokeWidth={1.8} aria-label={t("shell.project.private")} role="img" className="shrink-0 text-(--text-3)" />
             )}
             <span className="ml-auto flex shrink-0 items-center gap-1.5">
               {project.favorite && (
-                <Star size={12} strokeWidth={1.8} aria-label="즐겨찾기" role="img" className="fill-(--amber) text-(--amber)" />
+                <Star size={12} strokeWidth={1.8} aria-label={t("shell.project.favorite")} role="img" className="fill-(--amber) text-(--amber)" />
               )}
               <ProjectStatusDot status={project.status} />
             </span>
@@ -283,7 +287,7 @@ function ProjectItem({
                 onClick={onNavigate}
                 className={cn(rowClass, "text-(length:--fs-sm)")}
               >
-                {PROJECT_TAB_LABELS[tab]}
+                {t(`common.projectTab.${tab}`)}
               </Link>
             </li>
           );
@@ -302,6 +306,7 @@ export function Sidebar({
   inSheet?: boolean;
   onNavigate?: () => void;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
   const { setPref } = usePrefs();
@@ -339,10 +344,10 @@ export function Sidebar({
     const r = await saveProjectOrder(data.workspace.id, next);
     if (!r.ok) {
       setOrder(before);
-      toast.error(`프로젝트 순서를 저장하지 못했습니다. ${r.error}`);
+      toast.error(t("shell.project.orderSaveFailed", { error: r.error }));
       return;
     }
-    announce(`${name} 프로젝트를 ${next.indexOf(id) + 1}번째로 옮겼습니다`);
+    announce(t("shell.project.moved", { name, position: next.indexOf(id) + 1 }));
     // 다른 쪽 사이드바(좁은 화면 메뉴)도 같은 순서를 받게 셸 데이터를 다시 읽는다
     router.refresh();
   };
@@ -352,7 +357,7 @@ export function Sidebar({
       toast.error(r.error);
       return;
     }
-    toast.success(r.data ? "즐겨찾기에 추가했습니다" : "즐겨찾기에서 뺐습니다");
+    toast.success(r.data ? t("shell.project.favoriteAdded") : t("shell.project.favoriteRemoved"));
     router.refresh();
   };
   const { dragId, onPointerDown } = useTaskDrag((id, t) => {
@@ -366,7 +371,7 @@ export function Sidebar({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`워크스페이스 전환, 현재 ${data.workspace.name}`}
+              aria-label={t("shell.workspaceSwitch", { name: data.workspace.name })}
               className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-(--r-sm) px-1.5 text-left outline-none hover:bg-(--surface-3) focus-visible:ring-2 focus-visible:ring-(--accent) aria-expanded:bg-(--surface-3)"
             >
               <WorkspaceTile name={data.workspace.name} color={data.workspace.color} />
@@ -375,7 +380,7 @@ export function Sidebar({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-60">
-            <DropdownMenuLabel className="text-(length:--fs-2xs) text-(--text-3)">소속 워크스페이스</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-(length:--fs-2xs) text-(--text-3)">{t("shell.myWorkspaces")}</DropdownMenuLabel>
             {data.workspaces.map((w) => {
               const current = w.id === data.workspace.id;
               return (
@@ -384,7 +389,7 @@ export function Sidebar({
                     <WorkspaceTile name={w.name} color={w.color} />
                     <span className="truncate">{w.name}</span>
                     {current && (
-                      <Check size={14} strokeWidth={1.8} aria-label="현재" role="img" className="ml-auto text-(--accent)" />
+                      <Check size={14} strokeWidth={1.8} aria-label={t("shell.current")} role="img" className="ml-auto text-(--accent)" />
                     )}
                   </Link>
                 </DropdownMenuItem>
@@ -394,14 +399,14 @@ export function Sidebar({
             <DropdownMenuItem asChild>
               <Link href="/invites" onClick={onNavigate}>
                 <Mail size={14} strokeWidth={1.8} aria-hidden />
-                받은 초대
+                {t("shell.invites")}
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         {inSheet ? (
           <SheetClose asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="메뉴 닫기" className="text-(--text-3)">
+            <Button variant="ghost" size="icon-sm" aria-label={t("shell.closeMenu")} className="text-(--text-3)">
               <X size={16} strokeWidth={1.8} aria-hidden />
             </Button>
           </SheetClose>
@@ -409,7 +414,7 @@ export function Sidebar({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="사이드바 접기"
+            aria-label={t("shell.collapseSidebar")}
             className="text-(--text-3)"
             onClick={() => setPref("sidebarCollapsed", true)}
           >
@@ -418,13 +423,13 @@ export function Sidebar({
         )}
       </div>
 
-      <nav aria-label="주 메뉴" className="min-h-0 flex-1 space-y-3 overflow-y-auto px-2 pb-3">
+      <nav aria-label={t("shell.mainNav")} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-2 pb-3">
         <ul className="space-y-px">
-          <NavItem href={p("home")} icon={House} label={NAV_LABELS.home} onNavigate={onNavigate} />
+          <NavItem href={p("home")} icon={House} label={t("common.nav.home")} onNavigate={onNavigate} />
           <NavItem
             href={p("inbox")}
             icon={Inbox}
-            label={NAV_LABELS.inbox}
+            label={t("common.nav.inbox")}
             count={data.counts.unread}
             emphasis
             onNavigate={onNavigate}
@@ -432,48 +437,48 @@ export function Sidebar({
           <NavItem
             href={p("my-tasks")}
             icon={CircleCheckBig}
-            label={NAV_LABELS.myTasks}
+            label={t("common.nav.myTasks")}
             count={data.counts.myOpenTasks}
             onNavigate={onNavigate}
           />
-          <NavItem href={p("favorites")} icon={Star} label={NAV_LABELS.favorites} onNavigate={onNavigate} />
+          <NavItem href={p("favorites")} icon={Star} label={t("common.nav.favorites")} onNavigate={onNavigate} />
           <NavItem
             href={p("notifications")}
             icon={Bell}
-            label={NAV_LABELS.notifications}
+            label={t("common.nav.notifications")}
             count={data.counts.unread}
             onNavigate={onNavigate}
           />
         </ul>
 
-        <section aria-label={NAV_LABELS.workspace}>
-          <SectionTitle>{NAV_LABELS.workspace}</SectionTitle>
+        <section aria-label={t("common.nav.workspace")}>
+          <SectionTitle>{t("common.nav.workspace")}</SectionTitle>
           <ul className="space-y-px">
-            <NavItem href={p("overview")} icon={LayoutDashboard} label={NAV_LABELS.overview} onNavigate={onNavigate} />
-            <NavItem href={p("projects")} icon={FolderKanban} label={NAV_LABELS.projects} onNavigate={onNavigate} />
-            <NavItem href={p("tasks")} icon={ListChecks} label={NAV_LABELS.tasks} onNavigate={onNavigate} />
-            <NavItem href={p("calendar")} icon={Calendar} label={NAV_LABELS.calendar} onNavigate={onNavigate} />
-            <NavItem href={p("timeline")} icon={ChartGantt} label={NAV_LABELS.timeline} onNavigate={onNavigate} />
+            <NavItem href={p("overview")} icon={LayoutDashboard} label={t("common.nav.overview")} onNavigate={onNavigate} />
+            <NavItem href={p("projects")} icon={FolderKanban} label={t("common.nav.projects")} onNavigate={onNavigate} />
+            <NavItem href={p("tasks")} icon={ListChecks} label={t("common.nav.tasks")} onNavigate={onNavigate} />
+            <NavItem href={p("calendar")} icon={Calendar} label={t("common.nav.calendar")} onNavigate={onNavigate} />
+            <NavItem href={p("timeline")} icon={ChartGantt} label={t("common.nav.timeline")} onNavigate={onNavigate} />
             {/* 게스트는 구성원·팀 화면이 403이라 링크를 숨긴다 */}
             {canOpenOrgScreens(data.me.role) && (
-              <NavItem href={p("members")} icon={Users} label={NAV_LABELS.members} onNavigate={onNavigate} />
+              <NavItem href={p("members")} icon={Users} label={t("common.nav.members")} onNavigate={onNavigate} />
             )}
-            <NavItem href={p("activity")} icon={Activity} label={NAV_LABELS.activity} onNavigate={onNavigate} />
+            <NavItem href={p("activity")} icon={Activity} label={t("common.nav.activity")} onNavigate={onNavigate} />
           </ul>
         </section>
 
-        <section aria-label={NAV_LABELS.projects}>
+        <section aria-label={t("common.nav.projects")}>
           <SectionTitle
-            action={canCreateProject && <AddButton label={NAV_LABELS.newProject} onClick={openNewProject} />}
+            action={canCreateProject && <AddButton label={t("common.nav.newProject")} onClick={openNewProject} />}
           >
-            {NAV_LABELS.projects}
+            {t("common.nav.projects")}
           </SectionTitle>
           {projects.length === 0 ? (
-            <p className="px-2 text-(length:--fs-sm) text-(--text-3)">프로젝트가 아직 없습니다.</p>
+            <p className="px-2 text-(length:--fs-sm) text-(--text-3)">{t("shell.noProjects")}</p>
           ) : (
             <>
               <p id={hintId} className="sr-only">
-                Alt+위아래 화살표로 프로젝트 순서를 바꿉니다.
+                {t("shell.reorderHint")}
               </p>
               <ul ref={listRef} data-drop-group={PROJECT_DROP_GROUP} className="space-y-px">
                 {projects.map((project, i) => (
@@ -496,20 +501,20 @@ export function Sidebar({
             </>
           )}
           <ul className="mt-px space-y-px">
-            <NavItem href={p("archive")} icon={Archive} label={NAV_LABELS.archive} onNavigate={onNavigate} />
+            <NavItem href={p("archive")} icon={Archive} label={t("common.nav.archive")} onNavigate={onNavigate} />
           </ul>
         </section>
 
         {canOpenOrgScreens(data.me.role) && (
-        <section aria-label={NAV_LABELS.teams}>
-          <SectionTitle action={canCreateTeam && <AddButton label={NAV_LABELS.newTeam} onClick={() => setTeamOpen(true)} />}>
+        <section aria-label={t("common.nav.teams")}>
+          <SectionTitle action={canCreateTeam && <AddButton label={t("common.nav.newTeam")} onClick={() => setTeamOpen(true)} />}>
             <Link
               href={p("teams")}
               aria-current={pathname === p("teams") ? "page" : undefined}
               onClick={onNavigate}
               className="relative rounded-(--r-xs) outline-none after:absolute after:-inset-x-2 after:-inset-y-[5px] hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent) aria-[current=page]:text-(--text)"
             >
-              {NAV_LABELS.teams}
+              {t("common.nav.teams")}
             </Link>
           </SectionTitle>
           <ul className="space-y-px">
@@ -542,28 +547,28 @@ export function Sidebar({
           <DropdownMenuTrigger asChild>
             <button type="button" className={cn(rowClass, "w-full aria-expanded:bg-(--surface-3)")}>
               <LifeBuoy {...iconProps} className="shrink-0 text-(--text-3)" />
-              <span className="truncate">{NAV_LABELS.help}</span>
+              <span className="truncate">{t("common.nav.help")}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-56">
             <DropdownMenuItem asChild>
               <Link href={p("help")} onClick={onNavigate}>
-                도움말
+                {t("shell.helpLink")}
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={openShortcuts}>키보드 단축키</DropdownMenuItem>
+            <DropdownMenuItem onSelect={openShortcuts}>{t("shell.shortcuts")}</DropdownMenuItem>
             {isDev && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-(length:--fs-2xs) text-(--text-3)">개발 전용</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-(length:--fs-2xs) text-(--text-3)">{t("shell.devOnly")}</DropdownMenuLabel>
                 <DropdownMenuItem asChild>
                   <Link href={p("help/system")} onClick={onNavigate}>
-                    {NAV_LABELS.system}
+                    {t("common.nav.system")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href={p("help/states")} onClick={onNavigate}>
-                    {NAV_LABELS.states}
+                    {t("common.nav.states")}
                   </Link>
                 </DropdownMenuItem>
               </>
@@ -571,7 +576,7 @@ export function Sidebar({
           </DropdownMenuContent>
         </DropdownMenu>
         <ul>
-          <NavItem href={p("settings/general")} icon={Settings} label={NAV_LABELS.settings} onNavigate={onNavigate} />
+          <NavItem href={p("settings/general")} icon={Settings} label={t("common.nav.settings")} onNavigate={onNavigate} />
         </ul>
         <Link
           href={p("settings/profile")}

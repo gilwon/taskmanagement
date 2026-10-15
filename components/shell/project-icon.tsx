@@ -1,3 +1,4 @@
+"use client";
 // 프로젝트·팀 아이콘 타일과 프로젝트 상태 점. DB의 아이콘 이름을 Lucide 컴포넌트에 매핑한다(META §4)
 import {
   Briefcase,
@@ -19,7 +20,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Enums } from "@/lib/database.types";
-import { PROJECT_STATUS_LABELS, colorHex } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { colorHex } from "@/lib/i18n/labels";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -81,11 +83,13 @@ const STATUS_COLOR: Record<Enums<"project_status">, string> = {
 };
 
 export function ProjectStatusDot({ status }: { status: Enums<"project_status"> }) {
+  const t = useT();
+  const label = t(`common.projectStatus.${status}`);
   return (
     <span
       role="img"
-      aria-label={`상태 ${PROJECT_STATUS_LABELS[status]}`}
-      title={PROJECT_STATUS_LABELS[status]}
+      aria-label={t("shell.project.status", { status: label })}
+      title={label}
       className="inline-block size-1.5 shrink-0 rounded-full"
       style={{ background: STATUS_COLOR[status] }}
     />

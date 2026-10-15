@@ -1,6 +1,6 @@
 "use server";
 // 셸 서버 액션. 사이드바 프로젝트 순서를 사용자·워크스페이스별로 user_prefs.proj_order에 저장한다
-import { MSG } from "@/lib/auth/errors";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import type { ActionResult } from "@/lib/tasks/types";
@@ -18,13 +18,13 @@ export async function saveProjectOrder(workspaceId: string, ids: string[]): Prom
     !ids.every((id) => typeof id === "string" && UUID_RE.test(id)) ||
     new Set(ids).size !== ids.length
   ) {
-    return { ok: false, error: "입력값을 다시 확인해 주세요." };
+    return { ok: false, error: (await getT())("errors.rpc.invalidInput") };
   }
   try {
     const supabase = await createClient();
     const { data: claims } = await supabase.auth.getClaims();
     const sub = claims?.claims?.sub;
-    if (!sub) return { ok: false, error: MSG.sessionExpired };
+    if (!sub) return { ok: false, error: (await getT())("errors.msg.sessionExpired") };
     // 순서 값은 id 목록일 뿐이라 볼 수 없는 프로젝트 id가 섞여도 노출되는 것은 없다. 행은 RLS(user_prefs_owner)가 본인 것만 허용한다.
     // upsert는 넘긴 컬럼만 바꾸므로 같은 행의 최근 검색 등 다른 설정은 그대로다
     const { error } = await supabase

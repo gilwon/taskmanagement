@@ -1,5 +1,7 @@
-// 설정 화면 공용 틀. 섹션 제목, 카드, 이름-값 행, 미제공 배지. 서버·클라이언트 컴포넌트 양쪽에서 쓴다
-import { UNAVAILABLE_LABEL } from "@/lib/i18n/labels";
+"use client";
+// 설정 화면 공용 틀. 섹션 제목, 카드, 이름-값 행, 미제공 배지. 서버·클라이언트 컴포넌트 양쪽에서 쓴다.
+// 미제공 배지가 사전(useT)을 읽어 클라이언트 컴포넌트로 둔다
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 export function SettingsTitle({ title, subtitle }: { title: string; subtitle?: string }) {
@@ -56,9 +58,10 @@ export function InfoRow({ label, value, note }: { label: string; value: React.Re
 }
 
 export function UnavailableBadge() {
+  const t = useT();
   return (
     <span className="inline-flex h-5 items-center rounded-(--r-xs) bg-(--surface-3) px-1.5 text-(length:--fs-2xs) font-medium text-(--text-3)">
-      {UNAVAILABLE_LABEL}
+      {t("common.unavailable")}
     </span>
   );
 }

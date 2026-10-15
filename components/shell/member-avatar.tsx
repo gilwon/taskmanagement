@@ -1,5 +1,7 @@
+"use client";
 // 이니셜 아바타. 멤버 색을 옅게 깔고 본문 글자색을 써서 모든 색에서 대비를 지킨다
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useT } from "@/lib/i18n/client";
 import { colorHex } from "@/lib/i18n/labels";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +32,7 @@ export function MemberAvatar({
   online?: boolean;
   className?: string;
 }) {
+  const t = useT();
   const hex = colorHex(color);
   return (
     // ui/avatar의 테두리 겹침(after)은 멤버 색 테두리와 겹치므로 끈다
@@ -48,7 +51,7 @@ export function MemberAvatar({
       {online && (
         <span
           role="img"
-          aria-label="온라인"
+          aria-label={t("shell.online")}
           className="absolute -right-px -bottom-px size-2 rounded-full bg-(--green) ring-2 ring-(--bg-side)"
         />
       )}

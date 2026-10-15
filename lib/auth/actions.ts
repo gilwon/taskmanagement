@@ -1,7 +1,7 @@
 "use server";
-// 인증·온보딩 Server Action. 입력을 검증한 뒤 서버 Supabase 클라이언트로 호출하고 한국어 오류를 돌려준다
+// 인증·온보딩 Server Action. 입력을 검증한 뒤 서버 Supabase 클라이언트로 호출하고 현재 로캘의 오류를 돌려준다
 import { redirect } from "next/navigation";
-import { MSG, authErrorMessage, rpcErrorMessage } from "@/lib/auth/errors";
+import { authErrorMessage, rpcErrorMessage } from "@/lib/auth/errors";
 import {
   EMAIL_RE,
   MIN_PASSWORD_LENGTH,
@@ -14,6 +14,9 @@ import {
   type OnboardingInput,
 } from "@/lib/auth/rules";
 import { isDemoEnabled, isDemoUser } from "@/lib/demo/config";
+import { syncLocaleCookie, writeLocaleCookie } from "@/lib/i18n/cookie";
+import { getLocale, getT } from "@/lib/i18n/server";
+import type { T } from "@/lib/i18n/t";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,15 +35,15 @@ function fail(field: string | undefined, message: string): ActionState {
   return { error: { field, message } };
 }
 
-function checkEmail(email: string) {
-  if (!email) return fail("email", MSG.emailRequired);
-  if (!EMAIL_RE.test(email)) return fail("email", MSG.emailInvalid);
+function checkEmail(email: string, t: T) {
+  if (!email) return fail("email", t("errors.msg.emailRequired"));
+  if (!EMAIL_RE.test(email)) return fail("email", t("errors.msg.emailInvalid"));
   return null;
 }
 
-function checkPassword(password: string, field = "password") {
+function checkPassword(password: string, t: T, field = "password") {
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return fail(field, `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`);
+    return fail(field, t("errors.passwordTooShort", { min: MIN_PASSWORD_LENGTH }));
   }
   return null;
 }
@@ -55,33 +58,44 @@ function redirectTo(path: string) {
 export async function signIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = text(formData, "email");
   const password = raw(formData, "password");
-  const invalid = checkEmail(email) ?? (password ? null : fail("password", MSG.passwordRequired));
+  const t = await getT();
+  const invalid = checkEmail(email, t) ?? (password ? null : fail("password", t("errors.msg.passwordRequired")));
   if (invalid) return invalid;
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: authErrorMessage(error.code) };
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: authErrorMessage(error.code, t) };
+  await syncLocaleCookie(supabase, data.user.id);
   redirect(safeNext(text(formData, "next")));
 }
 
 // 데모 시작. 익명 로그인 후 그 사용자 전용 데모 사본을 만들고 홈으로 보낸다.
 // 이미 익명 사용자로 로그인했으면 새로 로그인하지 않아 같은 사본으로 간다
 export async function signInDemo(): Promise<ActionState> {
-  if (!isDemoEnabled()) return fail(undefined, MSG.demoDisabled);
+  const t = await getT();
+  if (!isDemoEnabled()) return fail(undefined, t("errors.msg.demoDisabled"));
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!isDemoUser(data?.claims)) {
-    const { error } = await supabase.auth.signInAnonymously({ options: { data: { name: "데모 사용자" } } });
+    const { data: anon, error } = await supabase.auth.signInAnonymously({ options: { data: { name: "데모 사용자" } } });
     if (error) {
       console.error("[데모 로그인]", error.code);
-      return { error: authErrorMessage(error.code) };
+      return { error: authErrorMessage(error.code, t) };
     }
+    // 새 데모 사용자는 프로필이 기본값(ko)이라 지금 보고 있는 언어를 저장한다
+    if (anon.user) {
+      const locale = await getLocale();
+      await supabase.from("profiles").update({ locale }).eq("id", anon.user.id);
+      await writeLocaleCookie(locale);
+    }
+  } else if (data?.claims?.sub) {
+    await syncLocaleCookie(supabase, data.claims.sub);
   }
   const { data: slug, error } = await supabase.rpc("start_demo_sandbox");
   if (error || !slug) {
     console.error("[데모 사본]", error?.code, error?.message);
-    return fail(undefined, error?.message === "demo_full" ? MSG.demoFull : MSG.demoNotReady);
+    return fail(undefined, t(error?.message === "demo_full" ? "errors.msg.demoFull" : "errors.msg.demoNotReady"));
   }
   redirect(`/${slug}/home`);
 }
@@ -90,9 +104,10 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   const name = text(formData, "name");
   const email = text(formData, "email");
   const password = raw(formData, "password");
-  if (!name) return fail("name", MSG.nameRequired);
-  if (name.length > 80) return fail("name", MSG.nameTooLong);
-  const invalid = checkEmail(email) ?? checkPassword(password);
+  const t = await getT();
+  if (!name) return fail("name", t("errors.msg.nameRequired"));
+  if (name.length > 80) return fail("name", t("errors.msg.nameTooLong"));
+  const invalid = checkEmail(email, t) ?? checkPassword(password, t);
   if (invalid) return invalid;
 
   const supabase = await createClient();
@@ -108,8 +123,8 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   // 메일 확인을 끈 설정(auth.email.enable_confirmations = false)에서는 가입 즉시 세션이 생겨 온보딩으로 간다.
   // 이때 기존 이메일은 오류로 오고, 확인 없이 로그인할 수 있어 계정 존재를 숨길 수 없으므로 로그인을 안내한다
   if (data.session) redirect("/onboarding");
-  if (exists) return fail("email", MSG.emailTaken);
-  if (error) return { error: authErrorMessage(error.code) };
+  if (exists) return fail("email", t("errors.msg.emailTaken"));
+  if (error) return { error: authErrorMessage(error.code, t) };
   // 메일 확인을 켠 설정에서는 세션 없이 오므로 확인 메일 안내 화면으로 보낸다
   redirect(`/verify?email=${encodeURIComponent(email)}`);
 }
@@ -122,7 +137,7 @@ export async function signOut(): Promise<void> {
 
 export async function requestPasswordReset(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = text(formData, "email");
-  const invalid = checkEmail(email);
+  const invalid = checkEmail(email, await getT());
   if (invalid) return invalid;
 
   const supabase = await createClient();
@@ -136,26 +151,28 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
 export async function updatePassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const password = raw(formData, "password");
   const confirm = raw(formData, "confirm");
-  const invalid = checkPassword(password);
+  const t = await getT();
+  const invalid = checkPassword(password, t);
   if (invalid) return invalid;
-  if (password !== confirm) return fail("confirm", MSG.passwordMismatch);
+  if (password !== confirm) return fail("confirm", t("errors.msg.passwordMismatch"));
 
   const supabase = await createClient();
   const [{ data }, { data: auth }] = await Promise.all([supabase.auth.getClaims(), supabase.auth.getUser()]);
   // 로그인만으로는 바꿀 수 없다. 재설정 링크로 만든 세션이어야 한다
   if (!isRecoverySession(data?.claims, auth.user?.recovery_sent_at)) {
-    return fail(undefined, MSG.recoveryExpired);
+    return fail(undefined, t("errors.msg.recoveryExpired"));
   }
-  if (isDemoUser(auth.user)) return fail(undefined, MSG.demoRestricted);
+  if (isDemoUser(auth.user)) return fail(undefined, t("errors.msg.demoRestricted"));
 
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { error: authErrorMessage(error.code) };
+  if (error) return { error: authErrorMessage(error.code, t) };
   redirect("/reset/done");
 }
 
 export async function resendConfirmation(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = text(formData, "email");
-  const invalid = checkEmail(email);
+  const t = await getT();
+  const invalid = checkEmail(email, t);
   if (invalid) return invalid;
 
   const supabase = await createClient();
@@ -165,7 +182,7 @@ export async function resendConfirmation(_prev: ActionState, formData: FormData)
     options: { emailRedirectTo: redirectTo("/auth/confirm?next=/onboarding") },
   });
   // 보내기 제한만 알리고 그 밖의 오류는 계정 존재를 숨기려고 성공과 같게 둔다
-  if (error?.code === "over_email_send_rate_limit") return { error: authErrorMessage(error.code) };
+  if (error?.code === "over_email_send_rate_limit") return { error: authErrorMessage(error.code, t) };
   return { ok: true };
 }
 
@@ -182,22 +199,23 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
     .map((e) => String(e).trim())
     .filter(Boolean);
 
-  if (!isOneOf(USAGES, usage)) return fail("usage", MSG.usageRequired);
-  if (!name) return fail("name", MSG.workspaceNameRequired);
-  if (name.length > 80) return fail("name", MSG.workspaceNameTooLong);
-  if (!SLUG_RE.test(slug)) return { error: rpcErrorMessage({ code: "P0001", message: "slug_invalid" }) };
-  if (!isOneOf(TEAM_SIZES, teamSize)) return fail("teamSize", MSG.teamSizeRequired);
-  if (!projectName) return fail("projectName", MSG.projectNameRequired);
-  if (!isOneOf(TEMPLATES, template)) return fail("template", MSG.templateRequired);
-  if (invites.length > 3) return fail("invites", MSG.tooManyInvites);
+  const t = await getT();
+  if (!isOneOf(USAGES, usage)) return fail("usage", t("errors.msg.usageRequired"));
+  if (!name) return fail("name", t("errors.msg.workspaceNameRequired"));
+  if (name.length > 80) return fail("name", t("errors.msg.workspaceNameTooLong"));
+  if (!SLUG_RE.test(slug)) return { error: rpcErrorMessage({ code: "P0001", message: "slug_invalid" }, t) };
+  if (!isOneOf(TEAM_SIZES, teamSize)) return fail("teamSize", t("errors.msg.teamSizeRequired"));
+  if (!projectName) return fail("projectName", t("errors.msg.projectNameRequired"));
+  if (!isOneOf(TEMPLATES, template)) return fail("template", t("errors.msg.templateRequired"));
+  if (invites.length > 3) return fail("invites", t("errors.msg.tooManyInvites"));
   const badInvite = invites.findIndex((e) => !EMAIL_RE.test(e));
-  if (badInvite >= 0) return fail(`invite-${badInvite}`, MSG.emailInvalid);
+  if (badInvite >= 0) return fail(`invite-${badInvite}`, t("errors.msg.emailInvalid"));
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return fail(undefined, MSG.sessionExpired);
+  if (!auth?.claims) return fail(undefined, t("errors.msg.sessionExpired"));
   // 데모 사용자가 만든 워크스페이스는 사본 만료 정리로 지워지지 않아 만들지 못하게 한다
-  if (isDemoUser(auth.claims)) return fail(undefined, MSG.demoRestricted);
+  if (isDemoUser(auth.claims)) return fail(undefined, t("errors.msg.demoRestricted"));
 
   const { data, error } = await supabase.rpc("create_workspace_onboarding", {
     p_name: name,
@@ -208,6 +226,6 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
     p_template: template,
     p_invite_emails: invites,
   });
-  if (error) return { error: rpcErrorMessage(error) };
+  if (error) return { error: rpcErrorMessage(error, t) };
   return { ok: true, slug: data?.[0]?.slug ?? slug };
 }

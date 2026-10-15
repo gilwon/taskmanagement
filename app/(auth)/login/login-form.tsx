@@ -4,20 +4,22 @@ import Link from "next/link";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
 import { Field, FormAlert, SubmitButton, useAuthAction } from "@/components/auth/form-parts";
 import { signIn, signInDemo } from "@/lib/auth/actions";
+import { useT } from "@/lib/i18n/client";
 
 export function LoginForm({ next, linkError, demo }: { next: string; linkError?: string; demo: boolean }) {
   const { pending, formRef, onSubmit, fieldError, formError, state } = useAuthAction(signIn);
+  const t = useT();
   // 제출 뒤 폼 전체 오류는 이메일·비밀번호 조합에 대한 것이라 두 칸 모두 오류로 표시하고 문구를 잇는다
   const credError = state && formError ? "login-error" : undefined;
   return (
     <AuthCard
-      title="로그인"
-      description="작업 공간에 다시 오신 것을 환영합니다."
+      title={t("auth.login.title")}
+      description={t("auth.login.description")}
       footer={
         <>
-          계정이 없으신가요?{" "}
+          {t("auth.login.noAccount")}{" "}
           <Link href="/signup" className={linkClass}>
-            계정 만들기
+            {t("auth.login.createAccount")}
           </Link>
         </>
       }
@@ -28,10 +30,10 @@ export function LoginForm({ next, linkError, demo }: { next: string; linkError?:
         <input type="hidden" name="next" value={next} />
         <Field
           id="email"
-          label="이메일"
+          label={t("auth.field.email")}
           type="email"
           autoComplete="email"
-          placeholder="name@example.com"
+          placeholder={t("auth.field.emailPlaceholder")}
           required
           error={fieldError("email")}
           invalidBy={credError}
@@ -39,19 +41,19 @@ export function LoginForm({ next, linkError, demo }: { next: string; linkError?:
         <div className="flex flex-col gap-[var(--s-2)]">
           <Field
             id="password"
-            label="비밀번호"
+            label={t("auth.field.password")}
             type="password"
             autoComplete="current-password"
-            placeholder="비밀번호"
+            placeholder={t("auth.field.password")}
             required
             error={fieldError("password")}
             invalidBy={credError}
           />
           <Link href="/forgot" className={`${linkClass} self-end text-[length:var(--fs-sm)]`}>
-            비밀번호를 잊으셨나요?
+            {t("auth.login.forgot")}
           </Link>
         </div>
-        <SubmitButton pending={pending}>{pending ? "로그인 중…" : "로그인"}</SubmitButton>
+        <SubmitButton pending={pending}>{pending ? t("auth.login.submitting") : t("auth.login.submit")}</SubmitButton>
       </form>
       {demo && <DemoLogin />}
     </AuthCard>
@@ -61,6 +63,7 @@ export function LoginForm({ next, linkError, demo }: { next: string; linkError?:
 // 데모 시작. 서버가 익명 로그인과 사본 생성을 하므로 폼은 아무 값도 보내지 않는다
 function DemoLogin() {
   const { pending, formRef, onSubmit, formError } = useAuthAction(signInDemo);
+  const t = useT();
   return (
     <form
       ref={formRef}
@@ -71,10 +74,10 @@ function DemoLogin() {
     >
       <FormAlert id="demo-error" message={formError} />
       <SubmitButton pending={pending} variant="outline">
-        {pending ? "데모 준비 중…" : "데모로 둘러보기"}
+        {pending ? t("auth.login.demoPending") : t("auth.login.demo")}
       </SubmitButton>
       <p id="demo-note" className="text-center text-[length:var(--fs-xs)] text-[var(--text-3)]">
-        가입 없이 나만의 데모가 열리고 24시간 뒤 지워집니다. 파일 업로드는 할 수 없습니다.
+        {t("auth.login.demoNote")}
       </p>
     </form>
   );

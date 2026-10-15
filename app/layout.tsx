@@ -1,9 +1,11 @@
-// 루트 레이아웃. html 속성(테마·강조색·밀도·모션), 폰트, 기본 메타데이터, 환경설정·툴팁·토스트 provider를 설정한다
+// 루트 레이아웃. html 속성(로캘·테마·강조색·밀도·모션), 폰트, 기본 메타데이터, 사전·환경설정·툴팁·토스트 provider를 설정한다
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { InlineScript } from "@/components/inline-script";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { I18nProvider } from "@/lib/i18n/client";
+import { getLocale, getT, messagesFor } from "@/lib/i18n/server";
 import { PREFS_SCRIPT } from "@/lib/prefs/prefs";
 import { PrefsProvider } from "@/lib/prefs/provider";
 import "./globals.css";
@@ -21,14 +23,15 @@ const geistMono = Geist_Mono({
   weight: ["400"],
 });
 
-export const metadata: Metadata = {
-  title: "작업 공간",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.appName") };
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
     <html
-      lang="ko"
+      lang={locale}
       data-theme="system"
       data-accent="indigo"
       data-density="comfortable"
@@ -43,12 +46,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <InlineScript html={PREFS_SCRIPT} />
       </head>
       <body className="min-h-full flex flex-col">
-        <PrefsProvider>
-          <TooltipProvider delayDuration={200}>
-            {children}
-            <Toaster />
-          </TooltipProvider>
-        </PrefsProvider>
+        {/* 현재 로캘 사전 하나만 클라이언트로 넘긴다 */}
+        <I18nProvider locale={locale} messages={messagesFor(locale)}>
+          <PrefsProvider>
+            <TooltipProvider delayDuration={200}>
+              {children}
+              <Toaster />
+            </TooltipProvider>
+          </PrefsProvider>
+        </I18nProvider>
       </body>
     </html>
   );

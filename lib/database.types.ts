@@ -276,14 +276,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "color": string,"created_at": string,"email": string,"id": string,"name": string,"updated_at": string
+                    "color": string,"created_at": string,"email": string,"id": string,"locale": string,"name": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "color"?: string,"created_at"?: string,"email"?: string,"id": string,"name"?: string,"updated_at"?: string
+                    "color"?: string,"created_at"?: string,"email"?: string,"id": string,"locale"?: string,"name"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "color"?: string,"created_at"?: string,"email"?: string,"id"?: string,"name"?: string,"updated_at"?: string
+                    "color"?: string,"created_at"?: string,"email"?: string,"id"?: string,"locale"?: string,"name"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     

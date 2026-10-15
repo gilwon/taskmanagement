@@ -12,12 +12,14 @@ import {
   SessionsPanel,
   TimezoneForm,
 } from "@/components/org/settings-forms";
+import { LanguageForm } from "@/components/org/language-form";
 import { RolePermissionsTable } from "@/components/org/role-permissions";
 import { InfoRow, SettingsCard, SettingsTitle, UnavailableRow } from "@/components/org/settings-parts";
 import { ShortcutSettings } from "@/components/shortcuts/shortcut-settings";
 import { Button } from "@/components/ui/button";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS, SETTINGS_SECTIONS, type SettingsSection } from "@/lib/i18n/labels";
+import { SETTINGS_SECTIONS, type SettingsSection } from "@/lib/i18n/labels";
+import { getFormatter, getT } from "@/lib/i18n/server";
 import { getNotifPrefs, getOrgMembers, getTeams } from "@/lib/org/queries";
 import { canOpenSettingsSection, isAdminRole } from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +32,9 @@ function find(section: string) {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const key = find((await params).section);
-  return key ? { title: `${NAV_LABELS.settings} ${SETTINGS_SECTIONS[key].label}` } : {};
+  if (!key) return {};
+  const t = await getT();
+  return { title: t("org.settings.pageTitle", { settings: t("common.nav.settings"), section: t(`org.settings.section.${key}`) }) };
 }
 
 export default async function SettingsSectionPage({ params }: { params: Params }) {
@@ -39,8 +43,14 @@ export default async function SettingsSectionPage({ params }: { params: Params }
   if (!key) notFound();
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
-  const found = SETTINGS_SECTIONS[key];
-  const header = <SettingsTitle title={found.label} subtitle={`${NAV_LABELS.settings} · ${found.group}`} />;
+  const [t, format] = await Promise.all([getT(), getFormatter()]);
+  const title = t(`org.settings.section.${key}`);
+  const header = (
+    <SettingsTitle
+      title={title}
+      subtitle={t("org.settings.subtitle", { settings: t("common.nav.settings"), group: t(`org.settings.groupOf.${key}`) })}
+    />
+  );
   const members = await getOrgMembers(workspace.id);
   const me = members.find((m) => m.id === userId);
   if (!canOpenSettingsSection(me?.role, key)) forbidden();
@@ -72,8 +82,8 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="언어">
-            <InfoRow label="표시 언어" value="한국어" note="현재 한국어만 지원합니다." />
+          <SettingsCard title={title}>
+            <LanguageForm />
           </SettingsCard>
         </>
       );
@@ -81,11 +91,12 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="날짜 및 시간" description="화면의 날짜와 시각은 Asia/Seoul 기준으로 표시합니다.">
+          <SettingsCard title={title} description={t("org.settings.datetime.description")}>
             <TimezoneForm workspaceId={workspace.id} initial={me?.tz ?? "Asia/Seoul"} />
-            <InfoRow label="한 주의 시작" value="일요일" note="변경을 제공하지 않습니다." />
-            <InfoRow label="날짜 형식" value="10월 26일" note="변경을 제공하지 않습니다." />
-            <InfoRow label="시간 형식" value="24시간제" note="변경을 제공하지 않습니다." />
+            <InfoRow label={t("org.settings.datetime.weekStart")} value={t("org.settings.datetime.sunday")} note={t("org.settings.notChangeable")} />
+            {/* 날짜 형식 예시는 현재 로캘의 실제 표기로 보인다 */}
+            <InfoRow label={t("org.settings.datetime.dateFormat")} value={format.date("2026-10-26")} note={t("org.settings.notChangeable")} />
+            <InfoRow label={t("org.settings.datetime.timeFormat")} value={t("org.settings.datetime.hour24")} note={t("org.settings.notChangeable")} />
           </SettingsCard>
         </>
       );
@@ -94,8 +105,8 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="구성원" description={`활성 구성원 ${active}명 · 전체 ${members.length}명`}>
-            {link("members", "구성원 관리")}
+          <SettingsCard title={title} description={t("org.settings.members.description", { active, total: members.length })}>
+            {link("members", t("org.settings.members.manage"))}
           </SettingsCard>
         </>
       );
@@ -105,8 +116,8 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="팀" description={`팀 ${teams.length}개`}>
-            {link("teams", "팀 관리")}
+          <SettingsCard title={title} description={t("org.settings.teams.description", { count: teams.length })}>
+            {link("teams", t("org.settings.teams.manage"))}
           </SettingsCard>
         </>
       );
@@ -115,8 +126,8 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="프로젝트" description="프로젝트 만들기·보관·삭제는 프로젝트 화면과 보관함에서 합니다.">
-            {link("projects", "프로젝트 보기")}
+          <SettingsCard title={title} description={t("org.settings.projects.description")}>
+            {link("projects", t("org.settings.projects.view"))}
           </SettingsCard>
         </>
       );
@@ -124,10 +135,7 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard
-            title="역할별 권한"
-            description="역할은 구성원 화면에서 소유자·관리자가 바꿉니다. 누구도 자기 역할을 스스로 바꿀 수 없습니다."
-          >
+          <SettingsCard title={t("org.settings.permissions.title")} description={t("org.settings.permissions.description")}>
             <RolePermissionsTable />
           </SettingsCard>
         </>
@@ -153,11 +161,11 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="환경 설정" description="아래 항목은 아직 바꿀 수 없습니다. 화면 모양은 화면 설정에서 바꿉니다.">
-            <UnavailableRow label="시작 화면" description="지금은 홈으로 시작합니다." />
-            <UnavailableRow label="작업 여는 방식" description="지금은 오른쪽 패널로 엽니다." />
-            <UnavailableRow label="보드에 완료 열 표시" />
-            <UnavailableRow label="삭제 전 확인" />
+          <SettingsCard title={title} description={t("org.settings.preferences.description")}>
+            <UnavailableRow label={t("org.settings.preferences.startPage")} description={t("org.settings.preferences.startPageNote")} />
+            <UnavailableRow label={t("org.settings.preferences.taskOpen")} description={t("org.settings.preferences.taskOpenNote")} />
+            <UnavailableRow label={t("org.settings.preferences.boardDone")} />
+            <UnavailableRow label={t("org.settings.preferences.confirmDelete")} />
           </SettingsCard>
         </>
       );
@@ -189,8 +197,8 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="2단계 인증">
-            <UnavailableRow label="2단계 인증" description="이 기능은 현재 제공하지 않습니다." />
+          <SettingsCard title={title}>
+            <UnavailableRow label={title} description={t("org.settings.twoFactor.note")} />
           </SettingsCard>
         </>
       );
@@ -198,10 +206,10 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title="결제" description="결제 기능은 현재 제공하지 않습니다. 요금이 청구되지 않습니다.">
-            <UnavailableRow label="요금제" />
-            <UnavailableRow label="결제 수단" />
-            <UnavailableRow label="청구서" />
+          <SettingsCard title={title} description={t("org.settings.billing.description")}>
+            <UnavailableRow label={t("org.settings.billing.plan")} />
+            <UnavailableRow label={t("org.settings.billing.paymentMethod")} />
+            <UnavailableRow label={t("org.settings.billing.invoices")} />
           </SettingsCard>
         </>
       );

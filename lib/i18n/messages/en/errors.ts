@@ -1,0 +1,48 @@
+// 서버 액션·RPC 오류 안내 영어 문구
+import type { Messages } from "../types";
+
+export default {
+  generic: "Something went wrong. Please try again in a moment.",
+  msg: {
+    emailRequired: "Enter your email.",
+    emailInvalid: "Enter a valid email address.",
+    passwordRequired: "Enter your password.",
+    nameRequired: "Enter your name.",
+    nameTooLong: "Name must be 80 characters or fewer.",
+    passwordMismatch: "Passwords don't match.",
+    recoveryExpired: "This reset link has expired. Request a new one from Forgot password.",
+    sessionExpired: "Your session has expired. Please log in again.",
+    usageRequired: "Choose how you'll use it.",
+    workspaceNameRequired: "Enter a workspace name.",
+    workspaceNameTooLong: "Workspace name must be 80 characters or fewer.",
+    slugInvalid: "URL must be 2–39 lowercase letters, numbers, or hyphens, starting with a letter or number.",
+    teamSizeRequired: "Choose a team size.",
+    projectNameRequired: "Enter a project name.",
+    templateRequired: "Choose a template.",
+    tooManyInvites: "You can invite up to 3 people.",
+    emailTaken: "This email is already registered. Please log in.",
+    demoDisabled: "The demo is turned off.",
+    demoNotReady: "The demo isn't ready yet.",
+    demoRestricted: "This isn't available in demo accounts.",
+    demoFull: "The demo is busy right now. Please try again in a moment.",
+  },
+  passwordTooShort: "Password must be at least {min} characters.",
+  auth: {
+    invalidCredentials: "Incorrect email or password.",
+    emailNotConfirmed: "Please confirm your email. Click the link in your inbox.",
+    emailAddressInvalid: "This email address can't be used.",
+    weakPassword: "Password is too weak. Use at least {min} characters with letters and numbers.",
+    samePassword: "Choose a password different from your current one.",
+    emailRateLimit: "Too many emails requested. Please try again in a moment.",
+    requestRateLimit: "Too many requests. Please try again in a moment.",
+    linkExpired: "This link has expired or was already used. Please request a new one.",
+    badCodeVerifier: "Open the link in the browser you requested it from.",
+    signupDisabled: "Sign-ups are currently closed.",
+    emailProviderDisabled: "Email sign-ups are currently closed.",
+  },
+  rpc: {
+    forbidden: "You don't have permission to do this.",
+    invalidInput: "Check your input and try again.",
+    slugTaken: "This URL is already taken. Try another one.",
+  },
+} satisfies Messages["errors"];

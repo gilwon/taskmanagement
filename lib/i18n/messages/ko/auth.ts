@@ -1,0 +1,78 @@
+// 인증 화면(로그인·가입·비밀번호 찾기·재설정·메일 확인) 한국어 문구
+export default {
+  field: {
+    email: "이메일",
+    emailPlaceholder: "name@example.com",
+    password: "비밀번호",
+    name: "이름",
+    namePlaceholder: "홍길동",
+    passwordMin: "{min}자 이상",
+    passwordHint: "영문과 숫자를 섞어 {min}자 이상 입력해 주세요.",
+  },
+  backToLogin: "로그인으로 돌아가기",
+  sending: "보내는 중…",
+  linkError: "링크가 만료되었거나 이미 사용되었습니다. 다시 요청해 주세요.",
+  login: {
+    title: "로그인",
+    description: "작업 공간에 다시 오신 것을 환영합니다.",
+    noAccount: "계정이 없으신가요?",
+    createAccount: "계정 만들기",
+    forgot: "비밀번호를 잊으셨나요?",
+    submit: "로그인",
+    submitting: "로그인 중…",
+    demo: "데모로 둘러보기",
+    demoPending: "데모 준비 중…",
+    demoNote: "가입 없이 나만의 데모가 열리고 24시간 뒤 지워집니다. 파일 업로드는 할 수 없습니다.",
+  },
+  signup: {
+    metaTitle: "가입",
+    title: "계정 만들기",
+    description: "이메일로 가입하고 팀의 작업을 한곳에서 관리하세요.",
+    haveAccount: "이미 계정이 있으신가요?",
+    login: "로그인",
+    submit: "가입하기",
+    submitting: "가입 중…",
+  },
+  forgot: {
+    title: "비밀번호 찾기",
+    description: "가입한 이메일을 입력하면 비밀번호를 다시 정할 수 있는 링크를 보내 드립니다.",
+    submit: "재설정 링크 보내기",
+  },
+  forgotSent: {
+    metaTitle: "메일 발송",
+    title: "메일함을 확인해 주세요",
+    description:
+      "입력한 이메일로 가입된 계정이 있으면 비밀번호 재설정 링크를 보냈습니다. 링크는 요청한 브라우저에서 열어 주세요.",
+    again: "다시 요청하기",
+  },
+  reset: {
+    metaTitle: "비밀번호 재설정",
+    expiredTitle: "링크가 만료되었습니다",
+    expiredDescription:
+      "비밀번호는 재설정 메일의 링크로 들어온 뒤 10분 안에만 바꿀 수 있습니다. 링크가 만료되었거나 이미 사용되었다면 비밀번호 찾기를 다시 요청해 주세요.",
+    forgot: "비밀번호 찾기",
+    title: "새 비밀번호 설정",
+    description: "앞으로 로그인할 때 쓸 새 비밀번호를 입력해 주세요.",
+    newPassword: "새 비밀번호",
+    confirm: "새 비밀번호 확인",
+    confirmPlaceholder: "한 번 더 입력",
+    submit: "비밀번호 변경",
+    submitting: "저장 중…",
+  },
+  resetDone: {
+    metaTitle: "비밀번호 변경 완료",
+    title: "비밀번호를 바꿨습니다",
+    description: "새 비밀번호로 계속 이용할 수 있습니다.",
+    go: "작업 공간으로 이동",
+  },
+  verify: {
+    metaTitle: "메일 확인",
+    title: "메일함을 확인해 주세요",
+    // {email}은 굵은 주소로 바뀐다
+    sentTo: "{email}(으)로 확인 링크를 보냈습니다. 링크를 누르면 가입이 완료됩니다.",
+    sentGeneric: "가입한 이메일로 확인 링크를 보냈습니다. 링크를 누르면 가입이 완료됩니다.",
+    spamHint: "메일이 보이지 않으면 스팸함을 확인하거나 다시 보내 주세요.",
+    resent: "확인 메일을 다시 보냈습니다.",
+    resend: "확인 메일 다시 보내기",
+  },
+} as const;

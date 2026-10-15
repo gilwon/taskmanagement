@@ -4,34 +4,36 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { Field, FormAlert, SubmitButton, useAuthAction } from "@/components/auth/form-parts";
 import { updatePassword } from "@/lib/auth/actions";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/rules";
+import { useT } from "@/lib/i18n/client";
 
 export function ResetForm() {
   const { pending, formRef, onSubmit, fieldError, formError } = useAuthAction(updatePassword);
+  const t = useT();
   return (
-    <AuthCard title="새 비밀번호 설정" description="앞으로 로그인할 때 쓸 새 비밀번호를 입력해 주세요.">
+    <AuthCard title={t("auth.reset.title")} description={t("auth.reset.description")}>
       <form ref={formRef} method="post" onSubmit={onSubmit} noValidate className="flex flex-col gap-[var(--s-4)]">
         <FormAlert message={formError} />
         <Field
           id="password"
-          label="새 비밀번호"
+          label={t("auth.reset.newPassword")}
           type="password"
           autoComplete="new-password"
-          placeholder={`${MIN_PASSWORD_LENGTH}자 이상`}
-          hint={`영문과 숫자를 섞어 ${MIN_PASSWORD_LENGTH}자 이상 입력해 주세요.`}
+          placeholder={t("auth.field.passwordMin", { min: MIN_PASSWORD_LENGTH })}
+          hint={t("auth.field.passwordHint", { min: MIN_PASSWORD_LENGTH })}
           minLength={MIN_PASSWORD_LENGTH}
           required
           error={fieldError("password")}
         />
         <Field
           id="confirm"
-          label="새 비밀번호 확인"
+          label={t("auth.reset.confirm")}
           type="password"
           autoComplete="new-password"
-          placeholder="한 번 더 입력"
+          placeholder={t("auth.reset.confirmPlaceholder")}
           required
           error={fieldError("confirm")}
         />
-        <SubmitButton pending={pending}>{pending ? "저장 중…" : "비밀번호 변경"}</SubmitButton>
+        <SubmitButton pending={pending}>{pending ? t("auth.reset.submitting") : t("auth.reset.submit")}</SubmitButton>
       </form>
     </AuthCard>
   );
