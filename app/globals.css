@@ -410,3 +410,87 @@
     @apply font-sans;
   }
 }
+
+/*
+ * 앱 셸 레이아웃(META §1·§8). 사이드바 표시 여부는 html의 data-sidebar와 미디어 쿼리로만 정해
+ * 서버 렌더와 첫 화면이 어긋나지 않게 한다
+ */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
+  height: 100dvh;
+}
+:root[data-sidebar=collapsed] .app-shell {
+  grid-template-columns: minmax(0, 1fr);
+}
+:root[data-sidebar=collapsed] .app-side {
+  display: none;
+}
+.only-collapsed,
+.only-narrow {
+  display: none;
+}
+:root[data-sidebar=collapsed] .only-collapsed {
+  display: inline-flex;
+}
+.app-side {
+  min-height: 0;
+}
+
+/* 본문 건너뛰기. 포커스를 받을 때만 화면 안으로 들어온다 */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: none;
+}
+
+/* 오프캔버스 사이드바. shadcn 기본 슬라이드(2.5rem)를 전체 폭 translateX .22s로 바꾼다 */
+.app-sheet[data-slot=sheet-content] {
+  width: 280px;
+  max-width: 280px;
+  --tw-enter-translate-x: -100%;
+  --tw-exit-translate-x: -100%;
+  --tw-enter-opacity: 1;
+  --tw-exit-opacity: 1;
+  animation-duration: 0.22s;
+  animation-timing-function: var(--ease-drawer);
+}
+/* 스크림은 --overlay 토큰을 쓴다 */
+[data-slot=sheet-overlay] {
+  background: var(--overlay);
+  backdrop-filter: none;
+}
+
+@media (max-width: 900px) {
+  .app-shell,
+  :root[data-sidebar=collapsed] .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-side,
+  :root[data-sidebar=collapsed] .only-collapsed {
+    display: none;
+  }
+  .only-narrow {
+    display: inline-flex;
+  }
+}
+
+/* 640px 이하. 하단 내비 높이만큼 본문 아래를 비운다 */
+@media (max-width: 640px) {
+  .hide-m {
+    display: none !important;
+  }
+  .app-main {
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 641px) {
+  .only-m {
+    display: none !important;
+  }
+}

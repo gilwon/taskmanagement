@@ -1,0 +1,80 @@
+// 인증·온보딩 입력 규칙과 선택지. 클라이언트 폼과 Server Action이 같은 규칙을 쓴다
+import { TEMPLATE_LABELS } from "@/lib/i18n/labels";
+
+// supabase/config.toml의 auth.minimum_password_length와 같아야 한다
+export const MIN_PASSWORD_LENGTH = 6;
+
+// 마이그레이션 workspaces.slug check와 create_workspace_onboarding의 정규식과 같다
+export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}$/;
+
+// create_workspace_onboarding의 초대 이메일 검사와 같다
+export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// 재설정 링크로 만든 세션만 비밀번호를 바꿀 수 있는 시간(초)
+export const RECOVERY_WINDOW_SEC = 10 * 60;
+
+// 재설정 링크 세션인지 판단한다. 로컬 GoTrue에서 PKCE code 교환 뒤 amr은 [{ method: "recovery", timestamp }]이고
+// 토큰을 갱신해도 그대로 남으므로 timestamp로 유효 시간을 제한한다. 일반 로그인은 method가 "password"다
+export function isRecoverySession(
+  claims: { amr?: ({ method: string; timestamp: number } | string)[] } | null | undefined,
+  nowSec = Math.floor(Date.now() / 1000),
+) {
+  return (claims?.amr ?? []).some(
+    (entry) =>
+      typeof entry === "object" &&
+      entry.method === "recovery" &&
+      nowSec - entry.timestamp >= 0 &&
+      nowSec - entry.timestamp <= RECOVERY_WINDOW_SEC,
+  );
+}
+
+// 워크스페이스 이름에서 URL 후보를 만든다. 영문·숫자 외 문자는 지우고 형식에 맞지 않으면 빈 값이다
+export function suggestSlug(name: string) {
+  const slug = name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/[\s-]+/g, "-")
+    .replace(/^-+/, "")
+    .slice(0, 39)
+    .replace(/-+$/, "");
+  return SLUG_RE.test(slug) ? slug : "";
+}
+
+export const USAGES = [
+  { id: "work", label: "업무" },
+  { id: "personal", label: "개인" },
+  { id: "school", label: "학교·교육" },
+  { id: "other", label: "기타" },
+] as const;
+
+// 저장값은 workspaces.team_size check 값이다
+export const TEAM_SIZES = [
+  { id: "solo", label: "혼자" },
+  { id: "2-10", label: "2–10명" },
+  { id: "11-50", label: "11–50명" },
+  { id: "51-200", label: "51–200명" },
+  { id: "200+", label: "200명 이상" },
+] as const;
+
+// 저장값은 create_project의 템플릿 검사 값이다. 표시명은 단일 사전(TEMPLATE_LABELS)에서 가져온다
+export const TEMPLATES = (Object.keys(TEMPLATE_LABELS) as (keyof typeof TEMPLATE_LABELS)[]).map((id) => ({
+  id,
+  label: TEMPLATE_LABELS[id],
+}));
+
+export type FieldError = { field?: string; message: string };
+
+// Server Action 결과. 성공하면 대부분 redirect하므로 ok는 redirect하지 않는 동작만 쓴다
+export type ActionState = { ok: true; slug?: string } | { error: FieldError } | null;
+
+export type OnboardingInput = {
+  usage: string;
+  name: string;
+  slug: string;
+  teamSize: string;
+  projectName: string;
+  template: string;
+  invites: string[];
+};

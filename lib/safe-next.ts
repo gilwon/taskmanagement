@@ -10,6 +10,13 @@ export function isPublicPath(pathname: string) {
   );
 }
 
+// 로그인 상태에서는 볼 필요가 없는 화면. /reset·/verify·/auth/*는 세션이 있어도 써야 하므로 뺀다
+export function isGuestOnlyPath(pathname: string) {
+  return (
+    pathname === "/login" || pathname === "/signup" || pathname === "/forgot" || pathname.startsWith("/forgot/")
+  );
+}
+
 // 같은 출처 상대 경로만 통과시킨다. 그 외는 "/"로 바꿔 오픈 리다이렉트를 막는다
 export function safeNext(value: string | null | undefined) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";

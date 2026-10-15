@@ -19,6 +19,9 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
+        // 사이드바 개수 배지. 테두리를 빼서 18px 높이 안에 숫자를 세로 가운데로 둔다
+        count:
+          "h-4.5 min-w-4.5 border-0 bg-(--accent) px-1.5 py-0 text-(length:--fs-2xs) leading-4.5 text-(--on-accent) tabular-nums",
       },
     },
     defaultVariants: {

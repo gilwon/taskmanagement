@@ -1,9 +1,9 @@
-// proxy에서 호출하는 세션 갱신 함수. 쿠키를 갱신하고 비로그인 요청을 /login으로 보낸다
+// proxy에서 호출하는 세션 갱신 함수. 쿠키를 갱신하고 비로그인 요청을 /login으로, 로그인 사용자의 로그인·가입 화면 요청을 /로 보낸다
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { getSupabaseEnv } from "@/lib/env";
-import { isPublicPath, safeNext } from "@/lib/safe-next";
+import { isGuestOnlyPath, isPublicPath, safeNext } from "@/lib/safe-next";
 
 export async function updateSession(request: NextRequest) {
   const { url, publishableKey } = getSupabaseEnv();
@@ -35,16 +35,28 @@ export async function updateSession(request: NextRequest) {
   const claims = data?.claims;
 
   const { pathname, search } = request.nextUrl;
+  // 갱신·삭제된 세션 쿠키와 캐시 금지 헤더를 리다이렉트 응답에도 옮긴다
+  const redirectTo = (target: URL) => {
+    const redirect = NextResponse.redirect(target);
+    supabaseResponse.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    Object.entries(authHeaders).forEach(([key, value]) => redirect.headers.set(key, value));
+    return redirect;
+  };
+
   if (!claims && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.search = "";
     loginUrl.searchParams.set("next", safeNext(pathname + search));
-    const redirect = NextResponse.redirect(loginUrl);
-    // 갱신·삭제된 세션 쿠키와 캐시 금지 헤더를 리다이렉트 응답에도 옮긴다
-    supabaseResponse.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
-    Object.entries(authHeaders).forEach(([key, value]) => redirect.headers.set(key, value));
-    return redirect;
+    return redirectTo(loginUrl);
+  }
+
+  // 로그인 상태로 로그인·가입·비밀번호 찾기에 오면 /로 보낸다. 워크스페이스 분기는 app/page.tsx가 한다
+  if (claims && isGuestOnlyPath(pathname)) {
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/";
+    homeUrl.search = "";
+    return redirectTo(homeUrl);
   }
 
   return supabaseResponse;

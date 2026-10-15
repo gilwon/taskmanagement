@@ -1,16 +1,27 @@
 "use client"
-// shadcn/ui sonner 컴포넌트. CLI로 생성한 파일이다
+// shadcn/ui sonner 컴포넌트. CLI로 생성한 파일이다. 테마는 환경설정 provider 값을 따른다
 
-import { useTheme } from "next-themes"
+import { useEffect, useRef } from "react"
+import { usePrefs } from "@/lib/prefs/provider"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const { prefs } = usePrefs()
+  const ref = useRef<HTMLElement>(null)
+
+  // sonner는 컨테이너에 aria-live만 준다. 상태 알림 역할(role=status)을 명시한다
+  useEffect(() => {
+    ref.current?.setAttribute("role", "status")
+  }, [])
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      ref={ref}
+      theme={prefs.theme}
+      position="bottom-right"
+      duration={4200}
+      containerAriaLabel="알림 메시지"
       className="toaster group"
       icons={{
         success: (
@@ -41,6 +52,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast: "cn-toast",
         },
+        closeButtonAriaLabel: "알림 닫기",
       }}
       {...props}
     />
