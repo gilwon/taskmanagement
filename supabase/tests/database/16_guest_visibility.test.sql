@@ -38,7 +38,7 @@ insert into public.project_members (project_id, user_id, perm) values
   ('20000000-0000-0000-0000-0000000016c1', '00000000-0000-0000-0000-0000000016a2', 'edit'),
   ('20000000-0000-0000-0000-0000000016c1', '00000000-0000-0000-0000-0000000016a4', 'comment');
 
-select ok(not has_function_privilege('anon', 'public.guest_shares_project(uuid, uuid)', 'execute'),
+select ok(not has_function_privilege('anon', 'private.guest_shares_project(uuid, uuid)', 'execute'),
   'anon은 guest_shares_project를 실행할 수 없다');
 
 set local role authenticated;

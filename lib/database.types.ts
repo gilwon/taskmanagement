@@ -850,9 +850,6 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
-"guest_shares_project":
-{ Args: { "p_user": string,"ws": string }; Returns: boolean
-                           },
 "is_ws_admin":
 { Args: { "ws": string }; Returns: boolean
                            },
