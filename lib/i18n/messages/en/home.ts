@@ -18,6 +18,7 @@ export default {
       done: "No completed tasks",
     },
     noDue: "No due date",
+    allDone: "All upcoming tasks done",
     viewAll: { one: "View {count} task", other: "View all {count} tasks" },
   },
   progress: {

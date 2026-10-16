@@ -18,6 +18,7 @@ export default {
       done: "完了したタスクはありません",
     },
     noDue: "期限なし",
+    allDone: "今後のタスクをすべて完了しました",
     viewAll: { one: "{count} 件のタスクを表示", other: "{count} 件のタスクをすべて表示" },
   },
   progress: {

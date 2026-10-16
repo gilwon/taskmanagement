@@ -1,44 +1,51 @@
 "use client";
-// 홈·내 작업 화면 공용 부품. 0부터 올라가는 숫자, 완료 토글 원형, 프로젝트 점, 패널 틀
-import { Check } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+// 홈·내 작업 화면 공용 부품. 자리별로 굴러가는 숫자, 완료 토글 원형, 프로젝트 점, 패널 틀
+import { useEffect, useState } from "react";
 import { useTaskActions } from "@/components/tasks/task-store";
 import { useT } from "@/lib/i18n/client";
 import { colorHex } from "@/lib/i18n/labels";
 import type { TaskItem } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
+import "./lucian-home.css";
 
-const COUNT_MS = 520;
+const DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-// 숫자를 0(또는 직전 값)에서 목표값까지 ease-out-cubic으로 올린다. 모션 줄이기면 바로 보인다(META §6).
-// 화면 읽기 프로그램에는 최종값만 읽힌다
+// 숫자를 자리마다 0~9 기둥으로 그려 바뀐 자리만 굴린다(#098). 첫 그리기는 0에서 굴러 올라간다.
+// 모션 줄이기면 CSS가 transition을 꺼 바로 보인다(META §6). 화면 읽기 프로그램에는 최종값만 읽힌다
 export function CountUp({ value, className }: { value: number; className?: string }) {
-  const [shown, setShown] = useState(0);
-  const shownRef = useRef(0);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    const from = shownRef.current;
-    const reduce = document.documentElement.dataset.motion !== "full";
-    const t0 = performance.now();
-    let id = 0;
-    const tick = (t: number) => {
-      const p = reduce ? 1 : Math.min(1, (t - t0) / COUNT_MS);
-      const next = Math.round(from + (value - from) * (1 - (1 - p) ** 3));
-      shownRef.current = next;
-      setShown(next);
-      if (p < 1) id = requestAnimationFrame(tick);
-    };
-    id = requestAnimationFrame(tick);
+    // 0으로 한 번 그려진 뒤에 목표 자리로 옮겨야 transition이 돈다
+    const id = requestAnimationFrame(() => setReady(true));
     return () => cancelAnimationFrame(id);
-  }, [value]);
+  }, []);
+  const str = String(value);
   return (
     <span className={cn("tabular-nums", className)}>
-      <span aria-hidden>{shown}</span>
+      <span aria-hidden className="u098-num">
+        {/* key는 오른쪽(일의 자리)부터 세어 자릿수가 늘어도 기존 자리가 그대로 굴러간다. 숫자가 아닌 글자는 그대로 둔다(원본 /\d/) */}
+        {str.split("").map((ch, i) =>
+          /\d/.test(ch) ? (
+            <span
+              key={str.length - i}
+              className="u098-col"
+              style={{ "--d": ready ? ch : 0, "--i": i } as React.CSSProperties}
+            >
+              {DIGITS.map((d) => (
+                <span key={d}>{d}</span>
+              ))}
+            </span>
+          ) : (
+            <span key={str.length - i}>{ch}</span>
+          ),
+        )}
+      </span>
       <span className="sr-only">{value}</span>
     </span>
   );
 }
 
-// 완료 토글. 열린 작업은 완료로, 완료된 작업은 다시 연다(store가 낙관적으로 바꾸고 실패하면 되돌린다)
+// 완료 토글(#014). 열린 작업은 완료로, 완료된 작업은 다시 연다(store가 낙관적으로 바꾸고 실패하면 되돌린다)
 export function CompleteToggle({ task, size = 16 }: { task: TaskItem; size?: number }) {
   const t = useT();
   const { complete, reopen } = useTaskActions();
@@ -52,19 +59,13 @@ export function CompleteToggle({ task, size = 16 }: { task: TaskItem; size?: num
         e.stopPropagation();
         void (done ? reopen(task.id) : complete(task.id));
       }}
-      className="inline-flex size-(--h-sm) shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+      className="u014-tg inline-flex size-(--h-sm) shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
     >
-      <span
-        aria-hidden
-        className={cn(
-          "inline-flex items-center justify-center rounded-full border-[1.5px] transition-colors duration-(--dur)",
-          done
-            ? "animate-[popCheck_.26s_var(--spring)] border-(--green) bg-(--green) text-(--surface)"
-            : "border-(--border-strong) text-transparent hover:border-(--green) hover:text-(--green)",
-        )}
-        style={{ width: size, height: size }}
-      >
-        <Check size={size - 6} strokeWidth={1.8} absoluteStrokeWidth />
+      {/* #014 원 채우기·체크 그리기. transition이라 처음부터 완료로 그려진 토글은 재생하지 않는다 */}
+      <span aria-hidden className="u014-mark" style={{ width: size, height: size }}>
+        <svg viewBox="0 0 26 26">
+          <path d="M7.5 13.5l3.8 3.8 7.4-8" />
+        </svg>
       </span>
     </button>
   );

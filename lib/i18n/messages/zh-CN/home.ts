@@ -18,6 +18,7 @@ export default {
       done: "暂无已完成的任务",
     },
     noDue: "无截止日期",
+    allDone: "即将到期的任务已全部完成",
     viewAll: { one: "查看 {count} 个任务", other: "查看全部 {count} 个任务" },
   },
   progress: {

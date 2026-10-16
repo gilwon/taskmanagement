@@ -18,6 +18,8 @@ export default {
       done: "완료한 작업이 없습니다",
     },
     noDue: "기한 없음",
+    // 예정 탭의 작업을 방금 모두 완료했을 때 빈 문구 대신 한 번 보인다
+    allDone: "다가오는 작업을 모두 끝냈어요",
     viewAll: { one: "작업 {count}개 모두 보기", other: "작업 {count}개 모두 보기" },
   },
   progress: {

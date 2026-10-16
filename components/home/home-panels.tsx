@@ -1,7 +1,8 @@
 "use client";
-// 홈 패널 네 개. 내 작업(탭), 프로젝트 진행 표, 다가오는 마감, 최근 활동
+// 홈 패널 네 개. 내 작업(탭), 프로젝트 진행 표, 다가오는 마감, 최근 활동.
+// 모양·모션은 Lucian #014(제목 줄긋기)·#093(예정 작업을 다 끝낸 축하)·#099(진행률 링)이다
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CompleteToggle, Panel, ProjectDot } from "@/components/home/parts";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { ProjectIcon, ProjectStatusDot } from "@/components/shell/project-icon";
@@ -13,8 +14,10 @@ import { formatActivity } from "@/lib/activity/format";
 import type { HomeActivity, HomeProject } from "@/lib/home/queries";
 import { deadlineGroups, myTaskTabs, projectProgress } from "@/lib/home/stats";
 import { useFormatter, useT } from "@/lib/i18n/client";
+import { motionOff } from "@/lib/prefs/prefs";
 import type { TaskItem } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
+import "./lucian-home.css";
 
 const MY_TASKS_MAX = 7;
 const DEADLINE_MAX = 3;
@@ -43,9 +46,10 @@ function MyTaskRow({ t, now }: { t: TaskItem; now: Date }) {
       <button
         type="button"
         onClick={() => open(t.key)}
-        className={cn(titleBtn, "text-(--text)", done && "text-(--text-3) line-through")}
+        className={cn(titleBtn, "text-(--text)", done && "text-(--text-3)")}
       >
-        {t.title}
+        {/* #014 줄긋기. 버튼 폭이 아니라 글자 폭만큼 긋도록 안쪽 span에 둔다 */}
+        <span className={cn("u014-t", done && "is-done")}>{t.title}</span>
       </button>
       <PriorityIcon priority={t.priority} size={14} />
       <DueLabel
@@ -59,52 +63,176 @@ function MyTaskRow({ t, now }: { t: TaskItem; now: Date }) {
   );
 }
 
+// 색종이 색. 원본 고정 6색(청록·초록·주황·분홍·보라·파랑)을 같은 계열 토큰으로 바꿨다
+const CONFETTI = ["--teal", "--green", "--amber", "--red", "--accent", "--blue"];
+
+// #093 색종이. 캔버스 크기에 맞춰 원본(450px 높이, 180px에서 출발)의 궤적을 비율로 줄인다. 끝나면 지운다
+function burst(canvas: HTMLCanvasElement) {
+  const css = getComputedStyle(document.documentElement);
+  const colors = CONFETTI.map((v) => css.getPropertyValue(v).trim());
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const width = canvas.offsetWidth;
+  const height = canvas.offsetHeight;
+  const scale = height / 450;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return () => {};
+  const pieces = Array.from({ length: 90 }, (_, i) => {
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.9;
+    const speed = (380 + Math.random() * 420) * scale;
+    return {
+      x: width / 2 + (Math.random() - 0.5) * 40,
+      y: height * 0.4,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      rot: Math.random() * 6,
+      spin: (Math.random() - 0.5) * 14,
+      w: 5 + Math.random() * 5,
+      h: 8 + Math.random() * 6,
+      color: colors[i % colors.length],
+      age: 0,
+      life: 1.6 + Math.random() * 0.9,
+    };
+  });
+  let last = performance.now();
+  let raf = 0;
+  const frame = (now: number) => {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    let alive = 0;
+    last = now;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    for (const piece of pieces) {
+      piece.age += dt;
+      if (piece.age > piece.life || piece.y > height + 20) continue;
+      alive++;
+      piece.vy += 900 * scale * dt;
+      piece.vx *= 0.985;
+      piece.vy *= 0.985;
+      piece.x += piece.vx * dt;
+      piece.y += piece.vy * dt;
+      piece.rot += piece.spin * dt;
+      ctx.save();
+      ctx.translate(piece.x, piece.y);
+      ctx.rotate(piece.rot);
+      ctx.globalAlpha = Math.min(1, (piece.life - piece.age) / 0.4);
+      ctx.scale(1, Math.cos(piece.age * 9 + piece.w));
+      ctx.fillStyle = piece.color;
+      ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+      ctx.restore();
+    }
+    if (alive) raf = requestAnimationFrame(frame);
+    else ctx.clearRect(0, 0, width, height);
+  };
+  raf = requestAnimationFrame(frame);
+  return () => cancelAnimationFrame(raf);
+}
+
 export function MyTasksPanel({ now }: { now: Date }) {
   const t = useT();
   const { items, meId, workspace } = useTasks();
   const tabs = useMemo(() => myTaskTabs(items, meId, now), [items, meId, now]);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("upcoming");
 
+  // #093 축하. idle → 예정 탭을 보는 중에 예정 작업을 방금 모두 완료로 바꾸면 pending → 450ms 뒤 on
+  // → 탭을 옮기거나 예정 작업이 다시 생기면 spent. pending 사이에 조건이 깨지면 idle로 돌아가 띄우지 않는다.
+  // 패널이 떠 있는 동안 한 번만 띄운다. 기한 초과가 남았거나 처음부터 0개면 띄우지 않는다
+  const [cheer, setCheer] = useState<"idle" | "pending" | "on" | "spent">("idle");
+  const [prevUpcoming, setPrevUpcoming] = useState(tabs.upcoming);
+  if (prevUpcoming !== tabs.upcoming) {
+    setPrevUpcoming(tabs.upcoming);
+    if (
+      cheer === "idle" &&
+      tab === "upcoming" &&
+      prevUpcoming.length > 0 &&
+      tabs.upcoming.length === 0 &&
+      tabs.overdue.length === 0 &&
+      prevUpcoming.every((p) => tabs.done.some((d) => d.id === p.id))
+    ) {
+      setCheer("pending");
+    } else if (cheer === "pending" && (tabs.upcoming.length > 0 || tabs.overdue.length > 0)) {
+      setCheer("idle");
+    } else if (cheer === "on" && tabs.upcoming.length > 0) {
+      setCheer("spent");
+    }
+  }
+  // 원본 later(celebrate, rm ? 0 : 450)처럼 마지막 완료 뒤 잠깐 두고 띄운다
+  useEffect(() => {
+    if (cheer !== "pending") return;
+    const id = window.setTimeout(() => setCheer("on"), motionOff() ? 0 : 450);
+    return () => clearTimeout(id);
+  }, [cheer]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (cheer !== "on" || !canvasRef.current || motionOff()) return;
+    return burst(canvasRef.current);
+  }, [cheer]);
+
   return (
     <Panel title={t("home.myTasks.title")} titleId="home-my-tasks" delay={160}>
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="gap-0">
-        <TabsList variant="line" aria-label={t("home.myTasks.tabs")} className="h-10 px-(--s-2)">
-          {TABS.map((x) => (
-            <TabsTrigger key={x.key} value={x.key} className="flex-none px-2 text-(length:--fs-sm)">
-              {t(`common.myTaskBucket.${x.key}`)}
-              <span className="rounded-(--r-full) bg-(--surface-3) px-1.5 text-(length:--fs-2xs) text-(--text-3) tabular-nums">
-                {tabs[x.key].length}
-              </span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {TABS.map((x) => {
-          const list = tabs[x.key];
-          return (
-            <TabsContent key={x.key} value={x.key} className="border-t border-(--divider)">
-              {list.length === 0 ? (
-                <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{t(`home.myTasks.empty.${x.key}`)}</p>
-              ) : (
-                <>
-                  <ul>
-                    {list.slice(0, MY_TASKS_MAX).map((task) => (
-                      <MyTaskRow key={task.id} t={task} now={now} />
-                    ))}
-                  </ul>
-                  <div className="border-t border-(--divider) px-(--s-4) py-(--s-2)">
-                    <Link
-                      href={`/${workspace.slug}/my-tasks`}
-                      className="rounded-(--r-xs) text-(length:--fs-sm) font-medium text-(--accent) outline-none hover:underline focus-visible:ring-2 focus-visible:ring-(--accent)"
-                    >
-                      {t("home.myTasks.viewAll", { count: list.length })}
-                    </Link>
+      <div className="relative">
+        {cheer === "on" && <canvas ref={canvasRef} aria-hidden className="u093-cf" />}
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            setTab(v as typeof tab);
+            if (cheer === "on") setCheer("spent");
+            else if (cheer === "pending") setCheer("idle");
+          }}
+          className="gap-0"
+        >
+          <TabsList variant="line" aria-label={t("home.myTasks.tabs")} className="h-10 px-(--s-2)">
+            {TABS.map((x) => (
+              <TabsTrigger key={x.key} value={x.key} className="flex-none px-2 text-(length:--fs-sm)">
+                {t(`common.myTaskBucket.${x.key}`)}
+                <span className="rounded-(--r-full) bg-(--surface-3) px-1.5 text-(length:--fs-2xs) text-(--text-3) tabular-nums">
+                  {tabs[x.key].length}
+                </span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {TABS.map((x) => {
+            const list = tabs[x.key];
+            return (
+              <TabsContent key={x.key} value={x.key} className="border-t border-(--divider)">
+                {list.length === 0 && x.key === "upcoming" && cheer === "on" ? (
+                  <div className="overflow-hidden">
+                    <div className="u093-win">
+                      <span aria-hidden className="u093-bdg">
+                        <svg viewBox="0 0 42 42">
+                          <path d="M10 22l7.5 7.5L32 14" />
+                        </svg>
+                      </span>
+                      <p role="status" className="text-(length:--fs-sm) font-semibold text-(--text)">
+                        {t("home.myTasks.allDone")}
+                      </p>
+                    </div>
                   </div>
-                </>
-              )}
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+                ) : list.length === 0 ? (
+                  <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{t(`home.myTasks.empty.${x.key}`)}</p>
+                ) : (
+                  <>
+                    <ul>
+                      {list.slice(0, MY_TASKS_MAX).map((task) => (
+                        <MyTaskRow key={task.id} t={task} now={now} />
+                      ))}
+                    </ul>
+                    <div className="border-t border-(--divider) px-(--s-4) py-(--s-2)">
+                      <Link
+                        href={`/${workspace.slug}/my-tasks`}
+                        className="rounded-(--r-xs) text-(length:--fs-sm) font-medium text-(--accent) outline-none hover:underline focus-visible:ring-2 focus-visible:ring-(--accent)"
+                      >
+                        {t("home.myTasks.viewAll", { count: list.length })}
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      </div>
     </Panel>
   );
 }
@@ -171,19 +299,7 @@ export function ProjectProgressPanel({ projects, now }: { projects: HomeProject[
                   </td>
                   <td>
                     <span className="flex items-center gap-2 pr-(--s-3)">
-                      <span
-                        role="progressbar"
-                        aria-label={t("home.progress.bar", { name: p.name })}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={pct}
-                        className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-(--r-full) bg-(--surface-3)"
-                      >
-                        <span
-                          className="block h-full origin-left animate-[growX_.52s_var(--ease)_both] rounded-(--r-full) bg-(--accent)"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </span>
+                      <ProgressRing pct={pct} label={t("home.progress.bar", { name: p.name })} />
                       <span className="w-9 shrink-0 text-right text-(length:--fs-xs) text-(--text-3) tabular-nums">
                         {pct}%
                       </span>
@@ -229,6 +345,49 @@ export function ProjectProgressPanel({ projects, now }: { projects: HomeProject[
         </table>
       )}
     </Panel>
+  );
+}
+
+// #099 진행률 링. 첫 그리기(서버 렌더 포함)는 현재 값으로 바로 그리고, 값이 바뀔 때만 1.1s 채운다.
+// 100%에 닿는 순간 한 번 빛난다
+function ProgressRing({ pct, label }: { pct: number; label: string }) {
+  const arcRef = useRef<SVGCircleElement>(null);
+  const prev = useRef(pct);
+  useEffect(() => {
+    const from = prev.current;
+    prev.current = pct;
+    const arc = arcRef.current;
+    if (!arc || from >= 100 || pct < 100 || motionOff()) return;
+    // 원본처럼 링이 실제로 닫힌 뒤(채우기 transition 끝)에 빛낸다
+    const flash = () => {
+      arc.classList.remove("fl");
+      void arc.getBoundingClientRect();
+      arc.classList.add("fl");
+    };
+    const clear = () => arc.classList.remove("fl");
+    arc.addEventListener("transitionend", flash, { once: true });
+    arc.addEventListener("animationend", clear);
+    return () => {
+      arc.removeEventListener("transitionend", flash);
+      arc.removeEventListener("animationend", clear);
+      clear();
+    };
+  }, [pct]);
+  return (
+    <span
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      className="u099-ring"
+      style={{ "--p": pct / 100 } as React.CSSProperties}
+    >
+      <svg viewBox="0 0 28 28" aria-hidden>
+        <circle className="t" cx={14} cy={14} r={11.5} pathLength={100} />
+        <circle ref={arcRef} className="a" cx={14} cy={14} r={11.5} pathLength={100} />
+      </svg>
+    </span>
   );
 }
 
