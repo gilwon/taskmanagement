@@ -35,6 +35,7 @@ import { ACCEPT_ATTR, ALLOWED_EXT_LABEL, formatSize, MAX_FILE_LABEL, type FileTy
 import type { FileItem } from "@/lib/files/types";
 import { useFormatter, useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
+import "@/components/files/lucian-files.css";
 
 const TYPE_ICONS: Record<FileType, LucideIcon> = {
   fig: PenTool,
@@ -93,7 +94,7 @@ export function FileStatus({ item, transfer, meId }: { item: FileItem; transfer?
           aria-valuenow={transfer.pct}
           className="h-1 w-full min-w-16 overflow-hidden rounded-(--r-full) bg-(--surface-3)"
         >
-          <div className="h-full rounded-(--r-full) bg-(--accent) transition-[width]" style={{ width: `${transfer.pct}%` }} />
+          <div className="u032-bar" style={{ "--p": transfer.pct / 100 } as React.CSSProperties} />
         </div>
         <span className="shrink-0 font-mono text-(length:--fs-2xs) text-(--text-3)">{transfer.pct}%</span>
       </div>
@@ -326,7 +327,11 @@ export function DropZone({
         e.preventDefault();
         setOver(true);
       }}
-      onDragLeave={() => setOver(false)}
+      // 영역 안의 아이콘·글자로 옮겨 갈 때도 dragleave가 와서 강조가 깜빡이므로, 옮겨 간 곳이 영역 안이면 무시한다
+      onDragLeave={(e) => {
+        if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) return;
+        setOver(false);
+      }}
       onDrop={(e) => {
         if (e.dataTransfer.files.length === 0) return;
         e.preventDefault();
@@ -337,13 +342,20 @@ export function DropZone({
       <button
         type="button"
         onClick={() => input.current?.click()}
+        data-compact={compact || undefined}
         className={cn(
-          "flex w-full items-center gap-3 rounded-(--r) border border-dashed border-(--border-strong) text-left text-(length:--fs-sm) text-(--text-3) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)",
+          "u032-zone flex w-full items-center gap-3 rounded-(--r) text-left text-(length:--fs-sm) text-(--text-3) outline-none focus-visible:ring-2 focus-visible:ring-(--accent)",
           compact ? "px-3 py-3" : "px-(--s-4) py-(--s-5)",
-          over && "border-(--accent) bg-(--accent-soft) text-(--text)",
+          over && "is-over",
         )}
       >
-        <Upload aria-hidden size={compact ? 14 : 18} strokeWidth={1.8} className="shrink-0" />
+        {/* 점선 테두리(#032). rx는 --r(12px)에서 선 두께 절반을 뺀 값이다 */}
+        <svg aria-hidden className="u032-dash">
+          <rect width="100%" height="100%" rx="11" />
+        </svg>
+        <span aria-hidden className="u032-orb">
+          <Upload size={compact ? 14 : 18} strokeWidth={1.8} />
+        </span>
         <span className="min-w-0">
           <span className="block text-(--text-2)">{label}</span>
           <span className="block text-(length:--fs-xs) text-(--text-4)">
@@ -409,6 +421,7 @@ export function FileListRow({
             <FileStatus item={item} transfer={transfer} meId={meId} />
           )}
         </div>
+        <UploadCheck done={item.status === "ready" && !!transfer?.done} />
         <FileActions
           item={item}
           transfer={transfer}
@@ -420,6 +433,24 @@ export function FileListRow({
         />
       </li>
     </FileContextMenu>
+  );
+}
+
+// 완료 체크(#032). 이 탭에서 끝까지 올린 파일에 붙는다. 처음 그릴 때 이미 끝나 있던 것은 가만히 두고, 그린 뒤에 끝난 것만 튄다
+function UploadCheck({ done }: { done: boolean }) {
+  const [prev, setPrev] = useState(done);
+  const [fresh, setFresh] = useState(false);
+  if (prev !== done) {
+    setPrev(done);
+    setFresh(done);
+  }
+  if (!done) return null;
+  return (
+    <span aria-hidden className={cn("u032-st", fresh && "is-new")}>
+      <svg viewBox="0 0 16 16">
+        <path d="M3.5 8.4l3 3 6-6.4" />
+      </svg>
+    </span>
   );
 }
 

@@ -26,6 +26,7 @@ export default {
   placeholder: "Leave a comment… Use @ to mention someone",
   send: "Send",
   mentionList: "Members to mention",
+  notified: "Will be notified",
   sendHint: "⌘/Ctrl+Enter to send",
   reactionChip: "{emoji} reaction, {count}: {names}",
   reactionAdd: "Add reaction",

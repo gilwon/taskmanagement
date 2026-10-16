@@ -1,0 +1,112 @@
+/* Lucian UX/UI Prompt #268 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#268 */
+/* Lucian UX/UI Prompt #077 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#077 */
+/* 댓글 모션. 멘션 목록 등장·맞는 글자 강조·알림 받을 사람 아바타(#268), 반응 칩 튀기·이모지 단추(#077). 팝오버 면은 ui/lucian-popover.css가 맡는다 */
+
+@layer components {
+  /* 멘션 목록. 입력창 위(bottom-full)에 뜨므로 원본의 왼쪽 위(12px 0) 대신 왼쪽 아래에서 자란다.
+     조건부로 마운트되어 transition이 돌지 않으니 원본 두 전환(transform .2s 튕김, opacity .12s 기본 곡선)을 keyframe 둘로 옮겼다 */
+  .u268-pp {
+    transform-origin: 12px 100%;
+    animation: u268-pop 0.2s cubic-bezier(0.3, 1.6, 0.5, 1), u268-fade 0.12s;
+  }
+  @keyframes u268-pop {
+    from {
+      transform: scale(0.9) translateY(4px);
+    }
+  }
+  @keyframes u268-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  /* 검색어와 맞는 글자. 글자용 강조 토큰이라 강조색 6종 모두 4.5:1을 넘는다 */
+  .u268-pp b {
+    font-weight: 900;
+    color: var(--accent-ink);
+  }
+
+  /* 알림 받을 사람 아바타. 겹쳐 쌓고 새로 들어온 사람만 튄다(마운트될 때 한 번) */
+  .u268-av > * {
+    margin-left: -6px;
+    box-shadow: 0 0 0 2.5px var(--surface);
+    border-radius: 50%;
+    animation: u268-in 0.4s cubic-bezier(0.3, 1.7, 0.5, 1);
+  }
+  .u268-av > :first-child {
+    margin-left: 0;
+  }
+  @keyframes u268-in {
+    from {
+      transform: scale(0);
+    }
+  }
+
+  /* 반응 칩. 테두리 대신 안쪽 그림자 고리, 내 반응이면 강조색 고리 */
+  .u077r-chip {
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1.5px transparent;
+    color: var(--text-2);
+    transition: box-shadow 0.2s, background-color 0.2s, transform 0.3s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  .u077r-chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+    color: var(--text);
+  }
+  .u077r-n {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .u077r-chip[aria-pressed="true"] .u077r-n {
+    color: var(--accent-ink);
+  }
+  button.u077r-chip:active {
+    transform: scale(0.9);
+  }
+  /* 칩이 새로 생기거나 개수가 바뀌면 칩이 튄다. is-pop은 reactions.tsx가 다시 붙인다 */
+  .u077r-chip.is-pop {
+    animation: u077r-pop 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  @keyframes u077r-pop {
+    0% {
+      transform: scale(0.4);
+    }
+    60% {
+      transform: scale(1.15);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  /* 반응 추가 팝오버의 이모지 단추 */
+  .u077r-e {
+    transition: transform 0.25s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)), background-color 0.15s;
+  }
+  .u077r-e:hover,
+  .u077r-e:focus-visible {
+    transform: scale(1.18);
+  }
+  .u077r-e:active {
+    transform: scale(0.9);
+  }
+
+  /* 앱 모션이 full이어도 OS 동작 줄이기면 멈춘다(motionOff와 같은 판정) */
+  @media (prefers-reduced-motion: reduce) {
+    .u268-pp,
+    .u268-av > *,
+    .u077r-chip.is-pop {
+      animation: none;
+    }
+    .u077r-chip,
+    .u077r-e {
+      transition: none;
+    }
+    button.u077r-chip:active,
+    .u077r-e:hover,
+    .u077r-e:focus-visible,
+    .u077r-e:active {
+      transform: none;
+    }
+  }
+}

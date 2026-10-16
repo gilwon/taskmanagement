@@ -26,6 +26,7 @@ export default {
   placeholder: "写下评论… 输入 @ 可提及成员",
   send: "发送",
   mentionList: "可提及的成员",
+  notified: "将收到通知",
   sendHint: "⌘/Ctrl+Enter 发送",
   reactionChip: "{emoji} 回应，{count} 人：{names}",
   reactionAdd: "添加回应",

@@ -26,6 +26,7 @@ export default {
   placeholder: "댓글을 남기세요… @로 구성원을 멘션할 수 있습니다",
   send: "보내기",
   mentionList: "멘션할 구성원",
+  notified: "알림 받을 사람",
   sendHint: "⌘/Ctrl+Enter로 보내기",
   // 반응
   reactionChip: "{emoji} 반응 {count}개: {names}",

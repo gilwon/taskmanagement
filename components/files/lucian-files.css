@@ -1,0 +1,141 @@
+/* Lucian UX/UI Prompt #032 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#032 */
+/* 끌어 놓기 업로드 모션. 끌어 올 때 점선 행진·영역 키우기·아이콘 들기, 파일별 진행 막대, 완료 체크 그리기 */
+
+@layer components {
+  /* 영역. 점선은 border 대신 안에 깐 SVG 사각형이 그린다(행진은 border로 못 한다) */
+  .u032-zone {
+    position: relative;
+    background: var(--surface);
+    transition: transform 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)), background-color 0.3s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u032-dash {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    width: calc(100% - 2px);
+    height: calc(100% - 2px);
+    overflow: visible;
+    pointer-events: none;
+  }
+  .u032-dash rect {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-width: 2;
+    stroke-dasharray: 8 7;
+    transition: stroke 0.3s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u032-zone:hover .u032-dash rect,
+  .u032-zone.is-over .u032-dash rect {
+    stroke: var(--accent);
+    animation: u032-march 0.9s linear infinite;
+  }
+  @keyframes u032-march {
+    to {
+      stroke-dashoffset: -30;
+    }
+  }
+  /* 원본 1.03은 340px 상자 기준이라 넓은 영역에서는 좌우로 크게 넘친다. 폭과 상관없이 몇 px만 커지게 한다 */
+  .u032-zone.is-over {
+    transform: scale(1.01);
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  }
+
+  /* 아이콘 타일. 원본 60px 구슬을 영역 높이에 맞춰 줄였다 */
+  .u032-orb {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r);
+    color: var(--on-accent);
+    background: linear-gradient(140deg, var(--accent), var(--violet));
+    box-shadow: 0 8px 14px -7px color-mix(in srgb, var(--accent) 80%, transparent);
+    transition: transform 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  .u032-zone[data-compact] .u032-orb {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--r-sm);
+  }
+  .u032-zone:hover .u032-orb {
+    transform: translateY(-4px);
+  }
+  .u032-zone.is-over .u032-orb {
+    transform: translateY(-8px) scale(1.1) rotate(-6deg);
+  }
+
+  /* 진행 막대. 폭 대신 scaleX로 채운다. --p는 0~1 */
+  .u032-bar {
+    height: 100%;
+    width: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+    transform-origin: 0 50%;
+    transform: scaleX(var(--p, 0));
+    transition: transform 0.2s linear, background-color 0.3s;
+  }
+
+  /* 완료 체크. 이 탭에서 끝까지 올린 파일에 붙고, 화면에 있는 동안 끝난 것만 튀며 그린다(is-new) */
+  .u032-st {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--green);
+    color: var(--on-accent);
+  }
+  .u032-st svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .u032-st.is-new {
+    animation: u032-pop 0.45s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  @keyframes u032-pop {
+    from {
+      transform: scale(0.3);
+    }
+  }
+  /* 숨긴 상태는 keyframe에만 둔다. 모션을 끄면(animation: none) 체크가 처음부터 다 그려진 채 보인다 */
+  .u032-st.is-new path {
+    stroke-dasharray: 16;
+    animation: u032-draw 0.4s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)) 0.15s both;
+  }
+  @keyframes u032-draw {
+    from {
+      stroke-dashoffset: 16;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* 앱 모션이 full이어도 OS 동작 줄이기면 멈춘다(motionOff와 같은 판정) */
+  @media (prefers-reduced-motion: reduce) {
+    .u032-zone,
+    .u032-dash rect,
+    .u032-orb,
+    .u032-bar {
+      transition: none;
+    }
+    .u032-zone:hover .u032-dash rect,
+    .u032-zone.is-over .u032-dash rect,
+    .u032-st.is-new,
+    .u032-st.is-new path {
+      animation: none;
+    }
+    .u032-zone.is-over,
+    .u032-zone:hover .u032-orb,
+    .u032-zone.is-over .u032-orb {
+      transform: none;
+    }
+  }
+}

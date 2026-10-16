@@ -26,6 +26,7 @@ export default {
   placeholder: "コメントを入力… @ でメンション",
   send: "送信",
   mentionList: "メンションするメンバー",
+  notified: "通知を受け取る人",
   sendHint: "⌘/Ctrl+Enter で送信",
   reactionChip: "{emoji} リアクション、{count} 件: {names}",
   reactionAdd: "リアクションを追加",

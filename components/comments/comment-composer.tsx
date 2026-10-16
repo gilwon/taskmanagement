@@ -7,6 +7,7 @@ import { MemberAvatar } from "@/components/shell/member-avatar";
 import { useT } from "@/lib/i18n/client";
 import { activeMention, filterMentionCandidates, insertMention, mentionIds } from "@/lib/comments/mentions";
 import { cn } from "@/lib/utils";
+import "@/components/comments/lucian-comments.css";
 
 export type ComposerMember = { id: string; name: string; color: string; title?: string | null };
 
@@ -48,6 +49,8 @@ export function CommentComposer({
   const candidates = mention && mention.start !== dismissed ? filterMentionCandidates(members, mention.query) : [];
   const open = candidates.length > 0;
   const current = open ? candidates[Math.min(active, candidates.length - 1)] : undefined;
+  // 보낼 때 알림이 가는 구성원(#268 아바타 줄). 보내기와 같은 mentionIds로 고른다
+  const notified = onCancel ? [] : mentionIds(value, members).flatMap((mid) => members.filter((m) => m.id === mid));
 
   const sync = (el: HTMLTextAreaElement) => {
     setCaret(el.selectionStart ?? el.value.length);
@@ -120,7 +123,7 @@ export function CommentComposer({
           id={listId}
           role="listbox"
           aria-label={t("comments.mentionList")}
-          className="absolute bottom-full left-0 z-10 mb-1 max-h-60 w-64 max-w-full overflow-y-auto rounded-(--r) border border-(--border) bg-(--surface) p-1 shadow-(--shadow-pop)"
+          className="u268-pp absolute bottom-full left-0 z-10 mb-1 max-h-60 w-64 max-w-full overflow-y-auto rounded-(--r) border border-(--border) bg-(--surface) p-1 shadow-(--shadow-pop)"
         >
           {candidates.map((m) => (
             <li
@@ -137,7 +140,9 @@ export function CommentComposer({
               )}
             >
               <MemberAvatar name={m.name} color={m.color} size={20} />
-              <span className="truncate">{m.name}</span>
+              <span className="truncate">
+                <Match name={m.name} query={mention?.query ?? ""} />
+              </span>
               {m.title && <span className="ml-auto truncate text-(length:--fs-xs) text-(--text-3)">{m.title}</span>}
             </li>
           ))}
@@ -167,7 +172,21 @@ export function CommentComposer({
         className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-(--r) border border-(--border) bg-(--surface) px-3 py-2 text-(length:--fs-base) text-(--text) outline-none placeholder:text-(--text-4) focus-visible:border-(--accent) focus-visible:ring-2 focus-visible:ring-(--accent)/30 disabled:opacity-60"
       />
       <div className="flex items-center justify-end gap-2">
-        <span className="mr-auto text-(length:--fs-xs) text-(--text-4) max-[480px]:hidden">{t("comments.sendHint")}</span>
+        <div className="mr-auto flex min-w-0 items-center gap-3">
+          <span className="text-(length:--fs-xs) text-(--text-4) max-[480px]:hidden">{t("comments.sendHint")}</span>
+          {notified.length > 0 && (
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-(length:--fs-xs) text-(--text-3)">{t("comments.notified")}</span>
+              <span className="u268-av flex shrink-0 items-center" title={notified.map((m) => m.name).join(", ")}>
+                {notified.map((m) => (
+                  <MemberAvatar key={m.id} name={m.name} color={m.color} size={20} />
+                ))}
+              </span>
+              {/* 아바타 글자는 aria-hidden이라 화면 낭독기에는 이름을 따로 읽힌다 */}
+              <span className="sr-only">{notified.map((m) => m.name).join(", ")}</span>
+            </span>
+          )}
+        </div>
         {onCancel && (
           <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
             {t("common.action.cancel")}
@@ -178,5 +197,19 @@ export function CommentComposer({
         </Button>
       </div>
     </div>
+  );
+}
+
+// 후보 이름에서 검색어와 맞는 글자를 굵게(#268). filterMentionCandidates와 같이 대소문자를 무시한다
+function Match({ name, query }: { name: string; query: string }) {
+  const i = query ? name.toLowerCase().indexOf(query.toLowerCase()) : -1;
+  // 소문자로 바꾸면 길이가 달라지는 글자가 있으면 자리가 어긋나므로 강조하지 않는다
+  if (i < 0 || name.toLowerCase().length !== name.length) return name;
+  return (
+    <>
+      {name.slice(0, i)}
+      <b>{name.slice(i, i + query.length)}</b>
+      {name.slice(i + query.length)}
+    </>
   );
 }
