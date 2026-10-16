@@ -4,7 +4,9 @@ import "./globals.css";
 import { useSyncExternalStore } from "react";
 import { matchAcceptLanguage } from "@/lib/i18n/locales";
 import enErrors from "@/lib/i18n/messages/en/errors";
+import jaErrors from "@/lib/i18n/messages/ja/errors";
 import koErrors from "@/lib/i18n/messages/ko/errors";
+import zhErrors from "@/lib/i18n/messages/zh-CN/errors";
 import type { Messages } from "@/lib/i18n/messages/types";
 import { createT } from "@/lib/i18n/t";
 
@@ -16,7 +18,7 @@ const browserLocale = () => matchAcceptLanguage(navigator.languages?.join(",") |
 export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   const locale = useSyncExternalStore(subscribeNone, browserLocale, () => "ko" as const);
   // errors 영역만 담은 t. 사전 전체를 싣지 않는다
-  const t = createT({ errors: locale === "en" ? enErrors : koErrors } as unknown as Messages, locale);
+  const t = createT({ errors: { ko: koErrors, en: enErrors, ja: jaErrors, "zh-CN": zhErrors }[locale] } as unknown as Messages, locale);
   return (
     <html lang={locale}>
       <body>

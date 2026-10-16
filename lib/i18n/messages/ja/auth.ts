@@ -1,0 +1,81 @@
+// 인증 화면(로그인·가입·비밀번호 찾기·재설정·메일 확인) 일본어 문구
+import type { Messages } from "../types";
+
+export default {
+  field: {
+    email: "メールアドレス",
+    emailPlaceholder: "name@example.com",
+    password: "パスワード",
+    name: "名前",
+    namePlaceholder: "山田 太郎",
+    passwordMin: "{min} 文字以上",
+    passwordHint: "英字と数字を含めて {min} 文字以上で入力してください。",
+  },
+  backToLogin: "ログインに戻る",
+  sending: "送信中…",
+  linkError: "このリンクは期限切れか、すでに使用されています。新しいリンクをリクエストしてください。",
+  login: {
+    title: "ログイン",
+    description: "おかえりなさい。ワークスペースにログインしてください。",
+    noAccount: "アカウントをお持ちでないですか？",
+    createAccount: "新規登録",
+    forgot: "パスワードをお忘れですか？",
+    submit: "ログイン",
+    submitting: "ログイン中…",
+    demo: "デモを試す",
+    demoPending: "デモを準備中…",
+    demoUserName: "デモユーザー",
+    demoRateLimited: "現在、デモを開始する人が多すぎます。1時間ほどしてからもう一度お試しください。",
+    demoNote: "登録せずに自分専用のデモを開きます。デモは24時間後に削除されます。ファイルのアップロードはできません。",
+  },
+  signup: {
+    metaTitle: "新規登録",
+    title: "アカウントを作成",
+    description: "メールアドレスで登録して、チームの仕事をひとつの場所で管理しましょう。",
+    haveAccount: "すでにアカウントをお持ちですか？",
+    login: "ログイン",
+    submit: "新規登録",
+    submitting: "登録中…",
+  },
+  forgot: {
+    title: "パスワードの再設定",
+    description: "登録したメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。",
+    submit: "再設定リンクを送信",
+  },
+  forgotSent: {
+    metaTitle: "メール送信完了",
+    title: "メールを確認してください",
+    description:
+      "そのメールアドレスのアカウントが存在する場合、パスワード再設定用のリンクを送信しました。リクエストしたブラウザで開いてください。",
+    again: "再送信",
+  },
+  reset: {
+    metaTitle: "パスワードの再設定",
+    expiredTitle: "このリンクは期限切れです",
+    expiredDescription:
+      "パスワードは、再設定メールのリンクを開いてから10分以内に限り変更できます。リンクが期限切れか、すでに使用されている場合は、新しいリンクをリクエストしてください。",
+    forgot: "パスワードの再設定",
+    title: "新しいパスワードを設定",
+    description: "ログインに使う新しいパスワードを入力してください。",
+    newPassword: "新しいパスワード",
+    confirm: "新しいパスワード（確認）",
+    confirmPlaceholder: "もう一度入力",
+    submit: "パスワードを変更",
+    submitting: "保存中…",
+  },
+  resetDone: {
+    metaTitle: "パスワード変更完了",
+    title: "パスワードを変更しました",
+    description: "新しいパスワードで引き続きご利用いただけます。",
+    go: "ワークスペースへ",
+  },
+  verify: {
+    metaTitle: "メールアドレスの確認",
+    title: "メールを確認してください",
+    sentTo: "{email} に確認リンクを送信しました。リンクをクリックして登録を完了してください。",
+    sentGeneric: "登録したメールアドレスに確認リンクを送信しました。リンクをクリックして登録を完了してください。",
+    spamHint: "届かない場合は、迷惑メールフォルダを確認するか、もう一度送信してください。",
+    resent: "確認メールを再送信しました。",
+    resend: "確認メールを再送信",
+  },
+} satisfies Messages["auth"];

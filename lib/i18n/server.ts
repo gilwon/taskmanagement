@@ -5,12 +5,14 @@ import { cache } from "react";
 import { createFormatter } from "@/lib/i18n/format";
 import { LOCALE_COOKIE, isSelectableLocale, matchAcceptLanguage, type Locale } from "@/lib/i18n/locales";
 import en from "@/lib/i18n/messages/en";
+import ja from "@/lib/i18n/messages/ja";
 import ko from "@/lib/i18n/messages/ko";
+import zhCN from "@/lib/i18n/messages/zh-CN";
 import type { Messages } from "@/lib/i18n/messages/types";
 import { createT } from "@/lib/i18n/t";
 
-// 사전이 아직 없는 로캘(ja·zh-CN)은 ko로 보인다
-const MESSAGES: Partial<Record<Locale, Messages>> = { ko, en };
+// 사전이 없는 로캘은 ko로 보인다
+const MESSAGES: Partial<Record<Locale, Messages>> = { ko, en, ja, "zh-CN": zhCN };
 
 export function messagesFor(locale: Locale): Messages {
   return MESSAGES[locale] ?? ko;

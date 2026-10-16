@@ -21,12 +21,15 @@ describe("matchAcceptLanguage", () => {
     expect(matchAcceptLanguage("en;q=0")).toBe("ko");
   });
 
-  it("사전이 없는 ja·zh-CN은 고르지 않지만, 있으면 간체만 zh-CN으로 맞춘다", () => {
-    expect(matchAcceptLanguage("ja,en;q=0.5")).toBe("en");
-    const all = ["ko", "en", "ja", "zh-CN"] as const;
-    expect(matchAcceptLanguage("zh-Hans-CN", all)).toBe("zh-CN");
-    expect(matchAcceptLanguage("zh", all)).toBe("zh-CN");
-    expect(matchAcceptLanguage("zh-TW,en;q=0.5", all)).toBe("en");
+  it("ja를 고르고, 중국어는 간체만 zh-CN으로 맞춘다", () => {
+    expect(matchAcceptLanguage("ja-JP,en;q=0.5")).toBe("ja");
+    expect(matchAcceptLanguage("zh-Hans-CN")).toBe("zh-CN");
+    expect(matchAcceptLanguage("zh")).toBe("zh-CN");
+    expect(matchAcceptLanguage("zh-TW,en;q=0.5")).toBe("en");
+  });
+
+  it("목록에 없는 로캘은 고르지 않는다", () => {
+    expect(matchAcceptLanguage("ja,en;q=0.5", ["ko", "en"])).toBe("en");
   });
 
   it("isLocale은 목록 값만 받는다", () => {

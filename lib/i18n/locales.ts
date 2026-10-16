@@ -3,8 +3,8 @@ export const LOCALES = ["ko", "en", "ja", "zh-CN"] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "ko";
 
-// 사전이 있어 고를 수 있는 로캘. 2단계에서 ja·zh-CN 사전을 채우면 여기에 더한다
-export const SELECTABLE_LOCALES = ["ko", "en"] as const satisfies readonly Locale[];
+// 사전이 있어 고를 수 있는 로캘. 새 언어는 사전을 만든 뒤 여기와 server.ts MESSAGES에 더한다
+export const SELECTABLE_LOCALES = ["ko", "en", "ja", "zh-CN"] as const satisfies readonly Locale[];
 export type SelectableLocale = (typeof SELECTABLE_LOCALES)[number];
 
 export const LOCALE_COOKIE = "locale";
