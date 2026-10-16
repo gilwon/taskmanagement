@@ -1,0 +1,46 @@
+/* Lucian UX/UI Prompt #088 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#088 */
+/* 빈 상태 면과 천천히 떠다니는 아이콘. 원본의 폴더 그림 대신 호출부 아이콘 배지를 띄우고 그림자 타원을 그 크기에 맞췄다 */
+
+@layer components {
+  .u088 {
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+  }
+  .u088-art {
+    position: relative;
+    padding-bottom: 8px;
+  }
+  .u088-fl {
+    animation: u088-f 5s ease-in-out infinite;
+  }
+  @keyframes u088-f {
+    50% {
+      transform: translateY(-7px);
+    }
+  }
+  .u088-sh {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 0;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--text) 16%, transparent), transparent);
+    animation: u088-s 5s ease-in-out infinite;
+  }
+  @keyframes u088-s {
+    50% {
+      transform: scaleX(0.8);
+      opacity: 0.6;
+    }
+  }
+
+  /* 앱 모션이 full이어도 OS 동작 줄이기면 멈춘다(motionOff와 같은 판정) */
+  @media (prefers-reduced-motion: reduce) {
+    .u088-fl,
+    .u088-sh {
+      animation: none;
+    }
+  }
+}

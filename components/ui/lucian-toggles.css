@@ -1,0 +1,203 @@
+/* Lucian UX/UI Prompt #013 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#013 */
+/* Lucian UX/UI Prompt #014 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#014 */
+/* 스위치(#013 늘어나는 손잡이·✕→✓)와 체크박스(#014 원 채우기·체크 그리기). 원본 140px·26px를 지금 부품 크기로 줄였다 */
+
+@layer components {
+  /* 스위치. 치수는 변수 한 벌로 두고 size=sm이 값만 바꾼다. --ks는 늘어난 손잡이 폭(원본 60→84, 1.4배) */
+  .u013-sw {
+    --w: 32px;
+    --k: 16px;
+    --p: 1px;
+    --ks: 22px;
+    position: relative;
+    flex: none;
+    width: var(--w);
+    height: calc(var(--k) + var(--p) * 2);
+    border: 0;
+    padding: 0;
+    border-radius: 999px;
+    background: var(--surface-3);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12), inset 0 0 0 1px var(--border);
+    outline: none;
+    transition: box-shadow 0.5s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u013-sw[data-size="sm"] {
+    --w: 24px;
+    --k: 12px;
+    --ks: 17px;
+  }
+  .u013-sw::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.45s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  /* 누르기 쉬운 영역. 이전 부품의 after:-inset-x-3 after:-inset-y-2를 잇는다 */
+  .u013-sw::after {
+    content: "";
+    position: absolute;
+    inset: -8px -12px;
+  }
+  .u013-sw:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .u013-sw:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .u013-sw[aria-checked="true"]::before {
+    opacity: 1;
+  }
+  .u013-sw[aria-checked="true"] {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 8px -4px color-mix(in srgb, var(--accent) 80%, transparent);
+  }
+
+  /* 손잡이. 켜지면 --on-accent라 다크 테마의 밝은 강조색 위에서도 대비가 난다 */
+  .u013-knob {
+    position: absolute;
+    top: var(--p);
+    left: var(--p);
+    width: var(--k);
+    height: var(--k);
+    border-radius: 999px;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 2px 4px -1px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+    transition: left 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)), width 0.32s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+      background-color 0.45s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u013-sw[aria-checked="true"] .u013-knob {
+    left: calc(var(--w) - var(--p) - var(--k));
+    background: var(--on-accent);
+  }
+  /* 늘어날 때 켜진 쪽은 오른쪽 끝을 붙인 채 왼쪽으로 자란다 */
+  .u013-sw.is-stretch .u013-knob {
+    width: var(--ks);
+    transition: left 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)), width 0.18s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+      background-color 0.45s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u013-sw[aria-checked="true"].is-stretch .u013-knob {
+    left: calc(var(--w) - var(--p) - var(--ks));
+  }
+  .u013-knob svg {
+    width: calc(var(--k) * 0.5);
+    height: calc(var(--k) * 0.5);
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .u013-x {
+    /* 꺼진 손잡이는 테마와 상관없이 흰색이라 고정색을 쓴다. 다크 --text-3은 흰 바탕 위 2.9:1이다 */
+    stroke: #64606c;
+    stroke-dasharray: 14;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.3s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)) 0.1s;
+  }
+  .u013-v {
+    stroke: var(--accent);
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+    transition: stroke-dashoffset 0.35s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u013-sw[aria-checked="true"] .u013-x {
+    stroke-dashoffset: 14;
+    transition-delay: 0s;
+  }
+  .u013-sw[aria-checked="true"] .u013-v {
+    stroke-dashoffset: 0;
+    transition-delay: 0.18s;
+  }
+
+  /* 체크박스. 원본 26px 원을 지금 크기 16px로, 테두리 2px은 1.5px로 줄였다 */
+  .u014-box {
+    position: relative;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 0;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    outline: none;
+    box-shadow: inset 0 0 0 1.5px var(--border-strong);
+    transition: box-shadow 0.3s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)), transform 0.45s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  .u014-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    transform: scale(0);
+    transition: transform 0.45s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  /* 누르기 쉬운 영역. 이전 부품의 after:-inset-x-3 after:-inset-y-2를 잇는다 */
+  .u014-box::after {
+    content: "";
+    position: absolute;
+    inset: -8px -12px;
+  }
+  .u014-box svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    fill: none;
+    stroke: var(--on-accent);
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .u014-box path {
+    stroke-dasharray: 18;
+    stroke-dashoffset: 18;
+    transition: stroke-dashoffset 0.35s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u014-box:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+  }
+  .u014-box:active:not(:disabled) {
+    transform: scale(0.86);
+  }
+  .u014-box:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .u014-box:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .u014-box[aria-checked="true"] {
+    box-shadow: none;
+  }
+  .u014-box[aria-checked="true"]::before {
+    transform: scale(1);
+  }
+  .u014-box[aria-checked="true"] path {
+    stroke-dashoffset: 0;
+    transition-delay: 0.12s;
+  }
+
+  /* 앱 모션이 full이어도 OS 동작 줄이기면 멈춘다(motionOff와 같은 판정) */
+  @media (prefers-reduced-motion: reduce) {
+    .u013-sw,
+    .u013-sw::before,
+    .u013-knob,
+    .u013-sw.is-stretch .u013-knob,
+    .u013-x,
+    .u013-v,
+    .u014-box,
+    .u014-box::before,
+    .u014-box path {
+      transition: none;
+    }
+  }
+}
