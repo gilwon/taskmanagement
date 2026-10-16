@@ -1,7 +1,7 @@
 "use client";
 // 보드 뷰. 상태 5열(완료 숨김 반영), 열 헤더(아이콘·이름·개수·+·⋯), 작업 카드, 열 하단 인라인 컴포저, 카드 드래그
 import { ChevronRight, MessageSquare, MoreHorizontal, Paperclip, Plus, Repeat } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,15 +16,16 @@ import { ContextMenuItem } from "@/components/ui/context-menu";
 import { KeyContextMenu, type MenuItemComponent } from "@/components/shortcuts/key-context-menu";
 import {
   AddTaskButton,
-  DropLine,
   InlineComposer,
   isInnerControl,
   MOVE_HINT_ID,
   MoveHint,
   dropIndexMarks,
+  refocus,
   type ViewCtl,
 } from "@/components/tasks/views/shared";
 import { useTaskDrag } from "@/components/tasks/views/use-drag";
+import "@/components/tasks/views/board-motion.css";
 import { useT } from "@/lib/i18n/client";
 import type { TaskGroup, TaskItem, TaskStatus } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
@@ -35,7 +36,15 @@ const iconBtn =
 export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }) {
   // t는 작업 변수로 쓰여 번역 함수는 tr로 둔다
   const tr = useT();
-  const { dragId, target, onPointerDown } = useTaskDrag((id, t) => ctl.drop(id, t, groups, "status"));
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { dragId, target, height, onPointerDown } = useTaskDrag(
+    (id, t) => {
+      ctl.drop(id, t, groups, "status");
+      // 끄는 동안 카드를 숨겨 잃은 포커스를 옮긴 카드로 돌려준다
+      refocus(id);
+    },
+    { ghostClass: "u255-ghost", landOn: () => rootRef.current?.querySelector<HTMLElement>("[data-drop-ph]") ?? null },
+  );
   const { bulkUpdate, update } = useTaskActions();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [composing, setComposing] = useState<string | null>(null);
@@ -50,8 +59,14 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
       return next;
     });
 
+  // 끄는 카드가 있던 열. 그 열에는 강조를 주지 않고, 열 밖으로 끌면 그 열의 원래 자리에 틈을 남긴다
+  const home = dragId ? groups.find((g) => g.items.some((t) => t.id === dragId)) : undefined;
+  const gapAt = target ?? (home ? { group: home.key, index: home.items.findIndex((t) => t.id === dragId) } : null);
+  const isOver = (key: string) => !!dragId && target?.group === key && key !== home?.key;
+  const gap = <li aria-hidden className="u255-ph" data-drop-ph style={{ height }} />;
+
   return (
-    <div data-drag-scroll className="overflow-x-auto pb-(--s-8)">
+    <div ref={rootRef} data-drag-scroll className="overflow-x-auto pb-(--s-8)">
       <MoveHint board />
       <div className="flex w-max gap-(--s-3) px-(--gutter)">
         {groups.map((g) => {
@@ -63,7 +78,10 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                 key={g.key}
                 aria-labelledby={headingId}
                 data-drop-group={g.key}
-                className="flex w-10 shrink-0 flex-col items-center rounded-(--r-lg) bg-(--surface-2) py-2"
+                className={cn(
+                  "u255-col flex w-10 shrink-0 flex-col items-center rounded-(--r-lg) bg-(--surface-2) py-2",
+                  isOver(g.key) && "is-over",
+                )}
               >
                 <button
                   type="button"
@@ -76,12 +94,12 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                   <h2 id={headingId} className="text-(length:--fs-sm) font-semibold [writing-mode:vertical-rl]">
                     {g.label}
                   </h2>
-                  <span className="text-(length:--fs-xs) text-(--text-3)">{g.items.length}</span>
+                  <Count n={g.items.length} />
                 </button>
               </section>
             );
           }
-          const marks = dropIndexMarks(g.items, dragId, target, g.key);
+          const marks = dropIndexMarks(g.items, dragId, gapAt, g.key);
           const done = status === "done";
           const open = g.items.filter((t) => t.status !== "done" && t.canEdit).map((t) => t.id);
           const archivable = g.items.filter((t) => t.canEdit);
@@ -111,8 +129,8 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
               aria-labelledby={headingId}
               data-drop-group={g.key}
               className={cn(
-                "flex w-[272px] shrink-0 flex-col rounded-(--r-lg) bg-(--surface-2) max-[640px]:w-[248px]",
-                target?.group === g.key && dragId && "ring-2 ring-(--accent-line)",
+                "u255-col flex w-[272px] shrink-0 flex-col rounded-(--r-lg) bg-(--surface-2) max-[640px]:w-[248px]",
+                isOver(g.key) && "is-over",
               )}
             >
               <KeyContextMenu label={tr("tasks.board.columnMenu", { group: g.label })} className="w-48" menu={columnMenu(ContextMenuItem)}>
@@ -121,7 +139,7 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                   <h2 id={headingId} className="truncate text-(length:--fs-sm) font-semibold text-(--text)">
                     {g.label}
                   </h2>
-                  <span className="text-(length:--fs-xs) text-(--text-3)">{g.items.length}</span>
+                  <Count n={g.items.length} />
                   <span className="flex-1" />
                   {canAdd && (
                     <button
@@ -148,19 +166,11 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
               <ul className="flex min-h-12 flex-col gap-2 px-2 pb-1">
                 {g.items.map((t, i) => (
                   <Fragment key={t.id}>
-                    {marks.before(i) && (
-                      <li aria-hidden>
-                        <DropLine />
-                      </li>
-                    )}
+                    {marks.before(i) && gap}
                     <Card t={t} ctl={ctl} groups={groups} dragging={dragId === t.id} onPointerDown={onPointerDown} />
                   </Fragment>
                 ))}
-                {marks.end && (
-                  <li aria-hidden>
-                    <DropLine />
-                  </li>
-                )}
+                {marks.end && gap}
               </ul>
               {canAdd && (
                 <div className="px-2 pt-1 pb-2">
@@ -176,6 +186,21 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
         })}
       </div>
     </div>
+  );
+}
+
+// 열 개수. 처음 그릴 때는 가만히 두고, 값이 바뀌면 key를 바꿔 튀는 애니메이션을 다시 재생한다
+function Count({ n }: { n: number }) {
+  const [prev, setPrev] = useState(n);
+  const [pop, setPop] = useState(false);
+  if (prev !== n) {
+    setPrev(n);
+    setPop(true);
+  }
+  return (
+    <span key={n} className={cn("u255-count text-(length:--fs-xs) text-(--text-3)", pop && "is-pop")}>
+      {n}
+    </span>
   );
 }
 
@@ -223,10 +248,11 @@ function Card({
           }
         }}
         className={cn(
-          "flex flex-col gap-2 rounded-(--r) select-none [-webkit-touch-callout:none] bg-(--surface) p-(--card-pad) shadow-(--shadow-card) outline-none hover:shadow-(--shadow-pop) focus-visible:ring-2 focus-visible:ring-(--accent)",
+          "flex-col gap-2 rounded-(--r) select-none [-webkit-touch-callout:none] bg-(--surface) p-(--card-pad) shadow-(--shadow-card) outline-none hover:shadow-(--shadow-pop) focus-visible:ring-2 focus-visible:ring-(--accent)",
           t.canEdit ? "cursor-grab" : "cursor-pointer",
           checked && "ring-2 ring-(--accent)",
-          dragging && "opacity-40",
+          // 끄는 동안 흐름에서 빼고 그 자리는 틈이 맡는다. 요소는 남겨 포인터 캡처를 지킨다
+          dragging ? "hidden" : "flex",
         )}
       >
         {t.labels.length > 0 && <LabelChips labels={t.labels} max={3} />}
@@ -273,6 +299,7 @@ function Card({
             </span>
           )}
           <AssigneeAvatar assignee={t.assignee} size={20} />
+          {t.status === "done" && <em aria-hidden className="u255-check" />}
         </div>
       </li>
     </TaskContextMenu>

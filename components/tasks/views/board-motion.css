@@ -1,0 +1,84 @@
+/* Lucian UX/UI Prompt #255 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#255 */
+/* 보드 카드 드래그 모션. 고스트 떠오르기·내려앉기, 놓을 자리 점선 틈, 대상 열 강조, 개수 튀기, 완료 체크 */
+
+/* 열. 전환을 늘 붙여 두어야 강조가 들어오고 나갈 때 둘 다 부드럽다 */
+.u255-col {
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+.u255-col.is-over {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* 열 머리 개수. 값이 바뀌면 튄다 */
+.u255-count.is-pop {
+  animation: u255-pop 0.4s cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+@keyframes u255-pop {
+  40% {
+    transform: scale(1.35);
+  }
+}
+
+/* 끄는 고스트. 위치는 use-drag가 인라인 translate로 옮기고, 기울기·확대는 개별 속성(rotate·scale)이라 겹치지 않는다.
+   is-lift·is-land는 use-drag가 붙이는 고정 상태 클래스다 */
+.u255-ghost {
+  box-shadow: var(--shadow-card);
+  transition: rotate 0.2s, scale 0.2s, box-shadow 0.2s;
+}
+.u255-ghost.is-lift {
+  rotate: 3deg;
+  scale: 1.04;
+  box-shadow: var(--shadow-drag);
+}
+.u255-ghost.is-land {
+  transition: transform 0.28s cubic-bezier(0.3, 1.2, 0.5, 1), rotate 0.28s, scale 0.28s;
+}
+
+/* 놓을 자리 점선 틈. 카드 사이 간격은 목록의 gap이 맡는다 */
+.u255-ph {
+  border-radius: var(--r);
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  transition: height 0.2s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+/* 완료 카드 체크 */
+.u255-check {
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: u255-check 0.35s cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+.u255-check::after {
+  content: "";
+  position: absolute;
+  left: 5.5px;
+  top: 3px;
+  width: 3.5px;
+  height: 7px;
+  border: solid var(--surface);
+  border-width: 0 1.6px 1.6px 0;
+  transform: rotate(45deg);
+}
+@keyframes u255-check {
+  from {
+    transform: scale(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u255-col,
+  .u255-ghost,
+  .u255-ghost.is-land,
+  .u255-ph {
+    transition: none;
+  }
+  .u255-count.is-pop,
+  .u255-check {
+    animation: none;
+  }
+}
