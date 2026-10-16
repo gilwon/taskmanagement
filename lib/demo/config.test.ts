@@ -74,6 +74,20 @@ describe("데모 시작", () => {
     rpc.mockResolvedValueOnce({ data: null, error: { code: "P0001", message: "forbidden" } });
     expect(await signInDemo()).toEqual({ error: { field: undefined, message: MSG.demoNotReady } });
   });
+
+  it("익명 로그인 한도에 걸리면 토스트용 필드로 안내하고 사본을 만들지 않는다", async () => {
+    vi.stubEnv("DEMO_ENABLED", "true");
+    const signInAnonymously = vi.fn(async () => ({
+      data: { user: null },
+      error: { code: "over_request_rate_limit", status: 429 },
+    }));
+    const rpc = vi.fn();
+    createClient.mockResolvedValue({ auth: { getClaims: async () => ({ data: null }), signInAnonymously }, rpc });
+    const { signInDemo } = await import("@/lib/auth/actions");
+    const result = await signInDemo();
+    expect(result).toEqual({ error: { field: "demo-limit", message: expect.stringContaining("1시간") } });
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });
 
 describe("데모 사용자 워크스페이스 이동 차단", () => {

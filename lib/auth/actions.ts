@@ -14,6 +14,7 @@ import {
   type OnboardingInput,
 } from "@/lib/auth/rules";
 import { isDemoEnabled, isDemoUser } from "@/lib/demo/config";
+import { DEMO_LIMIT_FIELD } from "@/lib/demo/fields";
 import { syncLocaleCookie, writeLocaleCookie } from "@/lib/i18n/cookie";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/t";
@@ -81,6 +82,10 @@ export async function signInDemo(): Promise<ActionState> {
     const { data: anon, error } = await supabase.auth.signInAnonymously({ options: { data: { name: "데모 사용자" } } });
     if (error) {
       console.error("[데모 로그인]", error.code);
+      // 익명 로그인 한도(서버 IP당 시간당 횟수)에 걸리면 폼 안내 대신 토스트로 보이도록 표시 필드를 붙인다
+      if (error.code === "over_request_rate_limit" || error.status === 429) {
+        return fail(DEMO_LIMIT_FIELD, t("auth.login.demoRateLimited"));
+      }
       return { error: authErrorMessage(error.code, t) };
     }
     // 새 데모 사용자는 프로필이 기본값(ko)이라 지금 보고 있는 언어를 저장한다

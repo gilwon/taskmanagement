@@ -1,9 +1,12 @@
 "use client";
 // 로그인 폼. 이메일·비밀번호를 signIn Server Action으로 보내고, 데모가 켜져 있으면 데모 로그인 버튼을 둔다
 import Link from "next/link";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
 import { Field, FormAlert, SubmitButton, useAuthAction } from "@/components/auth/form-parts";
 import { signIn, signInDemo } from "@/lib/auth/actions";
+import { DEMO_LIMIT_FIELD } from "@/lib/demo/fields";
 import { useT } from "@/lib/i18n/client";
 
 export function LoginForm({ next, linkError, demo }: { next: string; linkError?: string; demo: boolean }) {
@@ -62,8 +65,12 @@ export function LoginForm({ next, linkError, demo }: { next: string; linkError?:
 
 // 데모 시작. 서버가 익명 로그인과 사본 생성을 하므로 폼은 아무 값도 보내지 않는다
 function DemoLogin() {
-  const { pending, formRef, onSubmit, formError } = useAuthAction(signInDemo);
+  const { state, pending, formRef, onSubmit, formError } = useAuthAction(signInDemo);
   const t = useT();
+  // 익명 로그인 한도 초과는 폼 안 안내가 아니라 토스트로 알린다
+  useEffect(() => {
+    if (state && "error" in state && state.error.field === DEMO_LIMIT_FIELD) toast.error(state.error.message);
+  }, [state]);
   return (
     <form
       ref={formRef}
