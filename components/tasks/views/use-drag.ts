@@ -172,7 +172,8 @@ export function useTaskDrag(onDrop: (id: string, target: DropTarget) => void, mo
       place();
       retarget();
     };
-    const finish = (drop: boolean) => {
+    // held는 Esc로 취소해 버튼이 아직 눌려 있는 경우다
+    const finish = (drop: boolean, held = false) => {
       const dragged = !!ghost;
       const dropAt = current;
       const landAt = drop && ghost && ghostClass && !reducedMotion() ? motionRef.current?.landOn?.() : null;
@@ -194,8 +195,21 @@ export function useTaskDrag(onDrop: (id: string, target: DropTarget) => void, mo
         ce.stopPropagation();
         ce.preventDefault();
       };
-      window.addEventListener("click", stop, { capture: true, once: true });
-      setTimeout(() => window.removeEventListener("click", stop, { capture: true }), 0);
+      const swallow = () => {
+        window.addEventListener("click", stop, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener("click", stop, { capture: true }), 0);
+      };
+      if (held) {
+        // 버튼을 뗄 때 오는 click은 포인터 캡처 때문에 카드로 가므로, 뗄 때까지 막기를 미룬다
+        const release = (ev: PointerEvent) => {
+          if (ev.pointerId !== pointerId) return;
+          window.removeEventListener("pointerup", release, true);
+          window.removeEventListener("pointercancel", release, true);
+          if (ev.type === "pointerup") swallow();
+        };
+        window.addEventListener("pointerup", release, true);
+        window.addEventListener("pointercancel", release, true);
+      } else swallow();
       if (!landAt && drop && dropAt) onDropRef.current(id, dropAt);
     };
     const onUp = (ev: PointerEvent) => ev.pointerId === pointerId && finish(true);
@@ -204,7 +218,7 @@ export function useTaskDrag(onDrop: (id: string, target: DropTarget) => void, mo
       if (ev.key === "Escape" && ghost) {
         ev.preventDefault();
         ev.stopPropagation();
-        finish(false);
+        finish(false, true);
       }
     };
 
