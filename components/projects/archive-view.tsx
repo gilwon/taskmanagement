@@ -173,7 +173,7 @@ export function ArchiveView({
   return (
     <div className="px-(--gutter) pb-(--s-8)">
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="gap-(--s-3)">
-        <TabsList variant="line" aria-label={t("projects.archive.tabs")} className="h-10 max-w-full justify-start overflow-x-auto">
+        <TabsList variant="line" aria-label={t("projects.archive.tabs")} className="no-scrollbar h-10 max-w-full justify-start overflow-x-auto">
           {(Object.keys(ARCHIVE_TAB_LABELS) as Tab[]).map((k) => (
             <TabsTrigger key={k} value={k} className="flex-none px-2 text-(length:--fs-sm)">
               {t(`common.archiveTab.${k}`)}
