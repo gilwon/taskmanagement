@@ -78,7 +78,7 @@ const CMD_TASK_LIMIT = 5;
 const SEARCH_LIMIT = 5;
 
 const icon = { size: 15, strokeWidth: 1.8, "aria-hidden": true } as const;
-const itemClass = "h-(--h-lg) gap-2.5 px-2.5 text-(length:--fs-base) text-(--text) data-selected:bg-(--surface-2)";
+const itemClass = "h-(--h-lg) gap-2.5 px-2.5 text-(length:--fs-base) text-(--text)";
 const groupClass =
   "px-1.5 **:[[cmdk-group-heading]]:px-2.5 **:[[cmdk-group-heading]]:text-(length:--fs-2xs) **:[[cmdk-group-heading]]:text-(--text-3)";
 
@@ -292,7 +292,7 @@ export function CommandPalette({
         showCloseButton={false}
         onCloseAutoFocus={onCloseAutoFocus}
         aria-describedby="command-palette-desc"
-        className="top-[12vh] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[640px] max-[640px]:top-2 max-[640px]:max-w-[calc(100%-1rem)]"
+        className="u046-pal top-[12vh] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[640px] max-[640px]:top-2 max-[640px]:max-w-[calc(100%-1rem)]"
       >
         <DialogTitle className="sr-only">{t("command.title")}</DialogTitle>
         <DialogDescription id="command-palette-desc" className="sr-only">

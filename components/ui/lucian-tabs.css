@@ -1,0 +1,72 @@
+/* Lucian UX/UI Prompt #039 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#039 */
+/* 탭(#039 미끄러지는 알약). 활성 탭으로 알약이 늘어나며 옮겨 가고, line 변형은 같은 막대가 밑줄이 된다. 원본 340px 데모 대신 지금 탭 크기를 따른다 */
+
+@layer components {
+  /* 목록. 알약이 목록 기준으로 놓이도록 위치 기준을 잡는다 */
+  .u039-tabs {
+    position: relative;
+  }
+  .u039-tabs[data-variant="default"] {
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+
+  /* 알약. 가로 위치·폭은 useGlide가 --glide-x·--glide-w로 붙인다. 세로는 목록 안쪽 여백(p-[3px])만큼 띄운다 */
+  .u039-pill {
+    position: absolute;
+    left: 0;
+    top: 3px;
+    bottom: 3px;
+    width: var(--glide-w, 0);
+    border-radius: 999px;
+    background: var(--text);
+    transform: translateX(var(--glide-x, 0));
+    box-shadow: 0 8px 16px -10px var(--ux-shadow-strong);
+    pointer-events: none;
+  }
+  /* 첫 자리를 잡은 뒤에만 미끄러진다. data-glide-live는 useGlide가 자리를 잡은 다음 프레임에 붙인다 */
+  .u039-tabs[data-glide-live] .u039-pill {
+    transition:
+      transform 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)),
+      width 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  /* 활성 탭이 없으면 숨긴다 */
+  .u039-tabs:not([data-glide]) .u039-pill {
+    opacity: 0;
+  }
+  /* line 변형. 알약 대신 목록 바닥의 2px 밑줄로 미끄러진다 */
+  .u039-tabs[data-variant="line"] .u039-pill {
+    top: auto;
+    bottom: 0;
+    height: 2px;
+    border-radius: 1px;
+    box-shadow: none;
+  }
+
+  /* 탭. 알약보다 위에 그려지도록 relative(호출부 className)를 유지한다 */
+  .u039-tab {
+    border-radius: 999px;
+    font-weight: 680;
+    color: var(--text-2);
+    transition: color 0.35s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  }
+  .u039-tab:hover,
+  .u039-tab[data-state="active"] {
+    color: var(--text);
+  }
+  /* 어두운 알약 위 글자는 바탕색으로 뒤집는다. hover보다 구체적이라 활성 탭 글자가 알약 색에 묻히지 않는다 */
+  .u039-tabs[data-variant="default"] .u039-tab[data-state="active"] {
+    color: var(--bg);
+  }
+  .u039-tabs[data-variant="line"] .u039-tab {
+    border-radius: var(--r-sm);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .u039-tabs[data-glide-live] .u039-pill,
+    .u039-tab {
+      transition: none;
+    }
+  }
+}

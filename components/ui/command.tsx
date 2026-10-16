@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/input-group"
 import { SearchIcon, CheckIcon } from "lucide-react"
 import { useT } from "@/lib/i18n/client"
+import { useGlide } from "@/components/ui/use-glide"
+import "./lucian-command.css"
 
 function Command({
   className,
@@ -57,7 +59,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
+          "u046-pal top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
           className
         )}
         showCloseButton={showCloseButton}
@@ -73,8 +75,9 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+    // 입력칸은 상자 대신 아래 선 하나로 보이고, 포커스되면 그 선이 accent로 짙어진다(lucian-command.css)
+    <div data-slot="command-input-wrapper" className="u046-field p-1 pb-0">
+      <InputGroup className="h-8! rounded-none! border-0! bg-transparent! shadow-none! ring-0! *:data-[slot=input-group-addon]:pl-2!">
         <CommandPrimitive.Input
           data-slot="command-input"
           className={cn(
@@ -94,20 +97,28 @@ function CommandInput({
 function CommandList({
   className,
   label,
+  children,
+  ref,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.List>) {
   const t = useT()
+  // 선택 막대가 data-selected 항목으로 미끄러진다. 항목이 그룹 안쪽 여백만큼 들어가 있어 세로·가로 둘 다 잰다
+  const listRef = useGlide(ref, { axis: "both" })
   return (
     <CommandPrimitive.List
+      ref={listRef}
       data-slot="command-list"
       // cmdk는 label로 aria-label을 덮어쓰고 기본값이 "Suggestions"다. 호출부의 aria-label을 살리고 없으면 사전 이름을 준다
       label={label ?? props["aria-label"] ?? t("common.commandList")}
       className={cn(
-        "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
+        "u046-list no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
         className
       )}
       {...props}
-    />
+    >
+      <span aria-hidden className="u046-hl" />
+      {children}
+    </CommandPrimitive.List>
   )
 }
 
@@ -118,7 +129,7 @@ function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn("py-6 text-center text-sm", className)}
+      className={cn("u046-empty py-6 text-center text-sm", className)}
       {...props}
     />
   )
@@ -132,7 +143,7 @@ function CommandGroup({
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "overflow-hidden p-1 text-foreground **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground",
+        "u046-group overflow-hidden p-1 text-foreground **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs",
         className
       )}
       {...props}
@@ -162,7 +173,8 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-muted data-selected:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-foreground",
+        // 선택 배경은 목록의 미끄러지는 막대가 대신한다
+        "u046-item group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-foreground",
         className
       )}
       {...props}
@@ -181,7 +193,7 @@ function CommandShortcut({
     <span
       data-slot="command-shortcut"
       className={cn(
-        "ml-auto text-xs tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground",
+        "u046-kbd ml-auto text-xs tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground",
         className
       )}
       {...props}

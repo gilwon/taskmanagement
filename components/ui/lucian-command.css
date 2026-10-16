@@ -1,0 +1,123 @@
+/* Lucian UX/UI Prompt #046 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#046 */
+/* 명령 목록(#046 선택 막대 glide). 막대가 선택 항목으로 미끄러지고, 입력칸은 아래 선과 포커스 accent 선으로 보인다. 원본 360px 데모 대신 지금 목록 크기를 따른다 */
+
+@layer components {
+  /* 입력칸. 상자 대신 아래 선 하나, 포커스되면 안쪽 2px accent 선 */
+  .u046-field {
+    border-bottom: 1px solid var(--border);
+  }
+  .u046-field:has([data-slot="command-input"]:focus-visible) {
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+
+  /* 목록. 막대가 목록 기준으로 놓이고 항목과 같이 스크롤되도록 위치 기준을 잡는다 */
+  .u046-list {
+    position: relative;
+  }
+
+  /* 선택 막대. 위치·크기는 useGlide가 --glide-x·--glide-y·--glide-w·--glide-h로 붙인다 */
+  .u046-hl {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--glide-w, 0);
+    height: var(--glide-h, 0);
+    border-radius: var(--r-sm);
+    background: var(--accent-soft);
+    box-shadow: inset 3px 0 0 var(--accent);
+    transform: translate(var(--glide-x, 0), var(--glide-y, 0));
+    pointer-events: none;
+  }
+  /* 첫 자리를 잡은 뒤에만 미끄러진다. data-glide-live는 useGlide가 자리를 잡은 다음 프레임에 붙인다 */
+  .u046-list[data-glide-live] .u046-hl {
+    transition:
+      transform 0.4s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)),
+      opacity 0.2s;
+  }
+  /* 선택 항목이 없으면(결과 없음) 숨긴다 */
+  .u046-list:not([data-glide]) .u046-hl {
+    opacity: 0;
+  }
+  /* 대화상자 안 항목은 rounded-lg라 막대도 맞춘다 */
+  [data-slot="dialog-content"] .u046-hl {
+    border-radius: var(--r-lg);
+  }
+
+  /* 그룹 머리 */
+  .u046-group [cmdk-group-heading] {
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+
+  /* 항목. 선택되면 글자가 짙어진다(data-selected:text-foreground) */
+  .u046-item {
+    font-weight: 620;
+    color: var(--text-2);
+  }
+
+  /* 단축키 */
+  .u046-kbd {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: var(--r-xs, 4px);
+    background: var(--surface-2);
+    box-shadow: inset 0 -1px 0 var(--border-strong);
+    font-weight: 700;
+  }
+
+  .u046-empty {
+    color: var(--text-3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .u046-list[data-glide-live] .u046-hl {
+      transition: none;
+    }
+  }
+
+  /* 명령 대화상자 접힘·펼침. 열리면 입력칸 높이의 알약에서 아래로 펼쳐지고, 닫히면 알약으로 접힌다.
+     --u046-head는 알약 높이(⌘K 입력줄 49px, CommandInput이면 37px) */
+  .u046-pal {
+    --u046-head: 49px;
+  }
+  .u046-pal:has([data-slot="command-input-wrapper"]) {
+    --u046-head: 37px;
+  }
+  /* dialog.tsx의 tw-animate 유틸리티(fade·zoom)를 이기려고 !important를 쓴다.
+     층 안의 !important는 globals.css의 동작 끄기 규칙보다 세므로, 동작이 켜져 있을 때만 건다. 꺼지면 즉시 열고 닫힌다 */
+  @media (prefers-reduced-motion: no-preference) {
+    :root[data-motion="full"] .u046-pal[data-state="open"] {
+      animation: u046-unfold 0.6s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)) !important;
+    }
+    /* 닫힘도 keyframes라 Radix Presence가 끝날 때까지 기다렸다가 내린다 */
+    :root[data-motion="full"] .u046-pal[data-state="closed"] {
+      animation: u046-fold 0.5s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)) forwards !important;
+    }
+    :root[data-motion="full"] .u046-pal [cmdk-list] {
+      transition: opacity 0.3s;
+    }
+  }
+  .u046-pal[data-state="closed"] [cmdk-list] {
+    opacity: 0;
+  }
+
+  @keyframes u046-unfold {
+    from {
+      clip-path: inset(0 0 calc(100% - var(--u046-head)) 0 round calc(var(--u046-head) / 2));
+    }
+    to {
+      clip-path: inset(0 0 0 0 round var(--r-xl));
+    }
+  }
+  @keyframes u046-fold {
+    from {
+      clip-path: inset(0 0 0 0 round var(--r-xl));
+    }
+    to {
+      clip-path: inset(0 0 calc(100% - var(--u046-head)) 0 round calc(var(--u046-head) / 2));
+    }
+  }
+}
