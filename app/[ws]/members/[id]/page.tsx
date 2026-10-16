@@ -6,7 +6,7 @@ import { MemberProfileBody } from "@/components/org/member-profile";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { selectActivities } from "@/lib/activity/queries";
 import { getMember, getWorkspace } from "@/lib/data/workspace";
-import { MEMBER_STATUS_LABELS, NAV_LABELS, ROLE_LABELS } from "@/lib/i18n/labels";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { orgErrorMessage } from "@/lib/org/errors";
 import { canOpenOrg, getMemberTasks, getOrgMembers, getTeams } from "@/lib/org/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -17,24 +17,26 @@ type Params = Promise<{ ws: string; id: string }>;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { ws, id } = await params;
   // 403 응답의 제목에 구성원 이름이 실리지 않게 역할부터 보고 목록과 같은 제목만 준다
-  if (!(await canOpenOrg(ws))) return { title: NAV_LABELS.members };
+  const t = await getT();
+  if (!(await canOpenOrg(ws))) return { title: t("common.nav.members") };
   const member = await getMember(ws, id);
-  return member ? { title: member.profiles?.name || "구성원" } : {};
+  return member ? { title: member.profiles?.name || t("org.memberProfile.fallbackTitle") } : {};
 }
 
 const ACTIVITY_LIMIT = 10;
 
-// tz는 본인이 직접 update로 아무 문자열이나 넣을 수 있어 모르는 시간대면 시각을 뺀다
-function timeIn(tz: string, now: Date) {
+// tz는 본인이 직접 update로 아무 문자열이나 넣을 수 있어 모르는 시간대면 시각을 뺀다(null)
+function timeIn(tz: string, now: Date, locale: string) {
   try {
-    return new Intl.DateTimeFormat("ko-KR", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(now);
+    return new Intl.DateTimeFormat(locale, { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(now);
   } catch {
-    return "알 수 없음";
+    return null;
   }
 }
 
 export default async function MemberPage({ params }: { params: Params }) {
   const { ws, id } = await params;
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const [workspace, found] = await Promise.all([getWorkspace(ws), getMember(ws, id)]);
   // 워크스페이스 404 → 역할 403 → 구성원 404 순서로 본다. 게스트에게 사용자 id의 존재를 드러내지 않는다
   if (!workspace) notFound();
@@ -56,21 +58,24 @@ export default async function MemberPage({ params }: { params: Params }) {
   if (!member) notFound();
 
   const now = new Date();
-  const open = tasks.filter((t) => t.status !== "done");
+  const open = tasks.filter((task) => task.status !== "done");
   const stats = [
-    { label: "열린 작업", value: open.length },
-    { label: "완료", value: tasks.length - open.length },
-    { label: "기한 지남", value: open.filter((t) => t.due_date && dueBucket(t.due_date, now) === "overdue").length },
-    { label: "참여 프로젝트", value: new Set(tasks.map((t) => t.project.id)).size },
+    { label: t("org.memberProfile.stat.open"), value: open.length },
+    { label: t("org.memberProfile.stat.done"), value: tasks.length - open.length },
+    {
+      label: t("org.memberProfile.stat.overdue"),
+      value: open.filter((task) => task.due_date && dueBucket(task.due_date, now) === "overdue").length,
+    },
+    { label: t("org.memberProfile.stat.projects"), value: new Set(tasks.map((task) => task.project.id)).size },
   ];
-  const team = teams.find((t) => t.id === member.teamId);
-  const localTime = timeIn(member.tz, now);
+  const team = teams.find((x) => x.id === member.teamId);
+  const localTime = timeIn(member.tz, now, locale) ?? t("org.memberProfile.unknownTime");
   const facts = [
-    ["역할", ROLE_LABELS[member.role]],
-    ["상태", MEMBER_STATUS_LABELS[member.status]],
-    ["팀", team?.name ?? "—"],
-    ["이메일", member.email || "—"],
-    ["시간대", `${member.tz} · 현지 ${localTime}`],
+    [t("org.memberProfile.fact.role"), t(`common.role.${member.role}`)],
+    [t("org.memberProfile.fact.status"), t(`common.memberStatus.${member.status}`)],
+    [t("org.memberProfile.fact.team"), team?.name ?? "—"],
+    [t("org.memberProfile.fact.email"), member.email || "—"],
+    [t("org.memberProfile.fact.tz"), t("org.memberProfile.tzValue", { tz: member.tz, time: localTime })],
   ] as const;
 
   return (
@@ -82,7 +87,7 @@ export default async function MemberPage({ params }: { params: Params }) {
             {member.name}
           </h1>
           <p className="mt-1 text-(length:--fs-base) text-(--text-3)">
-            {[member.title, ROLE_LABELS[member.role]].filter(Boolean).join(" · ")}
+            {[member.title, t(`common.role.${member.role}`)].filter(Boolean).join(" · ")}
           </p>
         </div>
       </header>

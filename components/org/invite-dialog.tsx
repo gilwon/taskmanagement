@@ -16,13 +16,14 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { NAV_LABELS, ROLE_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import { inviteMembers, type InviteOutcome } from "@/lib/org/actions";
 import { INVITE_ROLES, MAX_INVITES } from "@/lib/org/rules";
 
 type InviteRole = (typeof INVITE_ROLES)[number];
 
 function InviteForm({ workspaceId, onDone }: { workspaceId: string; onDone: () => void }) {
+  const t = useT();
   const [emails, setEmails] = useState("");
   const [role, setRole] = useState<InviteRole>("member");
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ function InviteForm({ workspaceId, onDone }: { workspaceId: string; onDone: () =
     const sent = r.data.filter((x) => x.ok);
     const bad = r.data.filter((x) => !x.ok);
     if (sent.length) {
-      const msg = `${sent.length}명을 초대했습니다.`;
+      const msg = t("org.invite.sent", { count: sent.length });
       toast.success(msg);
       announce(msg);
     }
@@ -52,19 +53,17 @@ function InviteForm({ workspaceId, onDone }: { workspaceId: string; onDone: () =
   return (
     <form onSubmit={submit} method="post" className="grid gap-4">
       <DialogHeader>
-        <DialogTitle>{NAV_LABELS.inviteMember}</DialogTitle>
-        <DialogDescription>
-          초대 메일은 발송되지 않습니다. 초대받은 사람이 이 이메일로 가입하거나 로그인하면 받은 초대에서 수락할 수 있습니다.
-        </DialogDescription>
+        <DialogTitle>{t("common.nav.inviteMember")}</DialogTitle>
+        <DialogDescription>{t("org.invite.description")}</DialogDescription>
       </DialogHeader>
       <div className="grid gap-1.5">
-        <Label htmlFor="invite-emails">이메일</Label>
+        <Label htmlFor="invite-emails">{t("org.invite.emails")}</Label>
         <Textarea
           id="invite-emails"
           autoFocus
           rows={4}
           value={emails}
-          placeholder={"name@example.com\n쉼표나 줄바꿈으로 여러 명"}
+          placeholder={t("org.invite.placeholder")}
           aria-invalid={!!error || failed.length > 0}
           aria-describedby="invite-emails-hint invite-emails-error"
           onChange={(e) => {
@@ -74,7 +73,7 @@ function InviteForm({ workspaceId, onDone }: { workspaceId: string; onDone: () =
           }}
         />
         <p id="invite-emails-hint" className="text-(length:--fs-xs) text-(--text-3)">
-          한 번에 {MAX_INVITES}명까지 초대할 수 있습니다.
+          {t("org.invite.limit", { max: MAX_INVITES })}
         </p>
         <div id="invite-emails-error" role="alert" className="text-(length:--fs-sm) text-(--red)">
           {error}
@@ -90,7 +89,7 @@ function InviteForm({ workspaceId, onDone }: { workspaceId: string; onDone: () =
         </div>
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor="invite-role">역할</Label>
+        <Label htmlFor="invite-role">{t("org.invite.role")}</Label>
         <Select value={role} onValueChange={(v) => setRole(v as InviteRole)}>
           <SelectTrigger id="invite-role" className="w-full">
             <SelectValue />
@@ -98,19 +97,19 @@ function InviteForm({ workspaceId, onDone }: { workspaceId: string; onDone: () =
           <SelectContent>
             {INVITE_ROLES.map((r) => (
               <SelectItem key={r} value={r}>
-                {ROLE_LABELS[r]}
+                {t(`common.role.${r}`)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-(length:--fs-xs) text-(--text-3)">게스트는 초대된 프로젝트만 보고 댓글을 남길 수 있습니다.</p>
+        <p className="text-(length:--fs-xs) text-(--text-3)">{t("org.invite.guestNote")}</p>
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onDone}>
-          취소
+          {t("common.action.cancel")}
         </Button>
         <Button type="submit" disabled={busy || !emails.trim()} aria-busy={busy}>
-          초대하기
+          {t("org.invite.submit")}
         </Button>
       </DialogFooter>
     </form>

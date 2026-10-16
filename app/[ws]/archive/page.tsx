@@ -4,13 +4,16 @@ import { notFound } from "next/navigation";
 import { ArchiveView } from "@/components/projects/archive-view";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { getTrash } from "@/lib/projects/queries";
 import { getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.archive };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.archive") };
+}
 
 export default async function ArchivePage({ params }: { params: Promise<{ ws: string }> }) {
+  const t = await getT();
   const { ws } = await params;
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
@@ -18,8 +21,8 @@ export default async function ArchivePage({ params }: { params: Promise<{ ws: st
   return (
     <>
       <PageHeader
-        title={NAV_LABELS.archive}
-        subtitle="보관하거나 삭제한 항목을 되돌리거나 영구 삭제합니다. 영구 삭제는 전체 권한이 있는 사람만 할 수 있습니다."
+        title={t("common.nav.archive")}
+        subtitle={t("projects.page.archiveSubtitle")}
       />
       <ArchiveView
         data={data}

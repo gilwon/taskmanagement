@@ -4,17 +4,20 @@ import { notFound } from "next/navigation";
 import { WorkspaceOverview } from "@/components/projects/workspace-overview";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { getProjectSummaries } from "@/lib/projects/queries";
 import { getMilestones } from "@/lib/schedule/queries";
 import { todayIso } from "@/lib/schedule/dates";
 import { getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.overview };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.overview") };
+}
 
 const MILESTONE_MAX = 6;
 
 export default async function OverviewPage({ params }: { params: Promise<{ ws: string }> }) {
+  const t = await getT();
   const { ws } = await params;
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
@@ -29,7 +32,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ ws: s
 
   return (
     <>
-      <PageHeader title={NAV_LABELS.overview} subtitle="워크스페이스의 프로젝트와 작업 현황을 한눈에 봅니다." />
+      <PageHeader title={t("common.nav.overview")} subtitle={t("projects.page.overviewSubtitle")} />
       <WorkspaceOverview
         projects={live}
         members={members.map((m) => ({ id: m.id, name: m.name, color: m.color, status: m.status }))}

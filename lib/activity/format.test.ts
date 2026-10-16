@@ -1,5 +1,9 @@
 // 활동 문장 변환 테스트. 모든 verb가 영어 없이 한국어 문장이 되는지, 조사와 extra 값 변환이 맞는지 본다
 import { describe, expect, it } from "vitest";
+import { createFormatter } from "@/lib/i18n/format";
+import en from "@/lib/i18n/messages/en";
+import type { Messages } from "@/lib/i18n/messages/types";
+import { createT } from "@/lib/i18n/t";
 import { ACTIVITY_VERBS, activityText, directionJosa, formatActivity, objectJosa, type ActivityInput } from "./format";
 
 const MEMBERS: Record<string, string> = { "u-taeo": "강태오" };
@@ -110,6 +114,26 @@ describe("formatActivity", () => {
     expect(activityText(input("renamed", { from: "시안", to: "새 이름" }))).toBe(
       "김지윤님이 홈페이지 시안의 제목을 “새 이름”으로 바꿨습니다",
     );
+  });
+});
+
+describe("formatActivity 영어", () => {
+  const t = createT(en as Messages, "en");
+  const f = createFormatter("en", { justNow: en.common.justNow });
+
+  it("영어 틀로 같은 조각 구조를 만든다", () => {
+    expect(formatActivity(input("moved", { to: "review" }, { actorName: "Jiyun", taskTitle: "Homepage" }), t, f)).toEqual([
+      { text: "Jiyun moved " },
+      { text: "Homepage", strong: true },
+      { text: " to In review" },
+    ]);
+    for (const verb of ACTIVITY_VERBS) {
+      // 사용자 값(파일 이름 등)은 한글일 수 있어 extra를 비운다
+      const [, , over] = CASES[verb];
+      expect(activityText(input(verb, {}, { ...over, actorName: "Jiyun", taskTitle: "Homepage", projectName: "Web" }), t, f)).not.toMatch(
+        /[가-힣]/u,
+      );
+    }
   });
 });
 

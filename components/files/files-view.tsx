@@ -32,7 +32,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { previewUrls } from "@/lib/files/actions";
 import type { FileType } from "@/lib/files/mime";
 import type { FileItem, LinkableTask } from "@/lib/files/types";
-import { FILE_SORT_LABELS, FILE_TYPE_ALL_LABEL, FILE_TYPE_LABELS, FILE_VIEW_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { FILE_SORT_LABELS, FILE_TYPE_LABELS, FILE_VIEW_LABELS } from "@/lib/i18n/labels";
 import { cn } from "@/lib/utils";
 
 type SortKey = keyof typeof FILE_SORT_LABELS;
@@ -64,6 +65,7 @@ export function FilesView({
   initialFiles: FileItem[];
   tasks: LinkableTask[];
 }) {
+  const t = useT();
   const ctl = useFiles({ projectId, taskId: null, initial: initialFiles });
   const [q, setQ] = useState("");
   const [type, setType] = useState<TypeFilter>("all");
@@ -91,7 +93,7 @@ export function FilesView({
 
   return (
     <div className="flex flex-col gap-(--s-3) pt-(--s-3) pb-(--s-6)">
-      <div role="toolbar" aria-label="파일 보기 설정" className="mx-(--gutter) flex flex-wrap items-center gap-(--s-1)">
+      <div role="toolbar" aria-label={t("files.toolbar")} className="mx-(--gutter) flex flex-wrap items-center gap-(--s-1)">
         <div className="relative flex items-center">
           <Search {...ICON} className="pointer-events-none absolute left-2 text-(--text-4)" />
           <input
@@ -104,8 +106,8 @@ export function FilesView({
                 setQ("");
               }
             }}
-            placeholder="파일 검색"
-            aria-label="파일 검색"
+            placeholder={t("files.search")}
+            aria-label={t("files.search")}
             className="h-(--h-sm) w-48 rounded-(--r-sm) border border-(--border) bg-(--surface) pr-2 pl-7 text-(length:--fs-sm) text-(--text) placeholder:text-(--text-4) focus-visible:border-(--accent-line) focus-visible:outline-none max-sm:w-36 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
@@ -113,16 +115,16 @@ export function FilesView({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={TOOLBAR_BTN}>
               <ListFilter {...ICON} />
-              형식: {type === "all" ? FILE_TYPE_ALL_LABEL : FILE_TYPE_LABELS[type]}
+              {t("files.typeButton", { type: type === "all" ? t("common.fileTypeAll") : t(`common.fileType.${type}`) })}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className={MENU_CLASS}>
-            <DropdownMenuLabel>파일 형식</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("files.typeMenu")}</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={type} onValueChange={(v) => setType(v as TypeFilter)}>
-              <DropdownMenuRadioItem value="all">{FILE_TYPE_ALL_LABEL}</DropdownMenuRadioItem>
-              {(Object.keys(FILE_TYPE_LABELS) as FileType[]).map((t) => (
-                <DropdownMenuRadioItem key={t} value={t}>
-                  {FILE_TYPE_LABELS[t]}
+              <DropdownMenuRadioItem value="all">{t("common.fileTypeAll")}</DropdownMenuRadioItem>
+              {(Object.keys(FILE_TYPE_LABELS) as FileType[]).map((ft) => (
+                <DropdownMenuRadioItem key={ft} value={ft}>
+                  {t(`common.fileType.${ft}`)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -132,15 +134,15 @@ export function FilesView({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={TOOLBAR_BTN}>
               <ArrowDownWideNarrow {...ICON} />
-              정렬: {FILE_SORT_LABELS[sort]}
+              {t("files.sortButton", { sort: t(`common.fileSort.${sort}`) })}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className={MENU_CLASS}>
-            <DropdownMenuLabel>정렬 기준</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("files.sortMenu")}</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={sort} onValueChange={(v) => setSort(v as SortKey)}>
               {(Object.keys(FILE_SORT_LABELS) as SortKey[]).map((s) => (
                 <DropdownMenuRadioItem key={s} value={s}>
-                  {FILE_SORT_LABELS[s]}
+                  {t(`common.fileSort.${s}`)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -153,12 +155,12 @@ export function FilesView({
             variant="outline"
             spacing={0}
             value={mode}
-            aria-label="보기 방식"
+            aria-label={t("files.viewMode")}
             onValueChange={(v) => v && setMode(v as ViewMode)}
           >
             {(Object.keys(FILE_VIEW_LABELS) as ViewMode[]).map((m) => (
               <ToggleGroupItem key={m} value={m} className="h-(--h-md) px-2.5 text-(length:--fs-sm)">
-                {FILE_VIEW_LABELS[m]}
+                {t(`common.fileView.${m}`)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -168,26 +170,26 @@ export function FilesView({
 
       {canEdit && (
         <div className="mx-(--gutter)">
-          <DropZone label="파일을 끌어 놓거나 클릭해 올리세요" onFiles={upload} />
+          <DropZone label={t("files.dropHere")} onFiles={upload} />
         </div>
       )}
 
       {ctl.files.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title="아직 파일이 없습니다"
-          description={canEdit ? "파일을 끌어 놓거나 올리기 버튼으로 추가하세요." : undefined}
+          title={t("files.emptyTitle")}
+          description={canEdit ? t("files.emptyDescription") : undefined}
         />
       ) : shown.length === 0 ? (
-        <EmptyState icon={SearchX} title="검색 결과가 없습니다" description="조건에 맞는 파일이 없습니다." />
+        <EmptyState icon={SearchX} title={t("files.noResultsTitle")} description={t("files.noResultsDescription")} />
       ) : mode === "list" ? (
-        <ul aria-label="파일 목록" className="mx-(--gutter) rounded-(--r) border border-(--border) bg-(--surface)">
+        <ul aria-label={t("files.list")} className="mx-(--gutter) rounded-(--r) border border-(--border) bg-(--surface)">
           {shown.map((item) => (
             <FileListRow key={item.id} item={item} transfer={ctl.transfers[item.id]} now={now} showTask {...rowProps} />
           ))}
         </ul>
       ) : (
-        <ul aria-label="파일 목록" className="mx-(--gutter) grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-(--s-3)">
+        <ul aria-label={t("files.list")} className="mx-(--gutter) grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-(--s-3)">
           {shown.map((item) => (
             <FileCard
               key={item.id}
@@ -314,27 +316,28 @@ function LinkTaskDialog({
   onClose: () => void;
   onPick: (taskId: string) => void;
 }) {
+  const t = useT();
   return (
     <CommandDialog
       open={!!item}
       onOpenChange={(o) => !o && onClose()}
-      title="작업에 연결"
-      description={item ? `${item.name} 파일을 연결할 작업을 고르세요` : "연결할 작업을 고르세요"}
+      title={t("files.linkTitle")}
+      description={item ? t("files.linkDescriptionFor", { name: item.name }) : t("files.linkDescription")}
     >
       <Command>
-        <CommandInput placeholder="작업 키나 제목으로 검색" />
+        <CommandInput placeholder={t("files.linkSearch")} />
         <CommandList>
-          <CommandEmpty>일치하는 작업이 없습니다.</CommandEmpty>
-          <CommandGroup heading="작업">
-            {tasks.map((t) => (
+          <CommandEmpty>{t("files.linkEmpty")}</CommandEmpty>
+          <CommandGroup heading={t("files.linkGroup")}>
+            {tasks.map((task) => (
               <CommandItem
-                key={t.id}
-                value={`${t.key} ${t.title}`}
-                onSelect={() => onPick(t.id)}
-                className={cn(item?.task_id === t.id && "font-medium")}
+                key={task.id}
+                value={`${task.key} ${task.title}`}
+                onSelect={() => onPick(task.id)}
+                className={cn(item?.task_id === task.id && "font-medium")}
               >
-                <span className="shrink-0 font-mono text-(length:--fs-xs) text-(--text-3)">{t.key}</span>
-                <span className="truncate">{t.title}</span>
+                <span className="shrink-0 font-mono text-(length:--fs-xs) text-(--text-3)">{task.key}</span>
+                <span className="truncate">{task.title}</span>
               </CommandItem>
             ))}
           </CommandGroup>

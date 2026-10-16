@@ -6,16 +6,17 @@ import { Bold, Heading, Italic, Link2, List, ListOrdered, type LucideIcon } from
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
-import { LINK_ERROR, validLink } from "@/components/tasks/drawer/rules";
+import { validLink } from "@/components/tasks/drawer/rules";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
-// 툴바 버튼과 execCommand 명령. heading은 h3 ↔ p 전환이다
-const TOOLS: { icon: LucideIcon; label: string; command: string }[] = [
-  { icon: Bold, label: "굵게", command: "bold" },
-  { icon: Italic, label: "기울임", command: "italic" },
-  { icon: List, label: "글머리 기호 목록", command: "insertUnorderedList" },
-  { icon: ListOrdered, label: "번호 목록", command: "insertOrderedList" },
-  { icon: Heading, label: "제목", command: "heading" },
+// 툴바 버튼과 execCommand 명령. heading은 h3 ↔ p 전환이다. label은 tasks.description.tool 사전 키다
+const TOOLS: { icon: LucideIcon; label: "bold" | "italic" | "bulletList" | "orderedList" | "heading"; command: string }[] = [
+  { icon: Bold, label: "bold", command: "bold" },
+  { icon: Italic, label: "italic", command: "italic" },
+  { icon: List, label: "bulletList", command: "insertUnorderedList" },
+  { icon: ListOrdered, label: "orderedList", command: "insertOrderedList" },
+  { icon: Heading, label: "heading", command: "heading" },
 ];
 
 function escapeHtml(s: string) {
@@ -61,6 +62,7 @@ type Props = {
 };
 
 export function DescriptionEditor({ html, resetKey, onCommit, onChange, disabled, className }: Props) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const range = useRef<Range | null>(null);
   const lastKey = useRef<string | null>(null);
@@ -147,14 +149,14 @@ export function DescriptionEditor({ html, resetKey, onCommit, onChange, disabled
   return (
     <div className={cn("rounded-(--r) border border-(--border) bg-(--surface) focus-within:border-(--border-strong)", className)}>
       <Popover open={linkOpen} onOpenChange={setLinkOpen}>
-        <div role="toolbar" aria-label="설명 서식" className="flex items-center gap-0.5 border-b border-(--divider) px-1 py-1">
+        <div role="toolbar" aria-label={t("tasks.description.toolbar")} className="flex items-center gap-0.5 border-b border-(--divider) px-1 py-1">
           {TOOLS.map(({ icon: Icon, label, command }) => (
             <Button
               key={label}
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-label={label}
+              aria-label={t(`tasks.description.tool.${label}`)}
               disabled={disabled}
               className="text-(--text-3) hover:text-(--text)"
               // 버튼을 눌러도 편집기 선택이 풀리지 않게 한다
@@ -169,7 +171,7 @@ export function DescriptionEditor({ html, resetKey, onCommit, onChange, disabled
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-label="링크"
+              aria-label={t("tasks.description.link")}
               aria-expanded={linkOpen}
               disabled={disabled}
               className="text-(--text-3) hover:text-(--text)"
@@ -189,7 +191,7 @@ export function DescriptionEditor({ html, resetKey, onCommit, onChange, disabled
             className="flex flex-col gap-1.5"
           >
             <label htmlFor={`link-${resetKey}`} className="text-(length:--fs-xs) text-(--text-3)">
-              링크 주소
+              {t("tasks.description.linkUrl")}
             </label>
             <div className="flex gap-1.5">
               <Input
@@ -206,12 +208,12 @@ export function DescriptionEditor({ html, resetKey, onCommit, onChange, disabled
                 className="h-(--h-sm) text-(length:--fs-sm)"
               />
               <Button type="submit" size="sm">
-                넣기
+                {t("tasks.description.insert")}
               </Button>
             </div>
             {linkError && (
               <p id={`link-err-${resetKey}`} role="alert" className="text-(length:--fs-xs) text-(--red)">
-                {LINK_ERROR}
+                {t("tasks.description.linkError")}
               </p>
             )}
           </form>
@@ -221,11 +223,11 @@ export function DescriptionEditor({ html, resetKey, onCommit, onChange, disabled
         ref={ref}
         role="textbox"
         aria-multiline="true"
-        aria-label="설명"
+        aria-label={t("tasks.description.label")}
         contentEditable={!disabled}
         suppressContentEditableWarning
         data-empty={empty || undefined}
-        data-placeholder="설명 추가…"
+        data-placeholder={t("tasks.description.placeholder")}
         className="task-description min-h-24 px-3 py-2 text-(length:--fs-base) leading-relaxed text-(--text) outline-none data-empty:before:pointer-events-none data-empty:before:text-(--text-4) data-empty:before:content-[attr(data-placeholder)] [&_a]:text-(--accent) [&_a]:underline [&_h3]:my-1 [&_h3]:text-(length:--fs-md) [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-0.5 [&_ul]:list-disc [&_ul]:pl-5"
         onFocus={(e) => {
           atFocus.current = serialize(e.currentTarget);

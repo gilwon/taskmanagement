@@ -71,8 +71,7 @@ export function GeneralForm({
     const r = await updateWorkspace(workspace.id, { name, slug });
     setBusy(false);
     if (!r.ok) {
-      const field = r.error.includes("URL") ? "slug" : r.error.includes("이름") ? "name" : null;
-      return setError({ field, message: r.error });
+      return setError({ field: r.field ?? null, message: r.error });
     }
     saved(t("org.settings.general.saved"));
     if (r.data.slug !== workspace.slug) router.replace(`/${r.data.slug}/settings/general`);

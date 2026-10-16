@@ -1,15 +1,22 @@
-// 활동(activities) 한 건을 한국어 문장 조각으로 바꾸는 순수 함수. 홈 최근 활동과 활동 화면이 함께 쓴다
+// 활동(activities) 한 건을 현재 로캘 문장 조각으로 바꾸는 순수 함수. 홈 최근 활동과 활동 화면이 함께 쓴다.
+// 문장 틀은 사전(activity.verb)에 언어별로 하나씩 있고, 한국어 조사는 한국어 틀의 자리 표시자로만 넣는다
 import {
-  COLUMN_LABELS,
-  DELETED_TASK_LABEL,
   ESTIMATE_LABELS,
   PROJECT_STATUS_LABELS,
   REPEAT_LABELS,
   TASK_LABEL_LABELS,
   TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
-  UNKNOWN_USER_LABEL,
 } from "@/lib/i18n/labels";
+import { createFormatter, type Formatter } from "@/lib/i18n/format";
+import koActivity from "@/lib/i18n/messages/ko/activity";
+import koCommon from "@/lib/i18n/messages/ko/common";
+import type { Messages } from "@/lib/i18n/messages/types";
+import { createT, type Params, type T } from "@/lib/i18n/t";
+
+// 한국어 기본값. 클라이언트 번들에 사전 전체가 실리지 않게 activity·common 영역만 담는다
+const koT = createT({ activity: koActivity, common: koCommon } as unknown as Messages, "ko");
+const koF = createFormatter("ko", { justNow: koCommon.justNow });
 
 // activities.verb check 제약과 같은 목록(마이그레이션 01). 트리거·RPC가 넣는 값은 이 안에만 있다
 export const ACTIVITY_VERBS = [
@@ -107,17 +114,17 @@ function text(extra: unknown, key: string): string | null {
   return typeof v === "string" && v !== "" ? v : null;
 }
 
-function lookup<T extends Record<string, string>>(labels: T, value: string | null): string | null {
+// 라벨 사전 값. 모르는 값은 원래 값을 그대로 보인다
+function lookup(t: T, group: string, labels: Record<string, string>, value: string | null): string | null {
   if (!value) return null;
-  return (labels as Record<string, string>)[value] ?? value;
+  return Object.hasOwn(labels, value) ? (t as (key: string) => string)(`common.${group}.${value}`) : value;
 }
 
-// DB date("YYYY-MM-DD")는 서울 달력 날짜라 UTC로 읽어야 날이 밀리지 않는다
-const dateFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", month: "long", day: "numeric" });
-function dateLabel(value: string | null): string | null {
+// DB date("YYYY-MM-DD")는 서울 달력 날짜다
+function dateLabel(f: Formatter, value: string | null): string | null {
   const m = value ? /^(\d{4})-(\d{2})-(\d{2})/.exec(value) : null;
   if (!m) return null;
-  return dateFmt.format(new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])));
+  return f.date(m[0]);
 }
 
 // “이름”. 따옴표 안 이름이 없으면 null
@@ -125,129 +132,120 @@ function quoted(value: string | null) {
   return value ? `“${value}”` : null;
 }
 
+// 굵은 대상 자리를 가르는 표시. 사용자 값에는 나오지 않는 제어 문자다
+const SEP = "\u001f";
+
 // ─────────────────────────────────────────────
 // 문장
 // ─────────────────────────────────────────────
 
 // 활동 문장 조각. 예 [김지윤님이 ][작업 제목(굵게)][을 검토 중으로 옮겼습니다]
-export function formatActivity(a: ActivityInput): ActivitySegment[] {
-  const actor = a.actorName ? `${a.actorName}님이 ` : `${UNKNOWN_USER_LABEL}가 `;
-  const title = a.taskTitle ?? DELETED_TASK_LABEL;
+export function formatActivity(a: ActivityInput, t: T = koT, f: Formatter = koF): ActivitySegment[] {
+  const actor = a.actorName ? t("activity.actor", { name: a.actorName }) : t("activity.unknownActor");
+  const title = a.taskTitle ?? t("common.deletedTask");
   const x = a.extra;
-  const S = (t: string): ActivitySegment => ({ text: t, strong: true });
-  const T = S(title);
-  const P = S(a.projectName);
-  // [행위자][굵은 대상][나머지 문장]
-  const line = (target: ActivitySegment, rest: string): ActivitySegment[] => [{ text: actor }, target, { text: rest }];
-  const obj = (target: ActivitySegment, rest: string) => line(target, `${objectJosa(target.text)} ${rest}`);
-  // 프로젝트 활동. "프로젝트 "는 굵게 하지 않는다
-  const project = (rest: string): ActivitySegment[] => [{ text: `${actor}프로젝트 ` }, P, { text: rest }];
-  // "{대상}의 {속성}을 {값}(으)로 바꿨습니다". 값이 없으면 "{속성}을 지웠습니다"
-  const change = (attr: string, value: string | null, cleared = `${attr}${objectJosa(attr)} 지웠습니다`) =>
-    line(T, value ? `의 ${attr}${objectJosa(attr)} ${value}${directionJosa(value)} 바꿨습니다` : `의 ${cleared}`);
-  const subtask = quoted(text(x, "title")) ?? "하위 작업";
-  const member = (id: string | null) => (id ? (a.memberName(id) ?? UNKNOWN_USER_LABEL) : null);
+  // 문장 틀 하나를 [대상 앞][굵은 대상][대상 뒤]로 나눈다. o는 대상의 을/를, 나머지 자리는 vars로 채운다
+  const say = (key: string, target: string, vars: Params = {}): ActivitySegment[] => {
+    const params = { actor, target: SEP, o: objectJosa(target), ...vars };
+    const [before, after = ""] = (t as (key: string, params: Params) => string)(`activity.verb.${key}`, params).split(SEP);
+    return [{ text: before }, { text: target, strong: true }, { text: after }];
+  };
+  const task = (key: string, vars?: Params) => say(key, title, vars);
+  const project = (key: string, vars?: Params) => say(key, a.projectName, vars);
+  // 값과 그 값의 으로/로
+  const to = (value: string) => ({ to: value, ro: directionJosa(value) });
+  // 값이 있으면 key, 없으면 key + "Cleared"
+  const change = (key: string, value: string | null) => (value ? task(key, to(value)) : task(`${key}Cleared`));
+  const subtask = quoted(text(x, "title")) ?? t("activity.subtask");
+  const sub = { sub: subtask, subO: objectJosa(subtask) };
+  const member = (id: string | null) => (id ? (a.memberName(id) ?? t("common.unknownUser")) : null);
 
   switch (a.verb as ActivityVerb) {
     case "created":
-      return obj(T, "만들었습니다");
+      return task("created");
     case "moved": {
-      const to = lookup(TASK_STATUS_LABELS, text(x, "to"));
-      return to ? obj(T, `${to}${directionJosa(to)} 옮겼습니다`) : obj(T, "옮겼습니다");
+      const status = lookup(t, "taskStatus", TASK_STATUS_LABELS, text(x, "to"));
+      return status ? task("moved", to(status)) : task("movedNoTo");
     }
     case "completed":
-      return obj(T, "완료했습니다");
+      return task("completed");
     case "commented on":
-      return line(T, "에 댓글을 남겼습니다");
+      return task("commented");
     case "changed priority of":
-      return change(COLUMN_LABELS.priority, lookup(TASK_PRIORITY_LABELS, text(x, "to")));
+      return change("priority", lookup(t, "taskPriority", TASK_PRIORITY_LABELS, text(x, "to")));
     case "added a file to": {
-      const file = quoted(text(x, "name")) ?? "파일";
-      if (!a.hasTask) return project(`에 파일 ${file}${objectJosa(file)} 추가했습니다`);
-      return line(T, `에 파일 ${file}${objectJosa(file)} 추가했습니다`);
+      const file = quoted(text(x, "name")) ?? t("activity.file");
+      const vars = { file, fileO: objectJosa(file) };
+      return a.hasTask ? task("fileAdded", vars) : project("projectFileAdded", vars);
     }
     case "removed a file from": {
-      const file = quoted(text(x, "name")) ?? "파일";
-      if (!a.hasTask) return project(`에서 파일 ${file}${objectJosa(file)} 삭제했습니다`);
-      return line(T, `에서 파일 ${file}${objectJosa(file)} 삭제했습니다`);
+      const file = quoted(text(x, "name")) ?? t("activity.file");
+      const vars = { file, fileO: objectJosa(file) };
+      return a.hasTask ? task("fileRemoved", vars) : project("projectFileRemoved", vars);
     }
     case "assigned": {
-      const to = member(text(x, "to"));
-      return to ? obj(T, `${to}님에게 배정했습니다`) : line(T, `의 ${COLUMN_LABELS.assignee}${objectJosa(COLUMN_LABELS.assignee)} 해제했습니다`);
+      const m = member(text(x, "to"));
+      return m ? task("assigned", { member: m }) : task("unassigned");
     }
     case "created project":
-      return project(`${objectJosa(a.projectName)} 만들었습니다`);
+      return project("projectCreated");
     case "changed due date of":
-      return change(COLUMN_LABELS.due, dateLabel(text(x, "to")));
+      return change("due", dateLabel(f, text(x, "to")));
     case "changed start date of":
-      return change(COLUMN_LABELS.start, dateLabel(text(x, "to")));
+      return change("start", dateLabel(f, text(x, "to")));
     case "updated labels on": {
-      const to = field(x, "to");
-      const names = Array.isArray(to) ? to.map((l) => lookup(TASK_LABEL_LABELS, String(l))!) : [];
-      const attr = COLUMN_LABELS.labels;
-      return change(attr, names.length > 0 ? names.join(", ") : null, `${attr}${objectJosa(attr)} 모두 지웠습니다`);
+      const value = field(x, "to");
+      const names = Array.isArray(value) ? value.map((l) => lookup(t, "taskLabel", TASK_LABEL_LABELS, String(l))!) : [];
+      return change("labels", names.length > 0 ? names.join(", ") : null);
     }
     case "renamed": {
-      const to = text(x, "to");
-      return line(T, to && to !== title ? `의 제목을 “${to}”${directionJosa(to)} 바꿨습니다` : "의 제목을 바꿨습니다");
+      const value = text(x, "to");
+      return value && value !== title ? task("renamed", { to: `“${value}”`, ro: directionJosa(value) }) : task("renamedNoTo");
     }
     case "set repeat on": {
-      const to = text(x, "to");
-      if (!to || to === "none") return line(T, "의 반복을 껐습니다");
-      return line(T, `${objectJosa(title)} ${lookup(REPEAT_LABELS, to)} 반복하도록 설정했습니다`);
+      const value = text(x, "to");
+      if (!value || value === "none") return task("repeatOff");
+      return task("repeat", { repeat: lookup(t, "repeat", REPEAT_LABELS, value)! });
     }
     case "estimated":
-      return change(COLUMN_LABELS.estimate, lookup(ESTIMATE_LABELS, text(x, "to")));
+      return change("estimate", lookup(t, "estimate", ESTIMATE_LABELS, text(x, "to")));
     case "updated dependencies of":
-      return field(x, "removed") !== undefined
-        ? line(T, `에서 ${COLUMN_LABELS.deps}${objectJosa(COLUMN_LABELS.deps)} 뺐습니다`)
-        : line(T, `에 ${COLUMN_LABELS.deps}${objectJosa(COLUMN_LABELS.deps)} 추가했습니다`);
+      return field(x, "removed") !== undefined ? task("depsRemoved") : task("depsAdded");
     case "archived":
-      return a.hasTask ? obj(T, "보관했습니다") : project(`${objectJosa(a.projectName)} 보관했습니다`);
+      return a.hasTask ? task("archived") : project("projectArchived");
     case "restored":
-      return a.hasTask ? obj(T, "복원했습니다") : project(`${objectJosa(a.projectName)} 복원했습니다`);
+      return a.hasTask ? task("restored") : project("projectRestored");
     case "completed subtask on":
-      return line(T, `의 하위 작업 ${subtask}${objectJosa(subtask)} 완료했습니다`);
+      return task("subtaskCompleted", sub);
     case "reopened subtask on":
-      return line(T, `의 하위 작업 ${subtask}${objectJosa(subtask)} 다시 열었습니다`);
+      return task("subtaskReopened", sub);
     case "added subtask to":
-      return line(T, `에 하위 작업 ${subtask}${objectJosa(subtask)} 추가했습니다`);
-    case "assigned a subtask on": {
-      const to = member(text(x, "to")) ?? UNKNOWN_USER_LABEL;
-      return line(T, `의 하위 작업 ${subtask}${objectJosa(subtask)} ${to}님에게 배정했습니다`);
-    }
+      return task("subtaskAdded", sub);
+    case "assigned a subtask on":
+      return task("subtaskAssigned", { ...sub, member: member(text(x, "to")) ?? t("common.unknownUser") });
     case "set a subtask due date on": {
-      const to = dateLabel(text(x, "to"));
-      return line(
-        T,
-        to
-          ? `의 하위 작업 ${subtask} ${COLUMN_LABELS.due}${objectJosa(COLUMN_LABELS.due)} ${to}${directionJosa(to)} 바꿨습니다`
-          : `의 하위 작업 ${subtask} ${COLUMN_LABELS.due}${objectJosa(COLUMN_LABELS.due)} 지웠습니다`,
-      );
+      const date = dateLabel(f, text(x, "to"));
+      return date ? task("subtaskDue", { ...sub, ...to(date) }) : task("subtaskDueCleared", sub);
     }
     case "converted a subtask of": {
-      const sub = quoted(text(x, "subtask_title")) ?? "하위 작업";
+      const converted = quoted(text(x, "subtask_title")) ?? t("activity.subtask");
+      const vars = { sub: converted, subO: objectJosa(converted) };
       const key = text(x, "new_task_key");
-      return line(
-        T,
-        key
-          ? `의 하위 작업 ${sub}${objectJosa(sub)} 작업 ${key}${directionJosa(key)} 바꿨습니다`
-          : `의 하위 작업 ${sub}${objectJosa(sub)} 작업으로 바꿨습니다`,
-      );
+      return key ? task("converted", { ...vars, ...to(key) }) : task("convertedNoKey", vars);
     }
     case "changed status of project": {
-      const to = lookup(PROJECT_STATUS_LABELS, text(x, "to"));
-      return project(to ? `의 상태를 ${to}${directionJosa(to)} 바꿨습니다` : "의 상태를 바꿨습니다");
+      const status = lookup(t, "projectStatus", PROJECT_STATUS_LABELS, text(x, "to"));
+      return status ? project("projectStatus", to(status)) : project("projectStatusNoTo");
     }
     default:
       // check 제약 밖의 값은 오지 않는다. 와도 영어 verb를 그대로 보이지 않는다
-      return a.hasTask ? obj(T, "바꿨습니다") : project(`${objectJosa(a.projectName)} 바꿨습니다`);
+      return a.hasTask ? task("fallback") : project("projectFallback");
   }
 }
 
 // 굵게 표시 없이 한 줄로. 접근성 이름·알림 문구용
-export function activityText(a: ActivityInput) {
-  return formatActivity(a)
+export function activityText(a: ActivityInput, t?: T, f?: Formatter) {
+  return formatActivity(a, t, f)
     .map((s) => s.text)
     .join("");
 }

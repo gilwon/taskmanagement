@@ -8,14 +8,7 @@ import { LINK_CLS, ProgressBar } from "@/components/projects/parts";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { ProjectIcon, ProjectStatusDot } from "@/components/shell/project-icon";
 import { DueLabel, StatusIcon } from "@/components/tasks/parts";
-import {
-  NO_LEAD_LABEL,
-  OVERVIEW_STAT_LABELS,
-  PROJECT_COLUMN_LABELS,
-  PROJECT_STATUS_LABELS,
-  TASK_STATUS_LABELS,
-  UNKNOWN_USER_LABEL,
-} from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import { TASK_STATUSES, taskStats, workload } from "@/lib/projects/stats";
 import type { ProjectSummary } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
@@ -56,6 +49,7 @@ export function WorkspaceOverview({
   wsSlug: string;
   nowIso: string;
 }) {
+  const t = useT();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const tasks = useMemo(() => projects.flatMap((p) => p.tasks), [projects]);
@@ -68,51 +62,51 @@ export function WorkspaceOverview({
 
   return (
     <div className="px-(--gutter) pb-(--s-8)">
-      <h2 className="sr-only">요약</h2>
+      <h2 className="sr-only">{t("projects.overview.summary")}</h2>
       <dl className="grid grid-cols-4 gap-(--s-3) max-[901px]:grid-cols-2">
-        <Stat label={OVERVIEW_STAT_LABELS.projects} value={projects.length} note={`${active}개 진행 중`} delay={0} />
-        <Stat label={OVERVIEW_STAT_LABELS.tasks} value={all.total} note={`${all.open}개 열림`} delay={40} />
-        <Stat label={OVERVIEW_STAT_LABELS.completion} value={all.pct} suffix="%" note={`${all.done}개 완료`} delay={80} />
+        <Stat label={t("common.overviewStat.projects")} value={projects.length} note={t("projects.overview.activeCount", { count: active })} delay={0} />
+        <Stat label={t("common.overviewStat.tasks")} value={all.total} note={t("projects.overview.openCount", { count: all.open })} delay={40} />
+        <Stat label={t("common.overviewStat.completion")} value={all.pct} suffix="%" note={t("projects.overview.doneCount", { count: all.done })} delay={80} />
         <Stat
-          label={OVERVIEW_STAT_LABELS.members}
+          label={t("common.overviewStat.members")}
           value={activeMembers}
-          note={invited > 0 ? `${invited}명 초대됨` : "모두 활성"}
+          note={invited > 0 ? t("projects.overview.invitedCount", { count: invited }) : t("projects.overview.allActive")}
           delay={120}
         />
       </dl>
 
       <div className="mt-(--s-4) grid grid-cols-[minmax(0,1fr)_minmax(0,340px)] items-start gap-(--s-4) max-[1100px]:grid-cols-1">
-        <Panel title="포트폴리오" titleId="ov-portfolio" delay={160}>
+        <Panel title={t("projects.overview.portfolio")} titleId="ov-portfolio" delay={160}>
           {projects.length === 0 ? (
-            <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">아직 프로젝트가 없습니다</p>
+            <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.list.emptyTitle")}</p>
           ) : (
             <table className="w-full table-fixed text-(length:--fs-sm)">
               <thead>
                 <tr className="h-9 border-b border-(--divider) text-left text-(length:--fs-xs) text-(--text-3)">
                   <th scope="col" className="px-(--s-4) font-medium">
-                    {PROJECT_COLUMN_LABELS.project}
+                    {t("common.projectColumn.project")}
                   </th>
                   <th scope="col" className="hide-m w-28 font-medium max-[1100px]:hidden">
-                    {PROJECT_COLUMN_LABELS.lead}
+                    {t("common.projectColumn.lead")}
                   </th>
                   <th scope="col" className="hide-m w-20 font-medium">
-                    {PROJECT_COLUMN_LABELS.status}
+                    {t("common.projectColumn.status")}
                   </th>
                   <th scope="col" className="w-32 font-medium max-[640px]:w-24">
-                    {PROJECT_COLUMN_LABELS.progress}
+                    {t("common.projectColumn.progress")}
                   </th>
                   <th scope="col" className="w-12 text-right font-medium">
-                    <abbr title={PROJECT_COLUMN_LABELS.open} className="no-underline">
-                      열림
+                    <abbr title={t("common.projectColumn.open")} className="no-underline">
+                      {t("projects.overview.openShort")}
                     </abbr>
                   </th>
                   <th scope="col" className="w-12 text-right font-medium">
-                    <abbr title={PROJECT_COLUMN_LABELS.overdue} className="no-underline">
-                      지남
+                    <abbr title={t("common.projectColumn.overdue")} className="no-underline">
+                      {t("projects.overview.overdueShort")}
                     </abbr>
                   </th>
                   <th scope="col" className="hide-m w-20 pr-(--s-4) pl-(--s-3) font-medium">
-                    {PROJECT_COLUMN_LABELS.due}
+                    {t("common.projectColumn.due")}
                   </th>
                 </tr>
               </thead>
@@ -131,18 +125,18 @@ export function WorkspaceOverview({
                         </Link>
                       </td>
                       <td className="hide-m max-[1100px]:hidden">
-                        <span className="block truncate text-(--text-2)">{lead?.name ?? NO_LEAD_LABEL}</span>
+                        <span className="block truncate text-(--text-2)">{lead?.name ?? t("common.noLead")}</span>
                       </td>
                       <td className="hide-m">
                         <span className="inline-flex items-center gap-1.5 text-(--text-2)">
                           <ProjectStatusDot status={p.status} />
                           <span aria-hidden className="truncate">
-                            {PROJECT_STATUS_LABELS[p.status]}
+                            {t(`common.projectStatus.${p.status}`)}
                           </span>
                         </span>
                       </td>
                       <td>
-                        <ProgressBar pct={p.stats.pct} label={`${p.name} 진행률`} className="pr-(--s-2)" />
+                        <ProgressBar pct={p.stats.pct} label={t("projects.progressOf", { name: p.name })} className="pr-(--s-2)" />
                       </td>
                       <td className="text-right tabular-nums text-(--text-2)">{p.stats.open}</td>
                       <td className={cn("text-right tabular-nums", p.stats.overdue > 0 ? "text-(--red)" : "text-(--text-3)")}>
@@ -160,12 +154,12 @@ export function WorkspaceOverview({
         </Panel>
 
         <div className="grid min-w-0 gap-(--s-4)">
-          <Panel title="상태별 작업" titleId="ov-status" delay={200}>
+          <Panel title={t("projects.overview.byStatus")} titleId="ov-status" delay={200}>
             <div className="flex flex-col gap-(--s-3) px-(--s-4) py-(--s-3)">
               {all.total === 0 ? (
-                <p className="text-center text-(length:--fs-sm) text-(--text-3)">아직 작업이 없습니다</p>
+                <p className="text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.overview.noTasks")}</p>
               ) : (
-                <div role="img" aria-label={TASK_STATUSES.map((s) => `${TASK_STATUS_LABELS[s]} ${all.byStatus[s]}개`).join(", ")} className="flex h-2.5 overflow-hidden rounded-(--r-full) bg-(--surface-3)">
+                <div role="img" aria-label={TASK_STATUSES.map((s) => t("projects.statusCount", { status: t(`common.taskStatus.${s}`), count: all.byStatus[s] })).join(", ")} className="flex h-2.5 overflow-hidden rounded-(--r-full) bg-(--surface-3)">
                   {TASK_STATUSES.map((s) =>
                     all.byStatus[s] > 0 ? (
                       <span
@@ -182,7 +176,7 @@ export function WorkspaceOverview({
                   <li key={s} className="flex items-center gap-1.5 text-(length:--fs-sm) text-(--text-2)">
                     <StatusIcon status={s} size={12} />
                     <span aria-hidden className="truncate">
-                      {TASK_STATUS_LABELS[s]}
+                      {t(`common.taskStatus.${s}`)}
                     </span>
                     <span className="ml-auto tabular-nums text-(--text)">{all.byStatus[s]}</span>
                   </li>
@@ -191,14 +185,14 @@ export function WorkspaceOverview({
             </div>
           </Panel>
 
-          <Panel title="담당자별 부하" titleId="ov-workload" delay={240}>
+          <Panel title={t("projects.overview.workload")} titleId="ov-workload" delay={240}>
             {load.length === 0 ? (
-              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">담당자가 있는 열린 작업이 없습니다</p>
+              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.overview.noWorkload")}</p>
             ) : (
               <ul className="flex flex-col gap-2 px-(--s-4) py-(--s-3)">
                 {load.map((w) => {
                   const m = byId.get(w.userId);
-                  const name = m?.name ?? UNKNOWN_USER_LABEL;
+                  const name = m?.name ?? t("common.unknownUser");
                   return (
                     <li key={w.userId} className="flex items-center gap-2 text-(length:--fs-sm)">
                       <MemberAvatar name={name} color={m?.color} size={20} />
@@ -209,7 +203,7 @@ export function WorkspaceOverview({
                           style={{ width: `${maxLoad ? (w.open / maxLoad) * 100 : 0}%` }}
                         />
                       </span>
-                      <span className="w-14 shrink-0 text-right text-(length:--fs-xs) text-(--text-3) tabular-nums">열린 {w.open}개</span>
+                      <span className="w-14 shrink-0 text-right text-(length:--fs-xs) text-(--text-3) tabular-nums">{t("projects.overview.openLoad", { count: w.open })}</span>
                     </li>
                   );
                 })}
@@ -217,9 +211,9 @@ export function WorkspaceOverview({
             )}
           </Panel>
 
-          <Panel title="다가오는 마일스톤" titleId="ov-milestones" delay={280}>
+          <Panel title={t("projects.overview.upcomingMilestones")} titleId="ov-milestones" delay={280}>
             {milestones.length === 0 ? (
-              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">예정된 마일스톤이 없습니다</p>
+              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.overview.noMilestones")}</p>
             ) : (
               <ul>
                 {milestones.map((m) => (

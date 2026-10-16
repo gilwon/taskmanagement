@@ -1,9 +1,9 @@
 "use server";
-// 작업 쓰기 Server Action. 세션 클레임을 확인하고 입력을 검증한 뒤 RLS가 걸린 서버 클라이언트로 쓰고, 결과를 한국어 오류와 함께 돌려준다
-import { MSG } from "@/lib/auth/errors";
+// 작업 쓰기 Server Action. 세션 클레임을 확인하고 입력을 검증한 뒤 RLS가 걸린 서버 클라이언트로 쓰고, 결과를 현재 로캘의 오류와 함께 돌려준다
 import type { TablesUpdate } from "@/lib/database.types";
 import { sanitizeTaskHtml } from "@/lib/html/sanitize";
 import { ESTIMATE_LABELS, TASK_LABEL_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import { selectTaskDetail, selectTaskItems } from "@/lib/tasks/queries";
@@ -36,7 +36,6 @@ const REPEATS: readonly RepeatKind[] = ["none", "daily", "weekly", "biweekly", "
 const LABELS = Object.keys(TASK_LABEL_LABELS);
 const ESTIMATES = Object.keys(ESTIMATE_LABELS).filter((e) => e !== "clear");
 const MAX_BULK = 500;
-const INVALID = "입력값을 다시 확인해 주세요.";
 
 class InputError extends Error {}
 
@@ -48,9 +47,9 @@ function err<T>(error: string): ActionResult<T> {
   return { ok: false, error };
 }
 
-function dbErr<T>(what: string, error: DbError): ActionResult<T> {
+async function dbErr<T>(what: string, error: DbError): Promise<ActionResult<T>> {
   console.error(`[${what}]`, error.code, error.message);
-  return err(taskErrorMessage(error));
+  return err(taskErrorMessage(error, await getT()));
 }
 
 // Server Action은 직접 POST로도 불릴 수 있다. 매번 검증된 클레임으로 사용자를 확인한다
@@ -120,14 +119,15 @@ function description(value: unknown): string | null {
 
 // 검증 실패와 예상하지 못한 예외를 결과로 바꾼다. 실패를 빈 성공으로 숨기지 않는다
 async function run<T>(what: string, body: (s: { supabase: Client; uid: string }) => Promise<ActionResult<T>>) {
+  const t = await getT();
   try {
     const s = await session();
-    if (!s) return err<T>(MSG.sessionExpired);
+    if (!s) return err<T>(t("errors.msg.sessionExpired"));
     return await body(s);
   } catch (e) {
-    if (e instanceof InputError) return err<T>(INVALID);
+    if (e instanceof InputError) return err<T>(t("errors.rpc.invalidInput"));
     console.error(`[${what}]`, e);
-    return err<T>(taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }));
+    return err<T>(taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }, t));
   }
 }
 
@@ -142,7 +142,7 @@ async function readItems(supabase: Client, ids: string[]): Promise<ActionResult<
 async function readItem(supabase: Client, id: string): Promise<ActionResult<TaskItem>> {
   const r = await readItems(supabase, [id]);
   if (!r.ok) return r;
-  return r.data[0] ? ok(r.data[0]) : err(taskErrorMessage({ code: "PGRST116", message: "" }));
+  return r.data[0] ? ok(r.data[0]) : err(taskErrorMessage({ code: "PGRST116", message: "" }, await getT()));
 }
 
 // ─────────────────────────────────────────────
@@ -195,7 +195,7 @@ export async function updateTask(id: string, patch: TaskPatch): Promise<ActionRe
       .select("id");
     if (error) return dbErr("작업 수정", error);
     // RLS가 권한 없는 행을 건너뛰면 0행이다
-    if (data.length === 0) return err(taskErrorMessage({ code: "P0001", message: "not_found" }));
+    if (data.length === 0) return err(taskErrorMessage({ code: "P0001", message: "not_found" }, await getT()));
     return readItem(supabase, taskId);
   });
 }
@@ -224,7 +224,7 @@ async function finishComplete(
   const items = await readItems(supabase, nextId ? [taskId, nextId] : [taskId]);
   if (!items.ok) return items;
   const item = items.data.find((t) => t.id === taskId);
-  if (!item) return err(taskErrorMessage({ code: "PGRST116", message: "" }));
+  if (!item) return err(taskErrorMessage({ code: "PGRST116", message: "" }, await getT()));
   return ok({ item, next: items.data.find((t) => t.id === nextId) ?? null });
 }
 
@@ -350,6 +350,7 @@ export async function bulkRestore(tokens: Record<string, string>): Promise<Actio
     const restoredIds: string[] = [];
     const conflictIds: string[] = [];
     const failedIds: string[] = [];
+    const t = await getT();
     let error: string | null = null;
     for (const r of results) {
       if (!r.error) {
@@ -361,7 +362,7 @@ export async function bulkRestore(tokens: Record<string, string>): Promise<Actio
         conflictIds.push(r.id);
       } else {
         console.error("[작업 일괄 복원]", r.id, r.error.code, r.error.message);
-        error ??= taskErrorMessage(r.error);
+        error ??= taskErrorMessage(r.error, t);
       }
     }
     const restored = await readItems(supabase, restoredIds);
@@ -455,7 +456,7 @@ export async function updateSubtask(id: string, patch: SubtaskPatch): Promise<Ac
     if (Object.keys(row).length === 0) throw new InputError();
     const { data, error } = await supabase.from("subtasks").update(row).eq("id", subId).select("*");
     if (error) return dbErr("서브태스크 수정", error);
-    if (!data[0]) return err(taskErrorMessage({ code: "P0001", message: "not_found" }));
+    if (!data[0]) return err(taskErrorMessage({ code: "P0001", message: "not_found" }, await getT()));
     return ok(data[0]);
   });
 }
@@ -469,7 +470,7 @@ export async function deleteSubtask(id: string): Promise<ActionResult<{ id: stri
     const subId = uuid(id);
     const { data, error } = await supabase.from("subtasks").delete().eq("id", subId).select("id");
     if (error) return dbErr("서브태스크 삭제", error);
-    if (!data[0]) return err(taskErrorMessage({ code: "P0001", message: "not_found" }));
+    if (!data[0]) return err(taskErrorMessage({ code: "P0001", message: "not_found" }, await getT()));
     return ok({ id: subId });
   });
 }

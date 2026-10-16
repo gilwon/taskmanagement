@@ -27,9 +27,9 @@ export function LanguageForm() {
       setValue(prev);
       return void toast.error(r.error);
     }
-    const msg = t("org.settings.language.saved", { name: LOCALE_NAMES[next as Locale] });
-    toast.success(msg);
-    announce(msg);
+    // 화면 사전은 refresh 뒤에 바뀌므로 서버가 새 로캘로 만든 문구를 쓴다
+    toast.success(r.message);
+    announce(r.message);
     router.refresh();
   };
 

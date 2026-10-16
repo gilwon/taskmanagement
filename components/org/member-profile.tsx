@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { ActivityRow } from "@/components/activity/activity-row";
 import { StatusIcon, DueLabel, TaskKey } from "@/components/tasks/parts/display";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useT } from "@/lib/i18n/client";
 import type { HomeActivity } from "@/lib/home/queries";
 import type { MemberTask, OrgMember } from "@/lib/org/queries";
 
@@ -20,17 +21,17 @@ type Props = {
 function TaskRows({ items, wsSlug, at }: { items: MemberTask[]; wsSlug: string; at: Date }) {
   return (
     <ul className="divide-y divide-(--divider) rounded-(--r) border border-(--border)">
-      {items.map((t) => (
-        <li key={t.id}>
+      {items.map((task) => (
+        <li key={task.id}>
           <Link
-            href={`/${wsSlug}/task/${t.key}`}
+            href={`/${wsSlug}/task/${task.key}`}
             className="flex h-(--row-h) items-center gap-2 px-(--s-3) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-inset"
           >
-            <StatusIcon status={t.status} />
-            <TaskKey value={t.key} />
-            <span className="min-w-0 flex-1 truncate text-(--text)">{t.title}</span>
-            <span className="hidden truncate text-(length:--fs-sm) text-(--text-3) sm:inline">{t.project.name}</span>
-            <DueLabel due={t.due_date} done={t.status === "done"} now={at} className="text-(length:--fs-sm)" />
+            <StatusIcon status={task.status} />
+            <TaskKey value={task.key} />
+            <span className="min-w-0 flex-1 truncate text-(--text)">{task.title}</span>
+            <span className="hidden truncate text-(length:--fs-sm) text-(--text-3) sm:inline">{task.project.name}</span>
+            <DueLabel due={task.due_date} done={task.status === "done"} now={at} className="text-(length:--fs-sm)" />
           </Link>
         </li>
       ))}
@@ -39,20 +40,21 @@ function TaskRows({ items, wsSlug, at }: { items: MemberTask[]; wsSlug: string; 
 }
 
 export function MemberProfileBody({ wsSlug, tasks, activities, members, now }: Props) {
+  const t = useT();
   const at = useMemo(() => new Date(now), [now]);
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
-  const open = tasks.filter((t) => t.status !== "done");
-  const done = tasks.filter((t) => t.status === "done");
+  const open = tasks.filter((task) => task.status !== "done");
+  const done = tasks.filter((task) => task.status === "done");
 
   return (
     <div className="grid gap-(--s-8) px-(--gutter) pb-(--s-8)">
       <Tabs defaultValue="assigned">
         <TabsList>
           <TabsTrigger value="assigned">
-            담당 <span className="tabular-nums text-(--text-3)">{open.length}</span>
+            {t("org.memberProfile.assigned")} <span className="tabular-nums text-(--text-3)">{open.length}</span>
           </TabsTrigger>
           <TabsTrigger value="completed">
-            완료 <span className="tabular-nums text-(--text-3)">{done.length}</span>
+            {t("org.memberProfile.completed")} <span className="tabular-nums text-(--text-3)">{done.length}</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="assigned" className="mt-(--s-3)">
@@ -61,7 +63,7 @@ export function MemberProfileBody({ wsSlug, tasks, activities, members, now }: P
           ) : (
             <p className="flex items-center gap-2 text-(length:--fs-sm) text-(--text-3)">
               <Inbox aria-hidden size={14} strokeWidth={1.8} />
-              담당 중인 작업이 없습니다.
+              {t("org.memberProfile.noAssigned")}
             </p>
           )}
         </TabsContent>
@@ -71,7 +73,7 @@ export function MemberProfileBody({ wsSlug, tasks, activities, members, now }: P
           ) : (
             <p className="flex items-center gap-2 text-(length:--fs-sm) text-(--text-3)">
               <CheckCircle2 aria-hidden size={14} strokeWidth={1.8} />
-              완료한 작업이 없습니다.
+              {t("org.memberProfile.noCompleted")}
             </p>
           )}
         </TabsContent>
@@ -79,7 +81,7 @@ export function MemberProfileBody({ wsSlug, tasks, activities, members, now }: P
 
       <section aria-labelledby="member-activity-title">
         <h2 id="member-activity-title" className="mb-(--s-3) text-(length:--fs-md) font-semibold text-(--text)">
-          최근 활동
+          {t("org.memberProfile.recentActivity")}
         </h2>
         {activities.length ? (
           <ul className="space-y-3">
@@ -90,7 +92,7 @@ export function MemberProfileBody({ wsSlug, tasks, activities, members, now }: P
             ))}
           </ul>
         ) : (
-          <p className="text-(length:--fs-sm) text-(--text-3)">아직 활동이 없습니다.</p>
+          <p className="text-(length:--fs-sm) text-(--text-3)">{t("org.memberProfile.noActivity")}</p>
         )}
       </section>
     </div>

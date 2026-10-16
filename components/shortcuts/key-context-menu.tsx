@@ -4,6 +4,9 @@
 import { useRef } from "react";
 import { toast } from "sonner";
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
+import koShortcuts from "@/lib/i18n/messages/ko/shortcuts";
+import type { Messages } from "@/lib/i18n/messages/types";
+import { createT, type T } from "@/lib/i18n/t";
 
 // ⋯ 메뉴(DropdownMenuItem)와 우클릭 메뉴(ContextMenuItem)가 같은 항목 목록을 그리도록 받는 항목 컴포넌트
 export type MenuItemComponent = React.ComponentType<{
@@ -13,13 +16,16 @@ export type MenuItemComponent = React.ComponentType<{
   children?: React.ReactNode;
 }>;
 
-// 메뉴의 복사 항목. 결과를 토스트로 알린다. what은 목적격 조사 "를"이 붙는 말(키·링크)
-export async function copyText(text: string, what: string) {
+// t를 넘기지 않은 호출부의 한국어 기본값. 클라이언트 번들에 사전 전체가 실리지 않게 shortcuts 영역만 담는다
+const koT = createT({ shortcuts: koShortcuts } as unknown as Messages, "ko");
+
+// 메뉴의 복사 항목. 결과를 토스트로 알린다. what은 t와 같은 로캘의 대상 이름(키·링크)
+export async function copyText(text: string, what: string, t: T = koT) {
   try {
     await navigator.clipboard.writeText(text);
-    toast.success(`${what}를 복사했습니다`);
+    toast.success(t("shortcuts.copied", { what }));
   } catch {
-    toast.error(`${what}를 복사하지 못했습니다.`);
+    toast.error(t("shortcuts.copyFailed", { what }));
   }
 }
 

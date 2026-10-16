@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ICON_LABELS, NAV_LABELS, PROJECT_COLORS, type ProjectColor } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { PROJECT_COLORS, type ProjectColor } from "@/lib/i18n/labels";
 import { createTeam, updateTeam, type TeamInput } from "@/lib/org/actions";
 import type { OrgTeam } from "@/lib/org/queries";
 import { TEAM_ICONS } from "@/lib/org/rules";
@@ -87,6 +88,7 @@ export function TeamDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const [form, setForm] = useState<TeamInput>(() => ({
     name: team?.name ?? "",
@@ -101,12 +103,12 @@ export function TeamDialog({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!form.name.trim()) return setError("팀 이름을 입력해 주세요.");
+    if (!form.name.trim()) return setError(t("org.team.dialog.nameRequired"));
     setBusy(true);
     const r = team ? await updateTeam(team.id, form) : await createTeam(workspace.id, form);
     setBusy(false);
     if (!r.ok) return setError(r.error);
-    const msg = team ? "팀을 저장했습니다." : `${form.name.trim()} 팀을 만들었습니다.`;
+    const msg = team ? t("org.team.dialog.saved") : t("org.team.dialog.created", { name: form.name.trim() });
     toast.success(msg);
     announce(msg);
     onOpenChange(false);
@@ -118,11 +120,11 @@ export function TeamDialog({
       <DialogContent className="sm:max-w-md">
         <form onSubmit={submit} method="post" className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>{team ? "팀 편집" : NAV_LABELS.newTeam}</DialogTitle>
-            <DialogDescription>팀은 구성원과 프로젝트를 묶어 보는 단위입니다.</DialogDescription>
+            <DialogTitle>{team ? t("org.team.edit") : t("common.nav.newTeam")}</DialogTitle>
+            <DialogDescription>{t("org.team.dialog.description")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-1.5">
-            <Label htmlFor="team-name">이름</Label>
+            <Label htmlFor="team-name">{t("org.team.dialog.name")}</Label>
             <Input
               id="team-name"
               autoFocus
@@ -137,7 +139,7 @@ export function TeamDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="team-desc">설명</Label>
+            <Label htmlFor="team-desc">{t("org.team.dialog.desc")}</Label>
             <Textarea
               id="team-desc"
               rows={2}
@@ -147,19 +149,19 @@ export function TeamDialog({
             />
           </div>
           <Radios
-            label="아이콘"
+            label={t("org.team.dialog.icon")}
             values={TEAM_ICONS}
             value={form.icon as (typeof TEAM_ICONS)[number]}
             onChange={(icon) => setForm({ ...form, icon })}
-            name={(v) => ICON_LABELS[v]}
+            name={(v) => t(`common.icon.${v}`)}
             render={(v) => <ProjectIcon icon={v} color={form.color} size={22} />}
           />
           <Radios
-            label="색"
+            label={t("org.team.dialog.color")}
             values={colors}
             value={form.color as ProjectColor}
             onChange={(color) => setForm({ ...form, color })}
-            name={(v) => PROJECT_COLORS[v].label}
+            name={(v) => t(`common.projectColor.${v}`)}
             render={(v) => (
               <span aria-hidden className={cn("size-4 rounded-full")} style={{ background: PROJECT_COLORS[v].hex }} />
             )}
@@ -171,10 +173,10 @@ export function TeamDialog({
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              취소
+              {t("common.action.cancel")}
             </Button>
             <Button type="submit" disabled={busy} aria-busy={busy}>
-              {team ? "저장" : "만들기"}
+              {team ? t("common.action.save") : t("org.team.dialog.create")}
             </Button>
           </DialogFooter>
         </form>

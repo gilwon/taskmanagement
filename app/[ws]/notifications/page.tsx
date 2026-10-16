@@ -4,20 +4,24 @@ import { notFound } from "next/navigation";
 import { NotificationsView } from "@/components/notifications/notifications-view";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { getNotifications } from "@/lib/notifications/queries";
 import { getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.notifications };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("common.nav.notifications") };
+}
 
 export default async function NotificationsPage({ params }: { params: Promise<{ ws: string }> }) {
   const { ws } = await params;
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
+  const t = await getT();
   const [items, members] = await Promise.all([getNotifications(workspace.id, userId), getWorkspaceMembers(workspace.id)]);
   return (
     <>
-      <PageHeader title={NAV_LABELS.notifications} subtitle="워크스페이스에서 받은 알림을 날짜별로 봅니다." />
+      <PageHeader title={t("common.nav.notifications")} subtitle={t("notifications.subtitle")} />
       <NotificationsView
         initial={items}
         workspace={{ id: workspace.id, slug: workspace.slug }}

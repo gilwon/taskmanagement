@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n/client";
 import { saveRecentSearch } from "@/lib/search/actions";
 import { normalizeQuery, SEARCH_MAX_LEN } from "@/lib/search/text";
 import type { SearchScope } from "@/lib/search/types";
@@ -24,6 +25,7 @@ export function SearchForm({
   recent: string[];
 }) {
   const router = useRouter();
+  const t = useT();
   const [value, setValue] = useState(q);
   const [pending, startTransition] = useTransition();
 
@@ -58,19 +60,19 @@ export function SearchForm({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             maxLength={SEARCH_MAX_LEN}
-            aria-label="검색어"
-            placeholder="작업·프로젝트·사람·파일·댓글 검색"
+            aria-label={t("search.queryLabel")}
+            placeholder={t("search.placeholder")}
             autoComplete="off"
             className="h-(--h-md) rounded-(--r-sm) pl-8"
           />
         </div>
         <Button type="submit" size="sm" disabled={pending}>
-          검색
+          {t("search.submit")}
         </Button>
       </form>
       {recent.length > 0 && (
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="text-(length:--fs-sm) text-(--text-3)">최근 검색</span>
+          <span className="text-(length:--fs-sm) text-(--text-3)">{t("search.recent")}</span>
           <ul className="flex min-w-0 flex-wrap gap-1.5">
             {recent.map((s) => (
               <li key={s} className="min-w-0">

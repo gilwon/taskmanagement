@@ -25,12 +25,10 @@ export function seoulDay(input: DateInput) {
   return Date.UTC(get("year"), get("month") - 1, get("day"));
 }
 
-// Intl의 "지금(now)"보다 자연스러운 1분 미만 표시. 없는 로캘은 Intl 값을 쓴다
-const JUST_NOW: Partial<Record<Locale, string>> = { ko: "방금", en: "Just now" };
-
 export type Formatter = ReturnType<typeof createFormatter>;
 
-export function createFormatter(locale: Locale) {
+// words.justNow는 Intl의 "지금(now)"보다 자연스러운 1분 미만 표시(사전 common.justNow). 사전을 import하지 않게 호출부가 넘긴다
+export function createFormatter(locale: Locale, words: { justNow: string }) {
   // 아래 셋은 Date.UTC로 만든 "달력 날짜"를 받으므로 UTC로 읽어야 날이 밀리지 않는다
   const weekdayFmt = new Intl.DateTimeFormat(locale, { timeZone: "UTC", weekday: "short" });
   const monthDayFmt = new Intl.DateTimeFormat(locale, { timeZone: "UTC", month: "short", day: "numeric" });
@@ -70,7 +68,7 @@ export function createFormatter(locale: Locale) {
   function relative(ts: DateInput, now: Date) {
     const elapsed = now.getTime() - new Date(ts).getTime();
     // 시계 차이로 미래 시각이 오면 방금으로 본다
-    if (elapsed < 60_000) return JUST_NOW[locale] ?? upperFirst(dayWordFmt.format(0, "second"));
+    if (elapsed < 60_000) return words.justNow;
     const minutes = Math.floor(elapsed / 60_000);
     if (minutes < 60) return agoFmt.format(-minutes, "minute");
     const hours = Math.floor(minutes / 60);

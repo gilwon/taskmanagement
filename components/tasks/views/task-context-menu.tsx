@@ -17,7 +17,8 @@ import { KeyContextMenu, copyText as copy } from "@/components/shortcuts/key-con
 import { getTaskFavorite, setTaskFavorite } from "@/components/tasks/drawer/actions";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
-import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, UNASSIGNED_LABEL } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "@/lib/i18n/labels";
 import type { TaskItem, TaskPriority, TaskStatus } from "@/lib/tasks/types";
 
 const STATUSES = Object.keys(TASK_STATUS_LABELS) as TaskStatus[];
@@ -25,6 +26,7 @@ const PRIORITIES = Object.keys(TASK_PRIORITY_LABELS) as TaskPriority[];
 const NONE = "none";
 
 export function TaskContextMenu({ task, children }: { task: TaskItem; children: React.ReactElement }) {
+  const t = useT();
   const { open } = useTaskDrawer();
   const { move, update, remove } = useTaskActions();
   const { members, workspace } = useTasks();
@@ -45,23 +47,23 @@ export function TaskContextMenu({ task, children }: { task: TaskItem; children: 
       setFavorite(!next);
       toast.error(r.error);
     } else {
-      toast.success(next ? "즐겨찾기에 추가했습니다" : "즐겨찾기에서 뺐습니다");
+      toast.success(next ? t("tasks.taskMenu.favoriteAdded") : t("tasks.taskMenu.favoriteRemoved"));
     }
   };
 
   return (
     <KeyContextMenu
-      label={`${task.key} 작업 메뉴`}
+      label={t("tasks.taskMenu.label", { key: task.key })}
       blockTouch
       onOpenChange={onOpenChange}
       menu={
         <>
-          <ContextMenuItem onSelect={() => open(task.key)}>열기</ContextMenuItem>
+          <ContextMenuItem onSelect={() => open(task.key)}>{t("tasks.taskMenu.open")}</ContextMenuItem>
           {task.canEdit && (
             <>
               <ContextMenuSeparator />
               <ContextMenuSub>
-                <ContextMenuSubTrigger>상태</ContextMenuSubTrigger>
+                <ContextMenuSubTrigger>{t("tasks.taskMenu.status")}</ContextMenuSubTrigger>
                 <ContextMenuSubContent className="w-40">
                   <ContextMenuRadioGroup
                     value={task.status}
@@ -69,14 +71,14 @@ export function TaskContextMenu({ task, children }: { task: TaskItem; children: 
                   >
                     {STATUSES.map((s) => (
                       <ContextMenuRadioItem key={s} value={s}>
-                        {TASK_STATUS_LABELS[s]}
+                        {t(`common.taskStatus.${s}`)}
                       </ContextMenuRadioItem>
                     ))}
                   </ContextMenuRadioGroup>
                 </ContextMenuSubContent>
               </ContextMenuSub>
               <ContextMenuSub>
-                <ContextMenuSubTrigger>우선순위</ContextMenuSubTrigger>
+                <ContextMenuSubTrigger>{t("tasks.taskMenu.priority")}</ContextMenuSubTrigger>
                 <ContextMenuSubContent className="w-40">
                   <ContextMenuRadioGroup
                     value={task.priority}
@@ -84,14 +86,14 @@ export function TaskContextMenu({ task, children }: { task: TaskItem; children: 
                   >
                     {PRIORITIES.map((p) => (
                       <ContextMenuRadioItem key={p} value={p}>
-                        {TASK_PRIORITY_LABELS[p]}
+                        {t(`common.taskPriority.${p}`)}
                       </ContextMenuRadioItem>
                     ))}
                   </ContextMenuRadioGroup>
                 </ContextMenuSubContent>
               </ContextMenuSub>
               <ContextMenuSub>
-                <ContextMenuSubTrigger>담당자</ContextMenuSubTrigger>
+                <ContextMenuSubTrigger>{t("tasks.taskMenu.assignee")}</ContextMenuSubTrigger>
                 <ContextMenuSubContent className="max-h-72 w-52 overflow-y-auto">
                   <ContextMenuRadioGroup
                     value={task.assignee_id ?? NONE}
@@ -100,7 +102,7 @@ export function TaskContextMenu({ task, children }: { task: TaskItem; children: 
                       if (id !== task.assignee_id) void update(task.id, { assigneeId: id });
                     }}
                   >
-                    <ContextMenuRadioItem value={NONE}>{UNASSIGNED_LABEL}</ContextMenuRadioItem>
+                    <ContextMenuRadioItem value={NONE}>{t("common.unassigned")}</ContextMenuRadioItem>
                     {members.map((m) => (
                       <ContextMenuRadioItem key={m.id} value={m.id}>
                         <span className="truncate">{m.name}</span>
@@ -112,25 +114,25 @@ export function TaskContextMenu({ task, children }: { task: TaskItem; children: 
             </>
           )}
           <ContextMenuSeparator />
-          <ContextMenuItem onSelect={() => void copy(task.key, "키")}>키 복사</ContextMenuItem>
+          <ContextMenuItem onSelect={() => void copy(task.key, t("tasks.taskMenu.keyNoun"), t)}>{t("tasks.taskMenu.copyKey")}</ContextMenuItem>
           <ContextMenuItem
-            onSelect={() => void copy(`${window.location.origin}/${workspace.slug}/task/${task.key}`, "링크")}
+            onSelect={() => void copy(`${window.location.origin}/${workspace.slug}/task/${task.key}`, t("tasks.taskMenu.linkNoun"), t)}
           >
-            링크 복사
+            {t("tasks.taskMenu.copyLink")}
           </ContextMenuItem>
           <ContextMenuCheckboxItem
             checked={favorite === true}
             disabled={favorite === null}
             onSelect={() => void toggleFavorite()}
           >
-            즐겨찾기
+            {t("tasks.taskMenu.favorite")}
           </ContextMenuCheckboxItem>
           {task.canEdit && (
             <>
               <ContextMenuSeparator />
-              <ContextMenuItem onSelect={() => void update(task.id, { archived: true })}>보관</ContextMenuItem>
+              <ContextMenuItem onSelect={() => void update(task.id, { archived: true })}>{t("tasks.taskMenu.archive")}</ContextMenuItem>
               <ContextMenuItem variant="destructive" onSelect={() => void remove(task.id)}>
-                삭제
+                {t("tasks.taskMenu.delete")}
               </ContextMenuItem>
             </>
           )}

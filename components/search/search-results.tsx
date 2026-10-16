@@ -5,7 +5,8 @@ import { EmptyState } from "@/components/shell/empty-state";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { ProjectIcon } from "@/components/shell/project-icon";
 import { StatusIcon } from "@/components/tasks/parts";
-import { FILE_TYPE_LABELS, ROLE_LABELS, SEARCH_TAB_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
+import type { T } from "@/lib/i18n/t";
 import { SEARCH_SCOPES, type SearchResults, type SearchScope } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
 import { Highlight } from "./highlight";
@@ -26,6 +27,7 @@ function Rows({
   q,
   max,
   canOpenPeople,
+  t,
 }: {
   kind: Kind;
   results: SearchResults;
@@ -34,6 +36,7 @@ function Rows({
   max?: number;
   // 게스트는 구성원 화면이 403이라 사람 항목을 링크 없이 보인다
   canOpenPeople: boolean;
+  t: T;
 }) {
   const rows = (() => {
     switch (kind) {
@@ -73,7 +76,7 @@ function Rows({
               <span className="min-w-0 flex-1 truncate text-(length:--fs-sm) text-(--text-3)">
                 <Highlight text={m.email} q={q} />
               </span>
-              <span className={metaClass}>{ROLE_LABELS[m.role]}</span>
+              <span className={metaClass}>{t(`common.role.${m.role}`)}</span>
             </>
           );
           return canOpenPeople ? (
@@ -94,7 +97,7 @@ function Rows({
             className={rowClass}
           >
             <span className="inline-flex h-5 shrink-0 items-center rounded-(--r-xs) bg-(--surface-2) px-1.5 text-(length:--fs-xs) text-(--text-2)">
-              {FILE_TYPE_LABELS[f.type]}
+              {t(`common.fileType.${f.type}`)}
             </span>
             <span className="min-w-0 flex-1 truncate">
               <Highlight text={f.name} q={q} />
@@ -123,7 +126,7 @@ function Rows({
   return <ul className="flex flex-col">{rows.map((r) => <li key={r.key} className="min-w-0">{r}</li>)}</ul>;
 }
 
-export function SearchResultsView({
+export async function SearchResultsView({
   wsSlug,
   q,
   tab,
@@ -138,6 +141,7 @@ export function SearchResultsView({
   limit: number;
   canOpenPeople: boolean;
 }) {
+  const t = await getT();
   const count = (k: SearchScope) => (k === "all" ? KINDS.reduce((n, kk) => n + results[kk].length, 0) : results[k].length);
   // shortcut: 개수는 종류마다 limit개에서 잘린다. 정확한 총계가 필요해지면 count 쿼리를 따로 둔다
   const countLabel = (k: SearchScope) => {
@@ -149,7 +153,7 @@ export function SearchResultsView({
 
   return (
     <div className="flex min-w-0 flex-col gap-(--s-4) pb-(--s-8)">
-      <div role="tablist" aria-label="검색 범위" className="flex flex-wrap gap-1 px-(--gutter)">
+      <div role="tablist" aria-label={t("search.scope")} className="flex flex-wrap gap-1 px-(--gutter)">
         {SEARCH_SCOPES.map((k) => {
           const selected = k === tab;
           return (
@@ -166,7 +170,7 @@ export function SearchResultsView({
                 selected ? "bg-(--surface-3) font-medium text-(--text)" : "text-(--text-3) hover:bg-(--surface-2) hover:text-(--text)",
               )}
             >
-              {SEARCH_TAB_LABELS[k]}
+              {t(`common.searchTab.${k}`)}
               <span className="tabular-nums text-(--text-3)">{countLabel(k)}</span>
             </Link>
           );
@@ -175,14 +179,14 @@ export function SearchResultsView({
 
       <div role="tabpanel" id="search-panel" aria-labelledby={`search-tab-${tab}`} className="min-w-0">
         {count(tab) === 0 ? (
-          <EmptyState icon={SearchX} title="결과가 없습니다" description={`“${q}”와 일치하는 항목이 없습니다.`} />
+          <EmptyState icon={SearchX} title={t("search.noResultsTitle")} description={t("search.noResultsDescription", { q })} />
         ) : tab === "all" ? (
           <div className="flex flex-col gap-(--s-6) px-(--gutter)">
             {kindsShown.map((k) => (
               <section key={k} aria-labelledby={`search-section-${k}`} className="min-w-0">
                 <div className="mb-1 flex items-center justify-between gap-2 px-2">
                   <h2 id={`search-section-${k}`} className="text-(length:--fs-sm) font-medium text-(--text-2)">
-                    {SEARCH_TAB_LABELS[k]} <span className="tabular-nums text-(--text-3)">{countLabel(k)}</span>
+                    {t(`common.searchTab.${k}`)} <span className="tabular-nums text-(--text-3)">{countLabel(k)}</span>
                   </h2>
                   {results[k].length > SECTION_SIZE && (
                     <Link
@@ -190,17 +194,17 @@ export function SearchResultsView({
                       scroll={false}
                       className="rounded-(--r-xs) text-(length:--fs-sm) text-(--text-3) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
                     >
-                      모두 보기
+                      {t("search.seeAll")}
                     </Link>
                   )}
                 </div>
-                <Rows kind={k} results={results} wsSlug={wsSlug} q={q} max={SECTION_SIZE} canOpenPeople={canOpenPeople} />
+                <Rows kind={k} results={results} wsSlug={wsSlug} q={q} max={SECTION_SIZE} canOpenPeople={canOpenPeople} t={t} />
               </section>
             ))}
           </div>
         ) : (
           <div className="px-(--gutter)">
-            <Rows kind={tab} results={results} wsSlug={wsSlug} q={q} canOpenPeople={canOpenPeople} />
+            <Rows kind={tab} results={results} wsSlug={wsSlug} q={q} canOpenPeople={canOpenPeople} t={t} />
           </div>
         )}
       </div>

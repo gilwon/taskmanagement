@@ -7,8 +7,9 @@ import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { StatusIcon } from "@/components/tasks/parts";
 import { announce } from "@/components/tasks/views/shared";
 import { useTaskDrag, type DropTarget } from "@/components/tasks/views/use-drag";
-import { formatMonthTitle, seoulDay } from "@/lib/format/date";
-import { colorHex, WEEKDAY_SHORT_LABELS } from "@/lib/i18n/labels";
+import { seoulDay } from "@/lib/format/date";
+import { useFormatter, useLocale, useT } from "@/lib/i18n/client";
+import { colorHex } from "@/lib/i18n/labels";
 import { addDays, monthGrid, monthOf, moveKeepingSpan, weekdayIndex, weekOf } from "@/lib/schedule/dates";
 import type { CalendarEvent, CalendarMode } from "@/lib/schedule/types";
 import type { TaskItem } from "@/lib/tasks/types";
@@ -41,18 +42,17 @@ const MAX_PER_DAY = 3;
 // 작은 화면 칸의 점 개수
 const MAX_DOTS = 4;
 const EVENT_PREFIX = "ev:";
+// 요일 머리글 사전 키. 일요일 시작
+const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-// seoulDay가 만든 UTC 자정 시각을 읽으므로 UTC로 포맷한다
-const dayLabelFmt = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "UTC",
-  month: "long",
-  day: "numeric",
-  weekday: "long",
-});
-const monthDayFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", month: "long", day: "numeric" });
-
-const dayLabel = (iso: string) => dayLabelFmt.format(new Date(seoulDay(iso)));
-const monthDay = (iso: string) => monthDayFmt.format(new Date(seoulDay(iso)));
+// 칸·목록 제목("10월 16일 금요일"). seoulDay가 만든 UTC 자정 시각을 읽으므로 UTC로 포맷한다
+function useDayLabel() {
+  const locale = useLocale();
+  return useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { timeZone: "UTC", month: "long", day: "numeric", weekday: "long" });
+    return (iso: string) => fmt.format(new Date(seoulDay(iso)));
+  }, [locale]);
+}
 
 type Day = { events: CalendarEvent[]; tasks: TaskItem[] };
 
@@ -71,6 +71,10 @@ export function MonthCalendar({
   onMoveEvent,
   onAddTask,
 }: MonthCalendarProps) {
+  const t = useT();
+  const f = useFormatter();
+  const dayLabel = useDayLabel();
+  const monthDay = f.date;
   const weeks = useMemo(() => (mode === "week" ? [weekOf(anchor)] : monthGrid(anchor)), [anchor, mode]);
   const visible = useMemo(() => weeks.flat(), [weeks]);
   const month = monthOf(anchor);
@@ -82,7 +86,7 @@ export function MonthCalendar({
     const at = (iso: string) => map.get(iso) ?? map.set(iso, { events: [], tasks: [] }).get(iso)!;
     // 종일 일정이 먼저, 그다음 시각 순
     for (const e of [...events].sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""))) at(e.date).events.push(e);
-    for (const t of items) if (t.due_date) at(t.due_date).tasks.push(t);
+    for (const task of items) if (task.due_date) at(task.due_date).tasks.push(task);
     return map;
   }, [items, events]);
 
@@ -92,19 +96,21 @@ export function MonthCalendar({
       const ev = events.find((e) => e.id === id.slice(EVENT_PREFIX.length));
       if (!ev || ev.date === date || !onMoveEvent) return;
       void Promise.resolve(onMoveEvent(ev.id, date)).then(
-        (ok) => ok && announce(`일정 ${ev.title}을(를) ${monthDay(date)}로 옮겼습니다`),
+        (ok) => ok && announce(t("schedule.calendar.eventMoved", { title: ev.title, date: monthDay(date) })),
       );
       return;
     }
-    const t = items.find((x) => x.id === id);
-    if (!t?.due_date || t.due_date === date || !onMoveTask) return;
-    const patch = moveKeepingSpan({ start: t.start_date, due: t.due_date }, date);
+    const task = items.find((x) => x.id === id);
+    if (!task?.due_date || task.due_date === date || !onMoveTask) return;
+    const patch = moveKeepingSpan({ start: task.start_date, due: task.due_date }, date);
     // 실패 안내는 호출한 쪽(작업 store의 토스트)이 한다
-    void Promise.resolve(onMoveTask(t.id, patch)).then(
+    void Promise.resolve(onMoveTask(task.id, patch)).then(
       (ok) =>
         ok &&
         announce(
-          `${t.key} 작업 기한을 ${monthDay(date)}로 옮겼습니다${viaKeyboard ? "" : patch.start ? `. 시작일은 ${monthDay(patch.start)}` : ""}`,
+          !viaKeyboard && patch.start
+            ? t("schedule.calendar.taskMovedWithStart", { key: task.key, date: monthDay(date), start: monthDay(patch.start) })
+            : t("schedule.calendar.taskMoved", { key: task.key, date: monthDay(date) }),
         ),
     );
   };
@@ -160,17 +166,21 @@ export function MonthCalendar({
   return (
     <div className="px-(--gutter) pb-(--s-6)">
       <p id={hintId} className="sr-only">
-        화살표로 날짜를 옮기고 Enter로 그 날 항목을 엽니다. 항목 목록에서 Alt+좌우 화살표로 작업 기한을 하루씩 옮깁니다.
+        {t("schedule.calendar.hint")}
       </p>
       <div
         ref={gridRef}
         role="grid"
-        aria-label={mode === "week" ? `${monthDay(weeks[0][0])} 주 캘린더` : `${formatMonthTitle(anchor)} 캘린더`}
+        aria-label={
+          mode === "week"
+            ? t("schedule.calendar.weekGrid", { date: monthDay(weeks[0][0]) })
+            : t("schedule.calendar.monthGrid", { month: f.monthTitle(anchor) })
+        }
         aria-describedby={hintId}
         className="overflow-hidden rounded-(--r-lg) border border-(--border) bg-(--surface)"
       >
         <div role="row" className="grid grid-cols-7 border-b border-(--border) bg-(--surface-2)">
-          {WEEKDAY_SHORT_LABELS.map((w, i) => (
+          {WEEKDAYS.map((w, i) => (
             <div
               key={w}
               role="columnheader"
@@ -180,7 +190,7 @@ export function MonthCalendar({
                 i === 6 && "text-(--blue)",
               )}
             >
-              {w}
+              {t(`common.weekdayShort.${w}`)}
             </div>
           ))}
         </div>
@@ -197,9 +207,9 @@ export function MonthCalendar({
               const hidden = total - shownEvents.length - shownTasks.length;
               const label = [
                 dayLabel(iso),
-                isToday ? "오늘" : null,
-                day.tasks.length ? `작업 ${day.tasks.length}개` : null,
-                day.events.length ? `일정 ${day.events.length}개` : null,
+                isToday ? t("schedule.calendar.today") : null,
+                day.tasks.length ? t("schedule.calendar.taskCount", { count: day.tasks.length }) : null,
+                day.events.length ? t("schedule.calendar.eventCount", { count: day.events.length }) : null,
               ]
                 .filter(Boolean)
                 .join(", ");
@@ -258,7 +268,7 @@ export function MonthCalendar({
                           <button
                             type="button"
                             tabIndex={-1}
-                            aria-label={`${monthDay(iso)}에 새 작업`}
+                            aria-label={t("schedule.calendar.addOn", { date: monthDay(iso) })}
                             onClick={() => onAddTask(iso)}
                             className="hide-m relative ml-auto inline-flex size-5 items-center justify-center rounded-(--r-xs) text-(--text-3) opacity-0 after:absolute after:-inset-0.5 group-hover/cell:opacity-100 hover:bg-(--surface-3) hover:text-(--text)"
                           >
@@ -304,7 +314,7 @@ export function MonthCalendar({
                           onClick={() => setOpenDay(iso)}
                           className="hide-m mt-0.5 self-start rounded-(--r-xs) px-1.5 text-(length:--fs-2xs) font-medium text-(--text-3) hover:bg-(--surface-2) hover:text-(--text)"
                         >
-                          +{hidden}개 더
+                          {t("schedule.calendar.more", { count: hidden })}
                         </button>
                       )}
                       {total > 0 && (
@@ -322,7 +332,7 @@ export function MonthCalendar({
                     <PopoverContent
                       align="start"
                       collisionPadding={16}
-                      aria-label={`${dayLabel(iso)} 항목`}
+                      aria-label={t("schedule.calendar.dayItems", { date: dayLabel(iso) })}
                       className="w-72 max-w-[calc(100vw-32px)] gap-2 rounded-(--r) bg-(--surface) p-(--s-2) text-(--text) shadow-(--shadow-pop) ring-0"
                       onOpenAutoFocus={(e) => {
                         const id = refocusItem.current;
@@ -425,6 +435,8 @@ function DayList({
   onOpen: (t: TaskItem) => void;
   onKeyMove: (e: React.KeyboardEvent, t: TaskItem) => void;
 }) {
+  const t = useT();
+  const dayLabel = useDayLabel();
   const empty = day.events.length + day.tasks.length === 0;
   return (
     <>
@@ -436,12 +448,13 @@ function DayList({
             onClick={onAdd}
             className="inline-flex h-(--h-xs) items-center gap-1 rounded-(--r-xs) px-1.5 text-(length:--fs-xs) text-(--text-3) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
           >
-            <Plus aria-hidden size={12} strokeWidth={1.8} />새 작업
+            <Plus aria-hidden size={12} strokeWidth={1.8} />
+            {t("schedule.calendar.newTask")}
           </button>
         )}
       </div>
       {empty ? (
-        <p className="px-1 py-2 text-(length:--fs-sm) text-(--text-3)">예정된 일정이 없습니다</p>
+        <p className="px-1 py-2 text-(length:--fs-sm) text-(--text-3)">{t("schedule.calendar.noEvents")}</p>
       ) : (
         <ul className="flex max-h-80 flex-col gap-0.5 overflow-y-auto">
           {day.events.map((e) => (

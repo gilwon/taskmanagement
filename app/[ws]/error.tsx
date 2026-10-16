@@ -3,8 +3,10 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/shell/error-state";
+import { useT } from "@/lib/i18n/client";
 
 export default function WorkspaceError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
+  const t = useT();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -12,10 +14,10 @@ export default function WorkspaceError({ error, retry }: { error: Error & { dige
   return (
     <div className="pt-(--s-12)">
       <ErrorState
-        description={error.digest ? `잠시 후 다시 시도해 주세요. 오류 코드 ${error.digest}` : undefined}
+        description={error.digest ? t("errors.retryWithCode", { code: error.digest }) : undefined}
         action={
           <Button size="sm" onClick={() => retry()}>
-            다시 시도
+            {t("common.action.retry")}
           </Button>
         }
       />

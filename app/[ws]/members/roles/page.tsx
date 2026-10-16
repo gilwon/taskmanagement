@@ -5,20 +5,24 @@ import { OrgTabs } from "@/components/org/org-tabs";
 import { RolePermissionsTable } from "@/components/org/role-permissions";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace } from "@/lib/data/workspace";
+import { getT } from "@/lib/i18n/server";
 import { canOpenOrg } from "@/lib/org/queries";
 
-export const metadata: Metadata = { title: "역할과 권한" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("org.permissions.title") };
+}
 
 export default async function RolesPage({ params }: { params: Promise<{ ws: string }> }) {
   const { ws } = await params;
+  const t = await getT();
   const workspace = await getWorkspace(ws);
   if (!workspace) notFound();
   if (!(await canOpenOrg(ws))) forbidden();
   return (
     <>
       <PageHeader
-        title="역할과 권한"
-        subtitle="역할은 구성원 탭에서 소유자·관리자가 바꿉니다. 누구도 자기 역할을 스스로 바꿀 수 없습니다."
+        title={t("org.permissions.title")}
+        subtitle={t("org.permissions.subtitle")}
       />
       <OrgTabs wsSlug={workspace.slug} />
       <div className="px-(--gutter) pb-(--s-8)">

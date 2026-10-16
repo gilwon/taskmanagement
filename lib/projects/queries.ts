@@ -3,30 +3,37 @@ import "server-only";
 import type { Enums } from "@/lib/database.types";
 import { lastActive, taskStats } from "@/lib/projects/stats";
 import type { Milestone, ProjectMemberRow, ProjectSummary, SharePerm, TaskLite } from "@/lib/projects/types";
+import { getT } from "@/lib/i18n/server";
+import type { Messages } from "@/lib/i18n/messages/types";
+import type { T } from "@/lib/i18n/t";
 import { projectErrorMessage } from "@/lib/projects/errors";
 import { createClient } from "@/lib/supabase/server";
 import type { TaskStatus } from "@/lib/tasks/types";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
-// 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22)
-function fail(what: string, error: { code?: string; message: string }): never {
+type LoadWhat = keyof Messages["projects"]["load"];
+
+// 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22). what은 사전 projects.load의 키이고 로그 태그로도 쓴다
+function fail(t: T, what: LoadWhat, error: { code?: string; message: string }): never {
   console.error(`[${what}]`, error.code, error.message);
-  throw new Error(`${what}을(를) 불러오지 못했습니다. ${projectErrorMessage(error)}`);
+  throw new Error(t("projects.errors.loadFailed", { what: t(`projects.load.${what}`), reason: projectErrorMessage(error, t) }));
 }
 
 // 프로젝트별 현재 사용자 권한. 실패하면 오류로 올린다
 // shortcut: 프로젝트마다 권한 RPC를 한 번씩 부른다(새 작업 선택지와 같은 방식). 프로젝트가 수십 개를 넘으면 한 번에 묻는 RPC로 바꾼다
 export async function projectPerms(supabase: Client, ids: readonly string[]): Promise<Map<string, SharePerm | null>> {
+  const t = await getT();
   const unique = [...new Set(ids)];
   const rows = await Promise.all(unique.map((p) => supabase.rpc("project_perm", { p })));
   const failed = rows.find((r) => r.error);
-  if (failed?.error) fail("프로젝트 권한", failed.error);
+  if (failed?.error) fail(t, "perms", failed.error);
   return new Map(unique.map((id, i) => [id, (rows[i].data as SharePerm | null) ?? null]));
 }
 
 // 삭제되지 않은 프로젝트 전부(보관 포함)와 그 작업 요약. 작업은 삭제·보관된 것을 뺀다
 export async function getProjectSummaries(workspaceId: string, userId: string): Promise<ProjectSummary[]> {
+  const t = await getT();
   const supabase = await createClient();
   const [projects, favorites] = await Promise.all([
     supabase
@@ -48,8 +55,8 @@ export async function getProjectSummaries(workspaceId: string, userId: string): 
       .eq("user_id", userId)
       .not("project_id", "is", null),
   ]);
-  if (projects.error) fail("프로젝트 목록", projects.error);
-  if (favorites.error) fail("즐겨찾기", favorites.error);
+  if (projects.error) fail(t, "projects", projects.error);
+  if (favorites.error) fail(t, "favorites", favorites.error);
 
   const perms = await projectPerms(supabase, projects.data.map((p) => p.id));
   const favIds = new Set(favorites.data.map((f) => f.project_id));
@@ -97,6 +104,7 @@ const UPCOMING_MAX = 5;
 
 // 프로젝트 개요 탭. 상세 값·권한·구성원 권한·마일스톤·작업 요약
 export async function getProjectDetail(projectId: string): Promise<ProjectDetail> {
+  const t = await getT();
   const supabase = await createClient();
   const [project, members, milestones, tasks, perms] = await Promise.all([
     supabase
@@ -114,10 +122,10 @@ export async function getProjectDetail(projectId: string): Promise<ProjectDetail
       .is("archived_at", null),
     projectPerms(supabase, [projectId]),
   ]);
-  if (project.error) fail("프로젝트", project.error);
-  if (members.error) fail("프로젝트 구성원", members.error);
-  if (milestones.error) fail("마일스톤", milestones.error);
-  if (tasks.error) fail("프로젝트 작업", tasks.error);
+  if (project.error) fail(t, "project", project.error);
+  if (members.error) fail(t, "members", members.error);
+  if (milestones.error) fail(t, "milestones", milestones.error);
+  if (tasks.error) fail(t, "tasks", tasks.error);
 
   const p = project.data;
   const upcoming = tasks.data
@@ -180,6 +188,7 @@ export type FavoriteTask = {
 
 // 본인 즐겨찾기. 대상이 소프트 삭제된 행은 남아 있어도 뺀다(복원되면 다시 보인다)
 export async function getFavorites(workspaceId: string, userId: string) {
+  const t = await getT();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("favorites")
@@ -192,7 +201,7 @@ export async function getFavorites(workspaceId: string, userId: string) {
     .eq("workspace_id", workspaceId)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
-  if (error) fail("즐겨찾기", error);
+  if (error) fail(t, "favorites", error);
 
   const projects: FavoriteProject[] = [];
   const tasks: FavoriteTask[] = [];
@@ -294,6 +303,7 @@ const TRASH_LIMIT = 200;
 // project_deleted로 거부하고 프로젝트와 함께 복원되므로 프로젝트 한 줄로만 보인다.
 // 소프트 삭제 행은 편집 권한자(댓글은 작성자 본인 포함)에게만 보인다(RLS)
 export async function getTrash(workspaceId: string): Promise<TrashData> {
+  const t = await getT();
   const supabase = await createClient();
   const [projects, tasks, comments, files] = await Promise.all([
     supabase
@@ -339,10 +349,10 @@ export async function getTrash(workspaceId: string): Promise<TrashData> {
       .order("deleted_at", { ascending: false })
       .limit(TRASH_LIMIT),
   ]);
-  if (projects.error) fail("보관된 프로젝트", projects.error);
-  if (tasks.error) fail("보관된 작업", tasks.error);
-  if (comments.error) fail("삭제된 댓글", comments.error);
-  if (files.error) fail("삭제된 파일", files.error);
+  if (projects.error) fail(t, "archivedProjects", projects.error);
+  if (tasks.error) fail(t, "archivedTasks", tasks.error);
+  if (comments.error) fail(t, "deletedComments", comments.error);
+  if (files.error) fail(t, "deletedFiles", files.error);
 
   const ref = (p: TrashProjectRef) => ({ id: p.id, key: p.key, name: p.name, color: p.color });
   const data: Omit<TrashData, "perms"> = {

@@ -19,7 +19,7 @@ import { orderAt } from "@/components/tasks/views/order";
 import { announce, refocus, type ViewCtl, type ViewProject } from "@/components/tasks/views/shared";
 import { TableView } from "@/components/tasks/views/table-view";
 import { seoulDay } from "@/lib/format/date";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import type {
   CreateTaskInput,
   GroupField,
@@ -64,6 +64,8 @@ export function TaskViews({
   projectId?: string;
   nowIso: string;
 }) {
+  // t는 작업 변수로 쓰여 번역 함수는 tr로 둔다
+  const tr = useT();
   const { items: storeItems, workspace } = useTasks();
   const items = useMemo(
     () => (projectId ? storeItems.filter((t) => t.project_id === projectId) : storeItems),
@@ -94,8 +96,9 @@ export function TaskViews({
 
   // 보드는 그룹 설정과 무관하게 항상 상태 열이다. 표는 묶지 않는다
   const groups = useMemo(
-    () => applyView(items, mode === "list" ? state : { ...state, group: mode === "board" ? "status" : "none" }, { now }),
-    [items, state, mode, now],
+    () =>
+      applyView(items, mode === "list" ? state : { ...state, group: mode === "board" ? "status" : "none" }, { now, t: tr }),
+    [items, state, mode, now, tr],
   );
   const visibleIds = useMemo(() => groups.flatMap((g) => g.items.map((t) => t.id)), [groups]);
   const visibleCount = visibleIds.length;
@@ -137,11 +140,11 @@ export function TaskViews({
       const t = e.target as HTMLElement;
       if (t.closest("input, textarea, [contenteditable=true], [role=dialog], [role=menu], [role=listbox]")) return;
       clearSelection();
-      announce("선택을 해제했습니다");
+      announce(tr("tasks.taskViews.selectionCleared"));
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [selectedIds.length, openKey, clearSelection]);
+  }, [selectedIds.length, openKey, clearSelection, tr]);
 
   // ─── 이동 ───
   // 같은 묶음 안 순서는 sort_order만, 상태가 바뀌면 move(활동 기록), 그 밖의 그룹은 값과 순서를 한 번에 고친다
@@ -154,7 +157,7 @@ export function TaskViews({
       const same = from.key === to.key;
       if (same && from.items.findIndex((t) => t.id === id) === index) return;
       if (!same && !canMoveAcross(field, to.key)) {
-        toast.error("이 묶음으로는 옮길 수 없습니다");
+        toast.error(tr("tasks.taskViews.cannotMove"));
         return;
       }
       const others = to.items.filter((t) => t.id !== id);
@@ -174,7 +177,7 @@ export function TaskViews({
       }
       if (!manual) {
         setState({ ...state, sort: { f: "manual", dir: 1 } });
-        toast("직접 정렬로 바꿔 순서를 유지합니다");
+        toast(tr("tasks.taskViews.switchedToManual"));
       }
       let ok: boolean;
       if (same) ok = await actions.update(id, { sortOrder: order });
@@ -183,9 +186,9 @@ export function TaskViews({
       else if (field === "assignee")
         ok = await actions.update(id, { assigneeId: to.key === "none" ? null : to.key, sortOrder: order });
       else ok = await actions.update(id, { due: to.key === "today" ? todayIso : null, sortOrder: order });
-      if (ok) announce(`${task.key} 작업을 ${to.label} ${index + 1}번째로 옮겼습니다`);
+      if (ok) announce(tr("tasks.taskViews.moved", { key: task.key, group: to.label, position: index + 1 }));
     },
-    [actions, state, setState, todayIso],
+    [actions, state, setState, todayIso, tr],
   );
 
   // 빠른 추가는 편집 권한이 있는 프로젝트로만 한다. 프로젝트 묶음은 그 프로젝트 권한을 본다
@@ -232,7 +235,7 @@ export function TaskViews({
       const orders = (group?.items ?? []).map((t) => Number(t.sort_order));
       input.sortOrder = orders.length ? Math.max(...orders) + 1 : 1;
       const created = await actions.create(input);
-      if (created) announce(`${created.key} 작업을 만들었습니다`);
+      if (created) announce(tr("tasks.taskViews.created", { key: created.key }));
       return !!created;
     },
   };
@@ -251,12 +254,12 @@ export function TaskViews({
               variant="outline"
               spacing={0}
               value={mode}
-              aria-label="보기 방식"
+              aria-label={tr("tasks.taskViews.viewMode")}
               onValueChange={(v) => v && setMode(v as ViewMode)}
             >
               {MODES.map((m) => (
                 <ToggleGroupItem key={m} value={m} className="h-(--h-md) px-2.5 text-(length:--fs-sm)">
-                  {NAV_LABELS[m]}
+                  {tr(`common.nav.${m}`)}
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
@@ -268,12 +271,12 @@ export function TaskViews({
       {noResults && mode !== "board" ? (
         <EmptyState
           icon={SearchX}
-          title="결과가 없습니다"
-          description="이 조건에 맞는 작업이 없습니다."
+          title={tr("tasks.taskViews.noResultsTitle")}
+          description={tr("tasks.taskViews.noResultsDescription")}
           action={
             filtered && (
               <Button size="sm" variant="outline" onClick={() => setState({ ...state, filters: [], q: "" })}>
-                필터 지우기
+                {tr("tasks.taskViews.clearFilters")}
               </Button>
             )
           }

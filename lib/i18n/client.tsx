@@ -25,7 +25,12 @@ export function I18nProvider({
   children: React.ReactNode;
 }) {
   const value = useMemo(
-    () => ({ locale, messages, t: createT(messages, locale), format: createFormatter(locale) }),
+    () => ({
+      locale,
+      messages,
+      t: createT(messages, locale),
+      format: createFormatter(locale, { justNow: messages.common.justNow }),
+    }),
     [locale, messages],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

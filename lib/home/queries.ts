@@ -1,13 +1,15 @@
 // 홈 화면용 서버 조회. 프로젝트 진행 표와 최근 활동을 각각 한 번의 임베드 조회로 읽고, 범위는 RLS가 자른다
 import "server-only";
 import type { Enums } from "@/lib/database.types";
+import { getT } from "@/lib/i18n/server";
+import type { T } from "@/lib/i18n/t";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 
 // 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22)
-function fail(what: string, error: { code?: string; message: string }): never {
+function fail(t: T, what: "projects" | "activity", error: { code?: string; message: string }): never {
   console.error(`[${what}]`, error.code, error.message);
-  throw new Error(`${what}을(를) 불러오지 못했습니다. ${taskErrorMessage(error)}`);
+  throw new Error(t("home.errors.loadFailed", { what: t(`home.load.${what}`), reason: taskErrorMessage(error, t) }));
 }
 
 export type HomeProject = {
@@ -32,7 +34,7 @@ export async function getHomeProjects(workspaceId: string): Promise<HomeProject[
     .is("deleted_at", null)
     .is("archived_at", null)
     .order("name");
-  if (error) fail("프로젝트 진행", error);
+  if (error) fail(await getT(), "projects", error);
   return data.map(({ project_members, ...p }) => ({ ...p, memberIds: project_members.map((m) => m.user_id) }));
 }
 
@@ -64,7 +66,7 @@ export async function getRecentActivities(workspaceId: string, limit: number): P
     .is("project.deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) fail("최근 활동", error);
+  if (error) fail(await getT(), "activity", error);
   return data.map((a) => ({
     id: a.id,
     verb: a.verb,

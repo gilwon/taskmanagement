@@ -5,6 +5,7 @@ import { ProjectHeader } from "@/components/tasks/project-header";
 import { selectActivities } from "@/lib/activity/queries";
 import { loadProject, projectMetadata, type ProjectParams } from "@/lib/data/project";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
+import { getT } from "@/lib/i18n/server";
 import { getProjectDetail } from "@/lib/projects/queries";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
@@ -29,7 +30,8 @@ export default async function ProjectOverviewPage({ params }: { params: ProjectP
   // 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22)
   if (activities.error) {
     console.error("[프로젝트 활동]", activities.error.code, activities.error.message);
-    throw new Error(`최근 활동을 불러오지 못했습니다. ${taskErrorMessage(activities.error)}`);
+    const t = await getT();
+    throw new Error(t("projects.errors.activityLoadFailed", { reason: taskErrorMessage(activities.error, t) }));
   }
   const me = members.find((m) => m.id === userId);
 

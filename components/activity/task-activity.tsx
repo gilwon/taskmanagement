@@ -7,11 +7,13 @@ import { ActivityRow } from "@/components/activity/activity-row";
 import { useTasks } from "@/components/tasks/task-store";
 import { loadTaskActivities } from "@/lib/comments/actions";
 import type { TaskActivity as Row } from "@/lib/comments/queries";
+import { useT } from "@/lib/i18n/client";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import type { TaskItem } from "@/lib/tasks/types";
 
 export function TaskActivity({ task, onCount }: { task: TaskItem; onCount?: (n: number) => void }) {
   const { members, workspace } = useTasks();
+  const t = useT();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function TaskActivity({ task, onCount }: { task: TaskItem; onCount?: (n: 
   useEffect(() => {
     let alive = true;
     loadTaskActivities(task.id)
-      .catch((e: unknown) => ({ ok: false as const, error: taskErrorMessage({ message: String(e) }) }))
+      .catch((e: unknown) => ({ ok: false as const, error: taskErrorMessage({ message: String(e) }, t) }))
       .then((r) => {
         if (!alive) return;
         setNow(new Date());
@@ -36,14 +38,14 @@ export function TaskActivity({ task, onCount }: { task: TaskItem; onCount?: (n: 
     return () => {
       alive = false;
     };
-  }, [task.id, reload, onCount]);
+  }, [task.id, reload, onCount, t]);
 
   if (error) {
     return (
       <div role="alert" className="flex items-center gap-2 rounded-(--r) bg-(--red-soft) px-3 py-2 text-(length:--fs-sm) text-(--red)">
-        <span className="flex-1">활동을 불러오지 못했습니다. {error}</span>
+        <span className="flex-1">{t("activity.loadFailed", { error })}</span>
         <Button variant="outline" size="xs" onClick={() => setReload((n) => n + 1)}>
-          다시 시도
+          {t("common.action.retry")}
         </Button>
       </div>
     );
@@ -51,7 +53,7 @@ export function TaskActivity({ task, onCount }: { task: TaskItem; onCount?: (n: 
   if (!rows) {
     return (
       <p aria-busy="true" className="text-(length:--fs-sm) text-(--text-3)">
-        활동을 불러오는 중…
+        {t("activity.loading")}
       </p>
     );
   }
@@ -59,7 +61,7 @@ export function TaskActivity({ task, onCount }: { task: TaskItem; onCount?: (n: 
     return (
       <div className="flex flex-col items-center gap-1 py-6 text-center">
         <History size={18} strokeWidth={1.8} aria-hidden className="text-(--text-4)" />
-        <p className="text-(length:--fs-sm) text-(--text-3)">아직 활동이 없습니다</p>
+        <p className="text-(length:--fs-sm) text-(--text-3)">{t("activity.emptyTitle")}</p>
       </div>
     );
   }
@@ -67,7 +69,7 @@ export function TaskActivity({ task, onCount }: { task: TaskItem; onCount?: (n: 
     <>
       {total > rows.length && (
         <p className="mb-2 text-(length:--fs-xs) text-(--text-3)">
-          전체 {total}건 중 최근 {rows.length}건을 보입니다.
+          {t("activity.showingRecent", { total, count: rows.length })}
         </p>
       )}
       <ul className="flex flex-col gap-3">

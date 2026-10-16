@@ -6,13 +6,17 @@ import { TaskStoreProvider } from "@/components/tasks/task-store";
 import { TaskViews } from "@/components/tasks/views/task-views";
 import { getWorkspaceProjects } from "@/lib/data/project";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { canEditProject, getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.tasks };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("common.nav.tasks") };
+}
 
 export default async function TasksPage({ params }: { params: Promise<{ ws: string }> }) {
   const { ws } = await params;
+  const t = await getT();
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
   const [items, viewState, members, labels, projects] = await Promise.all([
@@ -27,12 +31,12 @@ export default async function TasksPage({ params }: { params: Promise<{ ws: stri
   const failed = perms.find((r) => r.error)?.error;
   if (failed) {
     console.error("[프로젝트 권한]", failed.message);
-    throw new Error("프로젝트 권한을 불러오지 못했습니다.");
+    throw new Error(t("tasks.errors.projectPermLoadFailed"));
   }
 
   return (
     <>
-      <PageHeader title={NAV_LABELS.tasks} subtitle={`${projects.length}개 프로젝트의 모든 작업`} />
+      <PageHeader title={t("common.nav.tasks")} subtitle={t("tasks.page.subtitle", { count: projects.length })} />
       <TaskStoreProvider
         initialItems={items}
         workspace={{ id: workspace.id, slug: workspace.slug, name: workspace.name }}

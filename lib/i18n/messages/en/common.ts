@@ -9,6 +9,7 @@ export default {
     saving: "Saving…",
     close: "Close",
     retry: "Try again",
+    home: "Go home",
   },
   taskStatus: {
     backlog: "Backlog",
@@ -368,4 +369,8 @@ export default {
     update: "When a task you own changes",
   },
   favoriteSort: { recent: "Recently added", name: "Name" },
+  justNow: "Just now",
+  commandDialog: { title: "Command palette", description: "Search for a command to run" },
+  commandList: "Search results",
+  toaster: { label: "Notifications", close: "Close notification" },
 } satisfies Messages["common"];

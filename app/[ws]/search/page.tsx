@@ -7,14 +7,17 @@ import { SearchResultsView } from "@/components/search/search-results";
 import { EmptyState } from "@/components/shell/empty-state";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { canOpenOrg } from "@/lib/org/queries";
 import { getRecentSearches } from "@/lib/search/actions";
 import { searchWorkspace } from "@/lib/search/queries";
 import { normalizeQuery } from "@/lib/search/text";
 import { isSearchScope, SEARCH_LIMIT_MAX } from "@/lib/search/types";
 
-export const metadata: Metadata = { title: NAV_LABELS.search };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("common.nav.search") };
+}
 
 type Props = {
   params: Promise<{ ws: string }>;
@@ -35,16 +38,17 @@ export default async function SearchPage({ params, searchParams }: Props) {
     canOpenOrg(ws),
   ]);
   if (!recent.ok) throw new Error(recent.error);
+  const t = await getT();
 
   return (
     <>
-      <PageHeader title={NAV_LABELS.search} subtitle="작업·프로젝트·사람·파일·댓글을 검색합니다." />
+      <PageHeader title={t("common.nav.search")} subtitle={t("search.subtitle")} />
       <div className="flex min-w-0 flex-col gap-(--s-4)">
         <SearchForm key={q} workspace={{ id: workspace.id, slug: workspace.slug }} q={q} tab={tab} recent={recent.data} />
         {results ? (
           <SearchResultsView wsSlug={workspace.slug} q={q} tab={tab} results={results} limit={SEARCH_LIMIT_MAX} canOpenPeople={canOpenPeople} />
         ) : (
-          <EmptyState icon={Search} title="검색어를 입력하세요" description="작업·프로젝트·사람·파일·댓글을 찾습니다." />
+          <EmptyState icon={Search} title={t("search.emptyTitle")} description={t("search.emptyDescription")} />
         )}
       </div>
     </>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ContextMenuItem } from "@/components/ui/context-menu";
 import { KeyContextMenu, copyText } from "@/components/shortcuts/key-context-menu";
+import { useT } from "@/lib/i18n/client";
 
 export function SavedViewTab({
   href,
@@ -16,15 +17,16 @@ export function SavedViewTab({
   current: boolean;
   className: string;
 }) {
+  const t = useT();
   const router = useRouter();
   return (
     <KeyContextMenu
-      label={`${name} 저장 뷰 메뉴`}
+      label={t("tasks.savedView.menu", { name })}
       menu={
         <>
-          <ContextMenuItem onSelect={() => router.push(href)}>열기</ContextMenuItem>
-          <ContextMenuItem onSelect={() => void copyText(`${window.location.origin}${href}`, "링크")}>
-            링크 복사
+          <ContextMenuItem onSelect={() => router.push(href)}>{t("tasks.savedView.open")}</ContextMenuItem>
+          <ContextMenuItem onSelect={() => void copyText(`${window.location.origin}${href}`, t("tasks.savedView.linkNoun"), t)}>
+            {t("tasks.savedView.copyLink")}
           </ContextMenuItem>
         </>
       }

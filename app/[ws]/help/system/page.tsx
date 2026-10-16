@@ -11,30 +11,27 @@ import { LabelChips, PriorityIcon, StatusIcon, TaskKey } from "@/components/task
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Enums } from "@/lib/database.types";
-import {
-  NAV_LABELS,
-  PROJECT_STATUS_LABELS,
-  TASK_LABEL_LABELS,
-  TASK_PRIORITY_LABELS,
-  TASK_STATUS_LABELS,
-} from "@/lib/i18n/labels";
+import { PROJECT_STATUS_LABELS, TASK_LABEL_LABELS, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import type { TaskPriority, TaskStatus } from "@/lib/tasks/types";
 
 // production에서는 404이므로 이 화면 제목을 남기지 않는다
-export const metadata: Metadata = process.env.NODE_ENV === "production" ? {} : { title: NAV_LABELS.system };
+export async function generateMetadata(): Promise<Metadata> {
+  return process.env.NODE_ENV === "production" ? {} : { title: (await getT())("common.nav.system") };
+}
 
-// globals.css에 실제로 있는 색 변수만 나열한다. 값은 테마마다 달라 이름만 보인다
-const COLOR_GROUPS: { title: string; kind: "fill" | "text" | "line"; names: string[] }[] = [
-  { title: "배경·표면", kind: "fill", names: ["--bg", "--bg-side", "--surface", "--surface-2", "--surface-3", "--sunken", "--overlay"] },
-  { title: "테두리", kind: "line", names: ["--border", "--border-strong", "--divider"] },
-  { title: "텍스트", kind: "text", names: ["--text", "--text-2", "--text-3", "--text-4", "--on-accent", "--accent-ink", "--sun-ink", "--sat-ink"] },
-  { title: "강조", kind: "fill", names: ["--accent", "--accent-soft", "--accent-line"] },
+// globals.css에 실제로 있는 색 변수만 나열한다. 값은 테마마다 달라 이름만 보인다. title은 help.system.colorGroup 키
+const COLOR_GROUPS: { title: "surface" | "border" | "text" | "accent" | "semantic" | "taskStatus"; kind: "fill" | "text" | "line"; names: string[] }[] = [
+  { title: "surface", kind: "fill", names: ["--bg", "--bg-side", "--surface", "--surface-2", "--surface-3", "--sunken", "--overlay"] },
+  { title: "border", kind: "line", names: ["--border", "--border-strong", "--divider"] },
+  { title: "text", kind: "text", names: ["--text", "--text-2", "--text-3", "--text-4", "--on-accent", "--accent-ink", "--sun-ink", "--sat-ink"] },
+  { title: "accent", kind: "fill", names: ["--accent", "--accent-soft", "--accent-line"] },
   {
-    title: "의미 색",
+    title: "semantic",
     kind: "fill",
     names: ["--green", "--green-soft", "--amber", "--amber-soft", "--red", "--red-soft", "--blue", "--violet", "--teal", "--rose", "--orange", "--gray"],
   },
-  { title: "작업 상태", kind: "fill", names: ["--st-backlog", "--st-todo", "--st-progress", "--st-review", "--st-done"] },
+  { title: "taskStatus", kind: "fill", names: ["--st-backlog", "--st-todo", "--st-progress", "--st-review", "--st-done"] },
 ];
 
 const FONT_SIZES = ["--fs-2xs", "--fs-xs", "--fs-sm", "--fs-base", "--fs-md", "--fs-lg", "--fs-xl", "--fs-2xl"];
@@ -43,28 +40,11 @@ const RADII = ["--r-xs", "--r-sm", "--r", "--r-lg", "--r-full"];
 const SHADOWS = ["--shadow-card", "--shadow-pop", "--shadow-drag"];
 const HEIGHTS = ["--h-xs", "--h-sm", "--h-md", "--h-lg"];
 
-const BUTTON_VARIANTS = [
-  ["default", "기본"],
-  ["outline", "외곽선"],
-  ["secondary", "보조"],
-  ["ghost", "고스트"],
-  ["destructive", "위험"],
-  ["link", "링크"],
-] as const;
-const BUTTON_SIZES = [
-  ["xs", "아주 작게"],
-  ["sm", "작게"],
-  ["default", "기본"],
-  ["lg", "크게"],
-] as const;
+// 변형·크기 이름은 help.system.variant·size 키와 같다
+const BUTTON_VARIANTS = ["default", "outline", "secondary", "ghost", "destructive", "link"] as const;
+const BUTTON_SIZES = ["xs", "sm", "default", "lg"] as const;
 const ICON_SIZES = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const;
-const BADGE_VARIANTS = [
-  ["default", "기본"],
-  ["secondary", "보조"],
-  ["destructive", "위험"],
-  ["outline", "외곽선"],
-  ["ghost", "고스트"],
-] as const;
+const BADGE_VARIANTS = ["default", "secondary", "destructive", "outline", "ghost"] as const;
 
 const STATUSES = Object.keys(TASK_STATUS_LABELS) as TaskStatus[];
 const PRIORITIES = Object.keys(TASK_PRIORITY_LABELS) as TaskPriority[];
@@ -81,7 +61,7 @@ const PROJECT_SAMPLES = [
 const swatchGrid = "grid grid-cols-2 gap-(--s-3) sm:grid-cols-4 lg:grid-cols-6";
 const row = "flex flex-wrap items-end gap-(--s-4)";
 
-function Swatch({ name, kind }: { name: string; kind: "fill" | "text" | "line" }) {
+function Swatch({ name, kind, glyph }: { name: string; kind: "fill" | "text" | "line"; glyph: string }) {
   const v = `var(${name})`;
   return (
     <li className="min-w-0">
@@ -90,7 +70,7 @@ function Swatch({ name, kind }: { name: string; kind: "fill" | "text" | "line" }
           className="flex h-10 items-center rounded-(--r-sm) px-(--s-2) text-(length:--fs-md) font-medium shadow-(--shadow-card)"
           style={{ color: v, background: name === "--on-accent" ? "var(--accent)" : "var(--surface)" }}
         >
-          가나다 Aa
+          {glyph}
         </div>
       ) : kind === "line" ? (
         <div className="h-10 rounded-(--r-sm) border-2 bg-(--surface)" style={{ borderColor: v }} />
@@ -102,38 +82,39 @@ function Swatch({ name, kind }: { name: string; kind: "fill" | "text" | "line" }
   );
 }
 
-export default function HelpSystemPage() {
+export default async function HelpSystemPage() {
   if (process.env.NODE_ENV === "production") notFound();
+  const t = await getT();
   return (
     <>
-      <PageHeader title={NAV_LABELS.system} subtitle="버튼·입력·색·간격 등 디자인 시스템 요소를 모아 봅니다. 개발 환경에서만 열립니다." />
+      <PageHeader title={t("common.nav.system")} subtitle={t("help.system.subtitle")} />
 
-      <ShowcaseSection id="sys-colors" title="색" description="테마(밝게·어둡게)와 강조색 설정에 따라 값이 바뀝니다.">
+      <ShowcaseSection id="sys-colors" title={t("help.system.colors")} description={t("help.system.colorsDescription")}>
         {COLOR_GROUPS.map((g) => (
-          <ShowcaseGroup key={g.title} title={g.title}>
+          <ShowcaseGroup key={g.title} title={t(`help.system.colorGroup.${g.title}`)}>
             <ul className={swatchGrid}>
               {g.names.map((n) => (
-                <Swatch key={n} name={n} kind={g.kind} />
+                <Swatch key={n} name={n} kind={g.kind} glyph={t("help.system.glyph")} />
               ))}
             </ul>
           </ShowcaseGroup>
         ))}
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-type" title="글자 크기">
+      <ShowcaseSection id="sys-type" title={t("help.system.fontSizes")}>
         <ul className="flex flex-col gap-(--s-2)">
           {FONT_SIZES.map((n) => (
             <li key={n} className="flex min-w-0 items-baseline gap-(--s-3)">
               <code className="w-20 shrink-0 font-mono text-(length:--fs-2xs) text-(--text-3)">{n}</code>
               <span className="min-w-0 truncate text-(--text)" style={{ fontSize: `var(${n})` }}>
-                작업을 추가해 일을 시작하세요
+                {t("help.system.fontSample")}
               </span>
             </li>
           ))}
         </ul>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-space" title="간격">
+      <ShowcaseSection id="sys-space" title={t("help.system.spacing")}>
         <ul className="flex flex-col gap-(--s-2)">
           {SPACES.map((n) => (
             <li key={n} className="flex items-center gap-(--s-3)">
@@ -144,8 +125,8 @@ export default function HelpSystemPage() {
         </ul>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-radius" title="반경·그림자·높이">
-        <ShowcaseGroup title="반경">
+      <ShowcaseSection id="sys-radius" title={t("help.system.radiusShadowHeight")}>
+        <ShowcaseGroup title={t("help.system.radius")}>
           <div className={row}>
             {RADII.map((n) => (
               <Sample key={n} name={n}>
@@ -154,7 +135,7 @@ export default function HelpSystemPage() {
             ))}
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="그림자">
+        <ShowcaseGroup title={t("help.system.shadow")}>
           <div className={row}>
             {SHADOWS.map((n) => (
               <Sample key={n} name={n}>
@@ -163,7 +144,7 @@ export default function HelpSystemPage() {
             ))}
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="컨트롤 높이">
+        <ShowcaseGroup title={t("help.system.controlHeight")}>
           <div className={row}>
             {HEIGHTS.map((n) => (
               <Sample key={n} name={n}>
@@ -174,40 +155,40 @@ export default function HelpSystemPage() {
         </ShowcaseGroup>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-button" title="버튼">
-        <ShowcaseGroup title="변형">
+      <ShowcaseSection id="sys-button" title={t("help.system.buttons")}>
+        <ShowcaseGroup title={t("help.system.variants")}>
           <div className={row}>
-            {BUTTON_VARIANTS.map(([v, label]) => (
+            {BUTTON_VARIANTS.map((v) => (
               <Sample key={v} name={v}>
-                <Button variant={v}>{label}</Button>
+                <Button variant={v}>{t(`help.system.variant.${v}`)}</Button>
               </Sample>
             ))}
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="크기">
+        <ShowcaseGroup title={t("help.system.sizes")}>
           <div className={row}>
-            {BUTTON_SIZES.map(([s, label]) => (
+            {BUTTON_SIZES.map((s) => (
               <Sample key={s} name={s}>
                 <Button size={s} variant="outline">
-                  {label}
+                  {t(`help.system.size.${s}`)}
                 </Button>
               </Sample>
             ))}
             {ICON_SIZES.map((s) => (
               <Sample key={s} name={s}>
-                <Button size={s} variant="outline" aria-label="추가">
+                <Button size={s} variant="outline" aria-label={t("help.system.add")}>
                   <Plus aria-hidden strokeWidth={1.8} />
                 </Button>
               </Sample>
             ))}
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="비활성">
+        <ShowcaseGroup title={t("help.system.disabled")}>
           <div className={row}>
-            {BUTTON_VARIANTS.map(([v, label]) => (
+            {BUTTON_VARIANTS.map((v) => (
               <Sample key={v} name={`${v} disabled`}>
                 <Button variant={v} disabled>
-                  {label}
+                  {t(`help.system.variant.${v}`)}
                 </Button>
               </Sample>
             ))}
@@ -215,11 +196,11 @@ export default function HelpSystemPage() {
         </ShowcaseGroup>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-badge" title="배지">
+      <ShowcaseSection id="sys-badge" title={t("help.system.badges")}>
         <div className={row}>
-          {BADGE_VARIANTS.map(([v, label]) => (
+          {BADGE_VARIANTS.map((v) => (
             <Sample key={v} name={v}>
-              <Badge variant={v}>{label}</Badge>
+              <Badge variant={v}>{t(`help.system.variant.${v}`)}</Badge>
             </Sample>
           ))}
         </div>
@@ -227,28 +208,28 @@ export default function HelpSystemPage() {
 
       <SystemDemos />
 
-      <ShowcaseSection id="sys-task" title="작업 표시 부품">
-        <ShowcaseGroup title="상태">
+      <ShowcaseSection id="sys-task" title={t("help.system.taskParts")}>
+        <ShowcaseGroup title={t("help.system.status")}>
           <ul className={row}>
             {STATUSES.map((s) => (
               <li key={s} className="flex items-center gap-1.5 text-(length:--fs-base) text-(--text-2)">
                 <StatusIcon status={s} />
-                <span aria-hidden>{TASK_STATUS_LABELS[s]}</span>
+                <span aria-hidden>{t(`common.taskStatus.${s}`)}</span>
               </li>
             ))}
           </ul>
         </ShowcaseGroup>
-        <ShowcaseGroup title="우선순위">
+        <ShowcaseGroup title={t("help.system.priority")}>
           <ul className={row}>
             {PRIORITIES.map((p) => (
               <li key={p} className="flex items-center gap-1.5 text-(length:--fs-base) text-(--text-2)">
                 <PriorityIcon priority={p} />
-                <span aria-hidden>{TASK_PRIORITY_LABELS[p]}</span>
+                <span aria-hidden>{t(`common.taskPriority.${p}`)}</span>
               </li>
             ))}
           </ul>
         </ShowcaseGroup>
-        <ShowcaseGroup title="라벨">
+        <ShowcaseGroup title={t("help.system.label")}>
           <div className="flex flex-col gap-(--s-2)">
             <LabelChips labels={Object.keys(TASK_LABEL_LABELS)} />
             <Sample name="max={2}">
@@ -256,7 +237,7 @@ export default function HelpSystemPage() {
             </Sample>
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="작업 키">
+        <ShowcaseGroup title={t("help.system.taskKey")}>
           <div className={row}>
             <TaskKey value="WEB-12" />
             <TaskKey value="MOB-108" />
@@ -264,8 +245,8 @@ export default function HelpSystemPage() {
         </ShowcaseGroup>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-project" title="프로젝트·구성원">
-        <ShowcaseGroup title="프로젝트 아이콘">
+      <ShowcaseSection id="sys-project" title={t("help.system.projectMembers")}>
+        <ShowcaseGroup title={t("help.system.projectIcon")}>
           <div className={row}>
             {PROJECT_SAMPLES.map(([icon, color]) => (
               <Sample key={icon} name={`${icon} · ${color}`}>
@@ -277,26 +258,26 @@ export default function HelpSystemPage() {
             </Sample>
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="프로젝트 상태">
+        <ShowcaseGroup title={t("help.system.projectStatus")}>
           <ul className={row}>
             {PROJECT_STATUSES.map((s) => (
               <li key={s} className="flex items-center gap-1.5 text-(length:--fs-base) text-(--text-2)">
                 <ProjectStatusDot status={s} />
-                <span aria-hidden>{PROJECT_STATUS_LABELS[s]}</span>
+                <span aria-hidden>{t(`common.projectStatus.${s}`)}</span>
               </li>
             ))}
           </ul>
         </ShowcaseGroup>
-        <ShowcaseGroup title="구성원 아바타">
+        <ShowcaseGroup title={t("help.system.memberAvatar")}>
           <div className={row}>
             <Sample name="size 20">
-              <MemberAvatar name="김지윤" color="indigo" size={20} />
+              <MemberAvatar name={t("help.system.sampleNameA")} color="indigo" size={20} />
             </Sample>
             <Sample name="size 24">
               <MemberAvatar name="Alex Kim" color="teal" />
             </Sample>
             <Sample name="size 32 · online">
-              <MemberAvatar name="박서준" color="rose" size={32} online />
+              <MemberAvatar name={t("help.system.sampleNameB")} color="rose" size={32} online />
             </Sample>
           </div>
         </ShowcaseGroup>

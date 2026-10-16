@@ -2,7 +2,7 @@
 // 작업 속성 선택 팝오버(상태·우선순위·담당자·날짜·라벨·반복·예상 시간). children이 트리거(버튼 요소 하나), value·onChange로 제어한다.
 // 목록형은 cmdk(combobox + listbox, ↑↓ Enter)로, 날짜는 grid로 그린다. Esc로 닫으면 Radix가 트리거로 포커스를 돌려준다
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AssigneeAvatar, LabelChip, PriorityIcon, StatusIcon } from "@/components/tasks/parts/display";
 import { useTasksOptional } from "@/components/tasks/task-store";
 import {
@@ -15,16 +15,9 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatMonthTitle, seoulDay } from "@/lib/format/date";
-import {
-  ESTIMATE_LABELS,
-  REPEAT_LABELS,
-  TASK_LABEL_LABELS,
-  TASK_PRIORITY_LABELS,
-  TASK_STATUS_LABELS,
-  UNASSIGNED_LABEL,
-  WEEKDAY_SHORT_LABELS,
-} from "@/lib/i18n/labels";
+import { seoulDay } from "@/lib/format/date";
+import { useFormatter, useLocale, useT } from "@/lib/i18n/client";
+import { ESTIMATE_LABELS, REPEAT_LABELS, TASK_LABEL_LABELS } from "@/lib/i18n/labels";
 import type { RepeatKind, TaskPriority, TaskStatus, WorkspaceMember } from "@/lib/tasks/types";
 import { PRIORITY_ORDER, STATUS_ORDER } from "@/lib/tasks/view";
 import { cn } from "@/lib/utils";
@@ -91,12 +84,13 @@ function OptionList<T extends string>({
   onKeyDown?: (e: React.KeyboardEvent) => void;
   footer?: React.ReactNode;
 }) {
+  const t = useT();
   return (
     // 현재 값에 하이라이트를 두고 연다
     <Command loop defaultValue={value} onKeyDown={onKeyDown} className="rounded-(--r)! bg-transparent">
       <CommandInput placeholder={placeholder} aria-label={placeholder} />
       <CommandList>
-        <CommandEmpty className="py-4 text-(length:--fs-sm) text-(--text-3)">결과가 없습니다</CommandEmpty>
+        <CommandEmpty className="py-4 text-(length:--fs-sm) text-(--text-3)">{t("tasks.picker.noResults")}</CommandEmpty>
         <CommandGroup>
           {options.map((o) => (
             <CommandItem
@@ -109,7 +103,7 @@ function OptionList<T extends string>({
             >
               {o.icon && <span aria-hidden className="contents">{o.icon}</span>}
               <span className="truncate">{o.label}</span>
-              {o.value === value && <span className="sr-only">(선택됨)</span>}
+              {o.value === value && <span className="sr-only">{t("tasks.picker.selected")}</span>}
               {o.hint && <span className="ml-auto text-(length:--fs-2xs) text-(--text-4)">{o.hint}</span>}
             </CommandItem>
           ))}
@@ -122,15 +116,16 @@ function OptionList<T extends string>({
 
 // 상태. 1–5 키로 바로 고른다(META §6)
 export function StatusPicker({ value, onChange, children, disabled, align }: PickerProps<TaskStatus | undefined>) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const pick = (s: TaskStatus) => {
     setOpen(false);
     if (s !== value) onChange(s);
   };
   return (
-    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label="상태 변경">
+    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label={t("tasks.pickers.status")}>
       <OptionList
-        placeholder="상태 변경…"
+        placeholder={t("tasks.pickers.statusPlaceholder")}
         value={value}
         onSelect={pick}
         onKeyDown={(e) => {
@@ -141,7 +136,7 @@ export function StatusPicker({ value, onChange, children, disabled, align }: Pic
         }}
         options={STATUS_ORDER.map((s, i) => ({
           value: s,
-          label: TASK_STATUS_LABELS[s],
+          label: t(`common.taskStatus.${s}`),
           icon: <StatusIcon status={s} className="size-3.5" />,
           hint: String(i + 1),
         }))}
@@ -151,11 +146,12 @@ export function StatusPicker({ value, onChange, children, disabled, align }: Pic
 }
 
 export function PriorityPicker({ value, onChange, children, disabled, align }: PickerProps<TaskPriority | undefined>) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
-    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label="우선순위 설정">
+    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label={t("tasks.pickers.priority")}>
       <OptionList
-        placeholder="우선순위 설정…"
+        placeholder={t("tasks.pickers.priorityPlaceholder")}
         value={value}
         onSelect={(p) => {
           setOpen(false);
@@ -163,7 +159,7 @@ export function PriorityPicker({ value, onChange, children, disabled, align }: P
         }}
         options={PRIORITY_ORDER.map((p) => ({
           value: p,
-          label: TASK_PRIORITY_LABELS[p],
+          label: t(`common.taskPriority.${p}`),
           icon: <PriorityIcon priority={p} className="size-3.5" />,
         }))}
       />
@@ -182,13 +178,14 @@ export function AssigneePicker({
   align,
   members,
 }: PickerProps<string | null | undefined> & { members?: WorkspaceMember[] }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const store = useTasksOptional();
   const list = members ?? store?.members ?? [];
   return (
-    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label="담당자 지정">
+    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label={t("tasks.pickers.assignee")}>
       <OptionList
-        placeholder="담당자 검색…"
+        placeholder={t("tasks.pickers.assigneePlaceholder")}
         value={value === null ? NONE : value}
         onSelect={(v) => {
           setOpen(false);
@@ -196,12 +193,12 @@ export function AssigneePicker({
           if (next !== value) onChange(next);
         }}
         options={[
-          { value: NONE, label: UNASSIGNED_LABEL, icon: <AssigneeAvatar assignee={null} size={18} /> },
+          { value: NONE, label: t("common.unassigned"), icon: <AssigneeAvatar assignee={null} size={18} /> },
           ...list.map((m) => ({
             value: m.id,
             label: m.name,
             icon: <AssigneeAvatar assignee={{ id: m.id, name: m.name, color: m.color }} size={18} />,
-            hint: m.id === store?.meId ? "나" : undefined,
+            hint: m.id === store?.meId ? t("tasks.pickers.me") : undefined,
           })),
         ]}
       />
@@ -210,17 +207,18 @@ export function AssigneePicker({
 }
 
 export function RepeatPicker({ value, onChange, children, disabled, align }: PickerProps<RepeatKind>) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
-    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label="반복 설정">
+    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label={t("tasks.pickers.repeat")}>
       <OptionList
-        placeholder="반복 설정…"
+        placeholder={t("tasks.pickers.repeatPlaceholder")}
         value={value}
         onSelect={(r) => {
           setOpen(false);
           if (r !== value) onChange(r);
         }}
-        options={(Object.keys(REPEAT_LABELS) as RepeatKind[]).map((r) => ({ value: r, label: REPEAT_LABELS[r] }))}
+        options={(Object.keys(REPEAT_LABELS) as RepeatKind[]).map((r) => ({ value: r, label: t(`common.repeat.${r}`) }))}
       />
     </Shell>
   );
@@ -233,25 +231,26 @@ const ESTIMATES = (Object.keys(ESTIMATE_LABELS) as (keyof typeof ESTIMATE_LABELS
 
 // 예상 시간. 고정 값 목록에서 고르고 "예상 시간 지우기"로 비운다(DB check 제약과 같은 값)
 export function EstimateInput({ value, onChange, children, disabled, align }: PickerProps<string | null>) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const pick = (v: string | null) => {
     setOpen(false);
     if (v !== value) onChange(v);
   };
   return (
-    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label="예상 시간">
+    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label={t("tasks.pickers.estimate")}>
       <OptionList
-        placeholder="예상 시간…"
+        placeholder={t("tasks.pickers.estimatePlaceholder")}
         value={value ?? undefined}
         onSelect={pick}
-        options={ESTIMATES.map((e) => ({ value: e, label: ESTIMATE_LABELS[e] }))}
+        options={ESTIMATES.map((e) => ({ value: e, label: t(`common.estimate.${e}`) }))}
         footer={
           value ? (
             <>
               <CommandSeparator />
               <CommandGroup>
-                <CommandItem value="clear" keywords={[ESTIMATE_LABELS.clear]} onSelect={() => pick(null)} className={ITEM_CLASS}>
-                  {ESTIMATE_LABELS.clear}
+                <CommandItem value="clear" keywords={[t("common.estimate.clear")]} onSelect={() => pick(null)} className={ITEM_CLASS}>
+                  {t("common.estimate.clear")}
                 </CommandItem>
               </CommandGroup>
             </>
@@ -267,6 +266,7 @@ const LABEL_IDS = Object.keys(TASK_LABEL_LABELS) as LabelId[];
 
 // 라벨 여러 개 선택. 고르는 동안 열려 있다. 라벨은 DB가 8개로 고정해 새 라벨은 만들 수 없다
 export function LabelPicker({ value, onChange, children, disabled, align }: PickerProps<string[]>) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const toggle = (l: LabelId) => {
     const set = new Set(value);
@@ -275,11 +275,11 @@ export function LabelPicker({ value, onChange, children, disabled, align }: Pick
     onChange(LABEL_IDS.filter((id) => set.has(id)));
   };
   return (
-    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label="라벨 설정">
+    <Shell open={open} onOpenChange={setOpen} trigger={children} disabled={disabled} align={align} label={t("tasks.pickers.labels")}>
       <Command loop className="rounded-(--r)! bg-transparent">
-        <CommandInput placeholder="라벨 검색…" aria-label="라벨 검색" />
+        <CommandInput placeholder={t("tasks.pickers.labelSearchPlaceholder")} aria-label={t("tasks.pickers.labelSearch")} />
         <CommandList aria-multiselectable>
-          <CommandEmpty className="py-4 text-(length:--fs-sm) text-(--text-3)">결과가 없습니다</CommandEmpty>
+          <CommandEmpty className="py-4 text-(length:--fs-sm) text-(--text-3)">{t("tasks.picker.noResults")}</CommandEmpty>
           <CommandGroup>
             {LABEL_IDS.map((l) => {
               const on = value.includes(l);
@@ -287,13 +287,13 @@ export function LabelPicker({ value, onChange, children, disabled, align }: Pick
                 <CommandItem
                   key={l}
                   value={l}
-                  keywords={[TASK_LABEL_LABELS[l]]}
+                  keywords={[t(`common.taskLabel.${l}`)]}
                   data-checked={on}
                   onSelect={() => toggle(l)}
                   className={ITEM_CLASS}
                 >
                   <LabelChip label={l} />
-                  {on && <span className="sr-only">(선택됨)</span>}
+                  {on && <span className="sr-only">{t("tasks.picker.selected")}</span>}
                 </CommandItem>
               );
             })}
@@ -310,13 +310,8 @@ export function LabelPicker({ value, onChange, children, disabled, align }: Pick
 // ─────────────────────────────────────────────
 
 const DAY_MS = 86_400_000;
-const dayLabelFmt = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "UTC",
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  weekday: "long",
-});
+// 일요일부터의 요일 키(common.weekdayShort)
+const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 const toIso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const fromIso = (iso: string) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
@@ -327,8 +322,10 @@ export function DatePicker({
   children,
   disabled,
   align,
-  label = "날짜 선택",
+  label: labelProp,
 }: PickerProps<string | null> & { label?: string }) {
+  const t = useT();
+  const label = labelProp ?? t("tasks.pickers.date");
   const [open, setOpen] = useState(false);
   const pick = (v: string | null) => {
     setOpen(false);
@@ -353,6 +350,14 @@ export function DatePicker({
 }
 
 function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v: string | null) => void; label: string }) {
+  const t = useT();
+  const fmt = useFormatter();
+  const locale = useLocale();
+  // 칸 이름은 요일까지 넣은 긴 날짜. 달력 날짜(UTC 자정)를 받으므로 UTC로 읽는다
+  const dayLabelFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { timeZone: "UTC", year: "numeric", month: "long", day: "numeric", weekday: "long" }),
+    [locale],
+  );
   const today = toIso(seoulDay(new Date()));
   const [focused, setFocused] = useState(value ?? today);
   const gridRef = useRef<HTMLTableElement>(null);
@@ -396,20 +401,20 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
   return (
     <div className="flex flex-col gap-(--s-2)">
       <div className="flex items-center justify-between">
-        <button type="button" className={navBtn} aria-label="이전 달" onClick={() => moveMonth(-1)}>
+        <button type="button" className={navBtn} aria-label={t("tasks.pickers.prevMonth")} onClick={() => moveMonth(-1)}>
           <ChevronLeft size={14} strokeWidth={1.8} aria-hidden />
         </button>
         <span className="text-(length:--fs-sm) font-medium" aria-live="polite">
-          {formatMonthTitle(Date.UTC(year, month, 15))}
+          {fmt.monthTitle(Date.UTC(year, month, 15))}
         </span>
-        <button type="button" className={navBtn} aria-label="다음 달" onClick={() => moveMonth(1)}>
+        <button type="button" className={navBtn} aria-label={t("tasks.pickers.nextMonth")} onClick={() => moveMonth(1)}>
           <ChevronRight size={14} strokeWidth={1.8} aria-hidden />
         </button>
       </div>
       <table ref={gridRef} role="grid" aria-label={label} onKeyDown={onKeyDown} className="border-collapse">
         <thead>
           <tr>
-            {WEEKDAY_SHORT_LABELS.map((w, i) => (
+            {WEEKDAYS.map((w, i) => (
               <th
                 key={w}
                 scope="col"
@@ -418,7 +423,7 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
                   i === 0 ? "text-(--red)" : i === 6 ? "text-(--blue)" : "text-(--text-4)",
                 )}
               >
-                {w}
+                {t(`common.weekdayShort.${w}`)}
               </th>
             ))}
           </tr>
@@ -465,7 +470,7 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
           onClick={() => onPick(today)}
           className="rounded-(--r-xs) px-2 py-1 text-(length:--fs-sm) text-(--text-2) hover:bg-(--surface-2)"
         >
-          오늘
+          {t("tasks.pickers.today")}
         </button>
         {value && (
           <button
@@ -473,7 +478,7 @@ function MonthGrid({ value, onPick, label }: { value: string | null; onPick: (v:
             onClick={() => onPick(null)}
             className="rounded-(--r-xs) px-2 py-1 text-(length:--fs-sm) text-(--text-3) hover:bg-(--surface-2)"
           >
-            날짜 지우기
+            {t("tasks.pickers.clearDate")}
           </button>
         )}
       </div>

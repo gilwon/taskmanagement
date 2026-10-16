@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Enums } from "@/lib/database.types";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import { useCurrentView } from "@/components/tasks/views/current-view";
 import { createSavedView } from "@/lib/tasks/saved-views";
 
@@ -36,6 +36,7 @@ export function SaveViewDialog({
   baseHref: string;
   defaultType: ViewType;
 }) {
+  const t = useT();
   const router = useRouter();
   const currentViewRef = useCurrentView();
   const [open, setOpen] = useState(false);
@@ -47,7 +48,7 @@ export function SaveViewDialog({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!name.trim()) return setError("이름을 입력해 주세요.");
+    if (!name.trim()) return setError(t("tasks.savedView.nameRequired"));
     setBusy(true);
     // 화면 메모리의 최신 상태를 넘기므로 디바운스 중인 DB 저장을 기다리지 않아도 된다. 골격 탭(작업 뷰 없음)은 필터 없이 만든다
     const r = await createSavedView(workspaceId, projectId, name, type, currentViewRef?.current?.filters ?? []);
@@ -72,27 +73,27 @@ export function SaveViewDialog({
       <DialogTrigger asChild>
         <button
           type="button"
-          aria-label="저장 뷰 만들기"
+          aria-label={t("tasks.savedView.create")}
           className="inline-flex h-(--h-sm) shrink-0 items-center gap-1 self-center rounded-(--r-xs) px-1.5 text-(length:--fs-sm) text-(--text-3) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
         >
           <Plus aria-hidden size={14} strokeWidth={1.8} />
-          <span className="hide-m">저장 뷰</span>
+          <span className="hide-m">{t("tasks.savedView.short")}</span>
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <form onSubmit={submit} method="post" className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>저장 뷰 만들기</DialogTitle>
-            <DialogDescription>지금 화면의 필터를 이름을 붙여 저장합니다.</DialogDescription>
+            <DialogTitle>{t("tasks.savedView.create")}</DialogTitle>
+            <DialogDescription>{t("tasks.savedView.description")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-1.5">
-            <Label htmlFor="saved-view-name">이름</Label>
+            <Label htmlFor="saved-view-name">{t("tasks.savedView.name")}</Label>
             <Input
               id="saved-view-name"
               autoFocus
               value={name}
               maxLength={80}
-              placeholder="예: 높은 우선순위"
+              placeholder={t("tasks.savedView.namePlaceholder")}
               aria-invalid={!!error}
               aria-describedby={error ? "saved-view-error" : undefined}
               onChange={(e) => {
@@ -108,7 +109,7 @@ export function SaveViewDialog({
           </div>
           <div className="grid gap-1.5">
             <span id="saved-view-type" className="text-(length:--fs-sm) font-medium">
-              보기 방식
+              {t("tasks.savedView.type")}
             </span>
             <ToggleGroup
               type="single"
@@ -119,19 +120,19 @@ export function SaveViewDialog({
               aria-labelledby="saved-view-type"
               onValueChange={(v) => v && setType(v as ViewType)}
             >
-              {TYPES.map((t) => (
-                <ToggleGroupItem key={t} value={t} className="px-3">
-                  {NAV_LABELS[t]}
+              {TYPES.map((v) => (
+                <ToggleGroupItem key={v} value={v} className="px-3">
+                  {t(`common.nav.${v}`)}
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              취소
+              {t("common.action.cancel")}
             </Button>
             <Button type="submit" disabled={busy} aria-busy={busy}>
-              만들기
+              {t("tasks.savedView.submit")}
             </Button>
           </DialogFooter>
         </form>

@@ -9,14 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { ProjectIcon } from "@/components/shell/project-icon";
-import {
-  GENERAL_ACCESS_LABELS,
-  NO_LEAD_LABEL,
-  PROJECT_COLORS,
-  PROJECT_ICON_LABELS,
-  type ProjectColor,
-  type ProjectIconName,
-} from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { PROJECT_COLORS, PROJECT_ICON_LABELS, type ProjectColor, type ProjectIconName } from "@/lib/i18n/labels";
 import { projectKeyPreview } from "@/lib/projects/stats";
 import type { CreateProjectInput, ProjectAccess } from "@/lib/projects/types";
 import type { WorkspaceMember } from "@/lib/tasks/types";
@@ -38,11 +32,12 @@ type Props = {
   loadError: string | null;
   onRetry: () => void;
   finalFocus?: React.RefObject<HTMLElement | null>;
-  // 실패하면 한국어 오류 문구를 돌려준다
+  // 실패하면 현재 로캘의 오류 문구를 돌려준다
   onCreate: (input: Omit<CreateProjectInput, "workspaceId">) => Promise<string | null>;
 };
 
 export function NewProjectDialog(props: Props) {
+  const t = useT();
   const { open, onOpenChange, finalFocus } = props;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,9 +50,9 @@ export function NewProjectDialog(props: Props) {
         className="gap-0 p-0 sm:max-w-[560px] data-open:animate-[modalIn_.2s_var(--ease)] max-[640px]:max-w-[calc(100%-1rem)]"
       >
         <DialogTitle className="border-b border-(--divider) px-4 py-3 text-(length:--fs-md) font-semibold text-(--text)">
-          새 프로젝트
+          {t("projects.new.title")}
         </DialogTitle>
-        <DialogDescription className="sr-only">프로젝트 이름과 표시 방식, 공개 범위를 정합니다.</DialogDescription>
+        <DialogDescription className="sr-only">{t("projects.new.description")}</DialogDescription>
         {open && <ProjectForm {...props} />}
       </DialogContent>
     </Dialog>
@@ -65,6 +60,7 @@ export function NewProjectDialog(props: Props) {
 }
 
 function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreate, onOpenChange }: Props) {
+  const t = useT();
   const uid = useId();
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
@@ -123,7 +119,7 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
             <span className="flex-1">{error ?? loadError}</span>
             {!error && loadError && (
               <Button type="button" size="xs" variant="outline" onClick={onRetry}>
-                다시 시도
+                {t("common.action.retry")}
               </Button>
             )}
           </div>
@@ -133,7 +129,7 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
           <ProjectIcon icon={icon} color={color} size={36} className="mt-5 rounded-(--r)" />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor={`${uid}-name`} className="text-(length:--fs-sm) font-medium text-(--text-2)">
-              프로젝트 이름
+              {t("projects.new.name")}
             </label>
             <Input
               id={`${uid}-name`}
@@ -141,7 +137,7 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
               autoFocus
               value={name}
               maxLength={120}
-              placeholder="예: Website Redesign"
+              placeholder={t("projects.new.namePlaceholder")}
               aria-invalid={nameError || undefined}
               aria-describedby={`${uid}-key${nameError ? ` ${uid}-name-err` : ""}`}
               onChange={(e) => {
@@ -151,21 +147,20 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
             />
             {nameError && (
               <p id={`${uid}-name-err`} role="alert" className="text-(length:--fs-xs) text-(--red)">
-                프로젝트 이름을 입력해 주세요.
+                {t("errors.msg.projectNameRequired")}
               </p>
             )}
             <p id={`${uid}-key`} className="text-(length:--fs-xs) text-(--text-3)">
-              키 <span className="font-mono text-(--text-2)">{projectKeyPreview(name)}</span> · 영문 단어 첫 글자로 정해지고,
-              이미 쓰는 키면 뒤에 X가 붙습니다.
+              {t("projects.new.key")} <span className="font-mono text-(--text-2)">{projectKeyPreview(name)}</span> · {t("projects.new.keyHint")}
             </p>
           </div>
         </div>
 
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-(length:--fs-sm) font-medium text-(--text-2)">아이콘</legend>
+          <legend className="mb-1.5 text-(length:--fs-sm) font-medium text-(--text-2)">{t("projects.new.icon")}</legend>
           <div className="flex flex-wrap gap-1">
             {(Object.keys(PROJECT_ICON_LABELS) as ProjectIconName[]).map((name) => (
-              <label key={name} className={cn(swatch, "size-(--h-md)")} title={PROJECT_ICON_LABELS[name]}>
+              <label key={name} className={cn(swatch, "size-(--h-md)")} title={t(`common.icon.${name}`)}>
                 <input
                   type="radio"
                   name={`${uid}-icon`}
@@ -175,17 +170,17 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
                   className="sr-only"
                 />
                 <ProjectIcon icon={name} color={color} size={22} />
-                <span className="sr-only">{PROJECT_ICON_LABELS[name]}</span>
+                <span className="sr-only">{t(`common.icon.${name}`)}</span>
               </label>
             ))}
           </div>
         </fieldset>
 
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-(length:--fs-sm) font-medium text-(--text-2)">색</legend>
+          <legend className="mb-1.5 text-(length:--fs-sm) font-medium text-(--text-2)">{t("projects.new.color")}</legend>
           <div className="flex flex-wrap gap-1">
             {(Object.keys(PROJECT_COLORS) as ProjectColor[]).map((c) => (
-              <label key={c} className={cn(swatch, "size-(--h-md) rounded-full")} title={PROJECT_COLORS[c].label}>
+              <label key={c} className={cn(swatch, "size-(--h-md) rounded-full")} title={t(`common.projectColor.${c}`)}>
                 <input
                   type="radio"
                   name={`${uid}-color`}
@@ -195,14 +190,14 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
                   className="sr-only"
                 />
                 <span aria-hidden className="size-4 rounded-full" style={{ background: PROJECT_COLORS[c].hex }} />
-                <span className="sr-only">{PROJECT_COLORS[c].label}</span>
+                <span className="sr-only">{t(`common.projectColor.${c}`)}</span>
               </label>
             ))}
           </div>
         </fieldset>
 
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-(length:--fs-sm) font-medium text-(--text-2)">공개 범위</legend>
+          <legend className="mb-1.5 text-(length:--fs-sm) font-medium text-(--text-2)">{t("projects.new.access")}</legend>
           <div className="grid grid-cols-2 gap-2 max-[480px]:grid-cols-1">
             {(["workspace", "private"] as const).map((a) => (
               <label
@@ -217,7 +212,7 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
                   onChange={() => setAccess(a)}
                   className="accent-(--accent)"
                 />
-                {GENERAL_ACCESS_LABELS[a](workspaceName)}
+                {t(`common.generalAccess.${a}`, { ws: workspaceName })}
               </label>
             ))}
           </div>
@@ -225,14 +220,14 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
 
         <div className="flex flex-col gap-1.5">
           <span id={`${uid}-lead`} className="text-(length:--fs-sm) font-medium text-(--text-2)">
-            리드
+            {t("projects.new.lead")}
           </span>
           <Select value={leadValue} onValueChange={setLead} disabled={members === null}>
             <SelectTrigger aria-labelledby={`${uid}-lead`} className="w-full">
-              <SelectValue placeholder={members === null ? "구성원 불러오는 중…" : NO_LEAD_LABEL} />
+              <SelectValue placeholder={members === null ? t("projects.new.membersLoading") : t("common.noLead")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_LEAD}>{NO_LEAD_LABEL}</SelectItem>
+              <SelectItem value={NO_LEAD}>{t("common.noLead")}</SelectItem>
               {leadOptions.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   <MemberAvatar name={m.name} color={m.color} size={18} />
@@ -245,24 +240,24 @@ function ProjectForm({ workspaceName, meId, members, loadError, onRetry, onCreat
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${uid}-desc`} className="text-(length:--fs-sm) font-medium text-(--text-2)">
-            설명
+            {t("projects.new.descriptionLabel")}
           </label>
           <Textarea
             id={`${uid}-desc`}
             value={description}
             maxLength={5000}
             rows={3}
-            placeholder="프로젝트의 목표와 범위를 적어 주세요."
+            placeholder={t("projects.new.descriptionPlaceholder")}
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
       </div>
       <DialogFooter className="mx-0 mb-0 rounded-b-(--r-lg) border-t border-(--divider) bg-(--surface-2) px-4 py-3">
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          취소
+          {t("common.action.cancel")}
         </Button>
         <Button type="submit" disabled={pending}>
-          {pending ? "만드는 중…" : "프로젝트 만들기"}
+          {pending ? t("projects.new.creating") : t("projects.new.create")}
         </Button>
       </DialogFooter>
     </form>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { loadNewTaskOptions, type NewTaskOptions } from "@/components/tasks/new-task/actions";
 import { NewTaskDialog, type NewTaskDefaults } from "@/components/tasks/new-task/new-task-dialog";
+import { useT } from "@/lib/i18n/client";
 import { createSubtask, createTask } from "@/lib/tasks/actions";
 import type { CreateTaskInput, TaskItem } from "@/lib/tasks/types";
 
@@ -24,7 +25,7 @@ const LauncherContext = createContext<Ctx | null>(null);
 
 export function useNewTask() {
   const ctx = useContext(LauncherContext);
-  if (!ctx) throw new Error("useNewTask는 NewTaskLauncher 안에서만 쓸 수 있습니다");
+  if (!ctx) throw new Error("useNewTask must be used inside NewTaskLauncher");
   return { openNewTask: ctx.openNewTask };
 }
 
@@ -54,6 +55,7 @@ type Props = {
 };
 
 export function NewTaskLauncher({ workspace, meId, children }: Props) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [defaults, setDefaults] = useState<NewTaskDefaults | undefined>();
@@ -102,14 +104,14 @@ export function NewTaskLauncher({ workspace, meId, children }: Props) {
       const r = await createSubtask(item.id, title);
       if (!r.ok) failed += 1;
     }
-    if (failed > 0) toast.error(`하위 작업 ${failed}개를 만들지 못했습니다. 작업 상세에서 다시 추가해 주세요.`);
+    if (failed > 0) toast.error(t("tasks.newTask.subtasksFailed", { count: failed }));
 
     // 서버 목록을 다시 받아 화면 범위(프로젝트 등)와 하위 작업 수를 맞춘다
     router.refresh();
     const key = item.key;
-    toast.success(`${key} 작업을 만들었습니다`, {
+    toast.success(t("tasks.newTask.created", { key }), {
       action: {
-        label: "열기",
+        label: t("tasks.newTask.open"),
         onClick: () => {
           if (target.current) target.current.open(key);
           else router.push(`/${workspace.slug}/task/${key}`);

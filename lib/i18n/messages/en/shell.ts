@@ -13,7 +13,7 @@ export default {
   mainNav: "Main menu",
   bottomNav: "Bottom menu",
   hasUnread: ", unread notifications",
-  countSuffix: "",
+  countSuffix: { one: " item", other: " items" },
   online: "Online",
   breadcrumb: "Breadcrumb",
   savedView: "Saved view",

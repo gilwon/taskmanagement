@@ -7,7 +7,8 @@ import { SaveViewDialog } from "@/components/tasks/save-view-dialog";
 import { SavedViewTab } from "@/components/tasks/saved-view-tab";
 import type { Enums } from "@/lib/database.types";
 import { getProjectHeader } from "@/lib/data/project";
-import { PROJECT_STATUS_LABELS, PROJECT_TAB_LABELS, type ProjectTab } from "@/lib/i18n/labels";
+import { PROJECT_TAB_LABELS, type ProjectTab } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
 const TABS = Object.keys(PROJECT_TAB_LABELS) as ProjectTab[];
@@ -37,7 +38,7 @@ export async function ProjectHeader({
   // 기본 탭 이름 또는 저장 뷰 id
   active: ProjectTab | { view: string };
 }) {
-  const { members, favorite, savedViews } = await getProjectHeader(project.id, userId);
+  const [{ members, favorite, savedViews }, t] = await Promise.all([getProjectHeader(project.id, userId), getT()]);
   const base = `/${wsSlug}/projects/${encodeURIComponent(project.key)}`;
   const isActive = (tab: ProjectTab | string) => (typeof active === "string" ? active === tab : active.view === tab);
   const defaultType = active === "board" || active === "table" ? active : "list";
@@ -52,11 +53,11 @@ export async function ProjectHeader({
         <ProjectFavoriteButton workspaceId={workspaceId} projectId={project.id} favorite={favorite} />
         <span className="inline-flex h-(--h-sm) shrink-0 items-center gap-1.5 rounded-(--r-full) border border-(--border) bg-(--surface) px-2.5 text-(length:--fs-xs) text-(--text-2)">
           <ProjectStatusDot status={project.status} />
-          {PROJECT_STATUS_LABELS[project.status]}
+          {t(`common.projectStatus.${project.status}`)}
         </span>
         <span className="flex-1" />
         {members.length > 0 && (
-          <ul aria-label={`구성원 ${members.length}명`} className="hide-m flex items-center -space-x-1.5">
+          <ul aria-label={t("tasks.project.members", { count: members.length })} className="hide-m flex items-center -space-x-1.5">
             {members.slice(0, MAX_AVATARS).map((m) => (
               <li key={m.id} title={m.name} className="rounded-full ring-2 ring-(--bg)">
                 <MemberAvatar name={m.name} color={m.color} size={24} />
@@ -71,7 +72,7 @@ export async function ProjectHeader({
           </ul>
         )}
       </div>
-      <nav aria-label="프로젝트 보기" className="mt-(--s-3) flex gap-1 overflow-x-auto border-b border-(--border)">
+      <nav aria-label={t("tasks.project.viewsNav")} className="mt-(--s-3) flex gap-1 overflow-x-auto border-b border-(--border)">
         {TABS.map((tab) => (
           <Link
             key={tab}
@@ -84,7 +85,7 @@ export async function ProjectHeader({
                 : "border-transparent text-(--text-3) hover:text-(--text)",
             )}
           >
-            {PROJECT_TAB_LABELS[tab]}
+            {t(`common.projectTab.${tab}`)}
           </Link>
         ))}
         {savedViews.map((v) => (

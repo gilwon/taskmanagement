@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { SLUG_RE } from "@/lib/auth/rules";
 import { orderProjects } from "@/lib/data/project-order";
 import type { Enums } from "@/lib/database.types";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 // 형식이 틀린 id로 조회하면 Postgres가 22P02 오류를 내므로 조회 전에 거른다
@@ -137,7 +138,7 @@ export async function getShellData(
   workspace: ShellData["workspace"],
   userId: string,
 ): Promise<ShellData> {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const [workspaces, projects, favorites, teams, unread, myOpen, profile, membership, prefs] = await Promise.all([
     supabase.from("workspaces").select("id, slug, name, color").order("name"),
     // 이름순으로 읽고 아래에서 사용자별 순서(user_prefs.proj_order)로 다시 놓는다
@@ -206,7 +207,7 @@ export async function getShellData(
     counts: { unread: unread.count ?? 0, myOpenTasks: myOpen.count ?? 0 },
     me: {
       id: userId,
-      name: profile.data?.name || profile.data?.email || "나",
+      name: profile.data?.name || profile.data?.email || t("common.me"),
       email: profile.data?.email ?? "",
       color: membership.data?.color ?? profile.data?.color ?? "indigo",
       role: membership.data?.role ?? null,

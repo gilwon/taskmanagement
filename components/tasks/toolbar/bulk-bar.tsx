@@ -5,37 +5,39 @@ import { AssigneePicker, PriorityPicker, StatusPicker } from "@/components/tasks
 import { useTaskActions } from "@/components/tasks/task-store";
 import { ClearButton, TOOLBAR_BTN } from "@/components/tasks/toolbar/task-toolbar";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/client";
 
 const ICON = { size: 14, strokeWidth: 1.8, "aria-hidden": true } as const;
 
 export function BulkBar({ selectedIds, onClear }: { selectedIds: string[]; onClear: () => void }) {
+  const t = useT();
   const actions = useTaskActions();
   if (selectedIds.length === 0) return null;
   return (
     <div
       role="toolbar"
-      aria-label="선택한 작업"
+      aria-label={t("tasks.bulk.label")}
       className="flex flex-wrap items-center gap-(--s-1) rounded-(--r) border border-(--border) bg-(--surface) px-2 py-1 shadow-(--shadow-pop)"
     >
       <span className="px-1 text-(length:--fs-sm) font-medium text-(--text)" aria-live="polite">
-        {selectedIds.length}개 선택됨
+        {t("tasks.bulk.selected", { count: selectedIds.length })}
       </span>
       <StatusPicker value={undefined} onChange={(status) => status && void actions.bulkUpdate(selectedIds, { status })}>
         <Button variant="ghost" className={TOOLBAR_BTN}>
           <CircleDot {...ICON} />
-          상태
+          {t("tasks.bulk.status")}
         </Button>
       </StatusPicker>
       <AssigneePicker value={undefined} onChange={(assigneeId) => assigneeId !== undefined && void actions.bulkUpdate(selectedIds, { assigneeId })}>
         <Button variant="ghost" className={TOOLBAR_BTN}>
           <UserRound {...ICON} />
-          담당자
+          {t("tasks.bulk.assignee")}
         </Button>
       </AssigneePicker>
       <PriorityPicker value={undefined} onChange={(priority) => priority && void actions.bulkUpdate(selectedIds, { priority })}>
         <Button variant="ghost" className={TOOLBAR_BTN}>
           <Signal {...ICON} />
-          우선순위
+          {t("tasks.bulk.priority")}
         </Button>
       </PriorityPicker>
       <Button
@@ -46,9 +48,9 @@ export function BulkBar({ selectedIds, onClear }: { selectedIds: string[]; onCle
         }}
       >
         <Trash2 {...ICON} />
-        삭제
+        {t("tasks.bulk.delete")}
       </Button>
-      <ClearButton label="선택 해제" onClick={onClear} className="ml-1 size-6" />
+      <ClearButton label={t("tasks.bulk.clear")} onClick={onClear} className="ml-1 size-6" />
     </div>
   );
 }

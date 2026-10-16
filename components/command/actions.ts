@@ -1,7 +1,7 @@
 "use server";
 // 커맨드 팔레트가 쓰는 조회. 최근에 바뀐 작업, 기한 지난 작업 몇 개를 돌려준다. 범위는 RLS가 자른다
-import { MSG } from "@/lib/auth/errors";
 import type { Enums } from "@/lib/database.types";
+import { getT } from "@/lib/i18n/server";
 import { todayIso } from "@/lib/schedule/dates";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
@@ -23,13 +23,14 @@ export async function loadOverdueTasks(workspaceId: string): Promise<ActionResul
 }
 
 async function loadTasks(workspaceId: string, kind: "recent" | "overdue"): Promise<ActionResult<PaletteTask[]>> {
+  const t = await getT();
   if (typeof workspaceId !== "string" || !UUID_RE.test(workspaceId)) {
-    return { ok: false, error: "입력값을 다시 확인해 주세요." };
+    return { ok: false, error: t("errors.rpc.invalidInput") };
   }
   try {
     const supabase = await createClient();
     const { data: claims } = await supabase.auth.getClaims();
-    if (!claims?.claims?.sub) return { ok: false, error: MSG.sessionExpired };
+    if (!claims?.claims?.sub) return { ok: false, error: t("errors.msg.sessionExpired") };
     // 작업 목록 조회와 같은 기준. 삭제·보관된 작업과 삭제·보관된 프로젝트의 작업은 뺀다
     const base = supabase
       .from("tasks")
@@ -49,11 +50,11 @@ async function loadTasks(workspaceId: string, kind: "recent" | "overdue"): Promi
             .limit(OVERDUE_TASKS);
     if (error) {
       console.error("[팔레트 작업]", error.code, error.message);
-      return { ok: false, error: taskErrorMessage(error) };
+      return { ok: false, error: taskErrorMessage(error, t) };
     }
     return { ok: true, data: data.map(({ key, title, status }) => ({ key, title, status })) };
   } catch (e) {
     console.error("[팔레트 작업]", e);
-    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }) };
+    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }, t) };
   }
 }

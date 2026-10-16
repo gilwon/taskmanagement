@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import { forbidden, notFound } from "next/navigation";
 import { MembersView } from "@/components/org/members-view";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { canOpenOrg, getMemberStats, getOrgMembers, getPendingInvites, getTeams } from "@/lib/org/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.members };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.members") };
+}
 
 type Props = { params: Promise<{ ws: string }>; searchParams: Promise<{ invite?: string }> };
 

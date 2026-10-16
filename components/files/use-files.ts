@@ -15,10 +15,11 @@ import {
   restoreFile,
   retryUpload,
 } from "@/lib/files/actions";
-import { storageUploadMessage, UPLOAD_CANCELED } from "@/lib/files/errors";
+import { storageUploadMessage } from "@/lib/files/errors";
 import { ACCEPT_ATTR, checkUpload, extOf } from "@/lib/files/mime";
 import type { FileItem, UploadTicket } from "@/lib/files/types";
-import { NETWORK_ERROR } from "@/lib/tasks/errors";
+import { useT } from "@/lib/i18n/client";
+import type { T } from "@/lib/i18n/t";
 
 const byNewest = (a: FileItem, b: FileItem) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id);
 
@@ -34,15 +35,15 @@ function pickFile(): Promise<File | null> {
   });
 }
 
-function markFailed(id: string, name: string, message: string) {
+function markFailed(id: string, name: string, message: string, t: T) {
   setTransfer(id, { pct: 0, error: message });
-  toast.error(`${name} 업로드 실패. ${message}`);
-  announce(`${name} 업로드 실패. ${message}`);
+  toast.error(t("files.uploadFailedFor", { name, error: message }));
+  announce(t("files.uploadFailedFor", { name, error: message }));
 }
 
 // 서명 URL로 PUT. 성공하면 finalize, 실패·취소면 행을 failed로 돌린다.
 // 컴포넌트가 사라져도(드로어 닫힘) 계속 돌고 결과는 upload-store에만 남긴다
-function startTransfer(ticket: UploadTicket, blob: File) {
+function startTransfer(ticket: UploadTicket, blob: File, t: T) {
   const { file } = ticket;
   uploadBlobs.set(file.id, blob);
   setTransfer(file.id, { pct: 0 });
@@ -61,28 +62,29 @@ function startTransfer(ticket: UploadTicket, blob: File) {
   xhr.onload = async () => {
     uploadXhrs.delete(file.id);
     if (xhr.status < 200 || xhr.status >= 300) {
-      markFailed(file.id, file.name, storageUploadMessage(xhr.status, xhr.responseText));
+      markFailed(file.id, file.name, storageUploadMessage(xhr.status, xhr.responseText, t), t);
       return void recordFail();
     }
     setTransfer(file.id, { pct: 100 });
     // 실패하면 서버 액션이 행을 failed로 돌린다
-    const r = await finalizeUpload(file.id).catch(() => ({ ok: false as const, error: NETWORK_ERROR }));
-    if (!r.ok) return markFailed(file.id, file.name, r.error);
+    const r = await finalizeUpload(file.id).catch(() => ({ ok: false as const, error: t("tasks.errors.network") }));
+    if (!r.ok) return markFailed(file.id, file.name, r.error, t);
     uploadBlobs.delete(file.id);
     setTransfer(file.id, { pct: 100, done: true });
-    announce(`${file.name} 업로드를 마쳤습니다.`);
+    announce(t("files.uploadDone", { name: file.name }));
   };
   xhr.onerror = () => {
     uploadXhrs.delete(file.id);
-    markFailed(file.id, file.name, NETWORK_ERROR);
+    markFailed(file.id, file.name, t("tasks.errors.network"), t);
     void recordFail();
   };
   // 사용자가 고른 취소라 실패 토스트 대신 안내만 한다
   xhr.onabort = () => {
     uploadXhrs.delete(file.id);
-    setTransfer(file.id, { pct: 0, error: UPLOAD_CANCELED, canceled: true });
-    toast.info(UPLOAD_CANCELED, { description: file.name });
-    announce(`${UPLOAD_CANCELED} ${file.name}`);
+    const canceled = t("files.errors.uploadCanceled");
+    setTransfer(file.id, { pct: 0, error: canceled, canceled: true });
+    toast.info(canceled, { description: file.name });
+    announce(`${canceled} ${file.name}`);
     void recordFail();
   };
   xhr.open("PUT", ticket.url);
@@ -110,6 +112,7 @@ export function useFiles({
   taskId: string | null;
   initial: FileItem[];
 }) {
+  const t = useT();
   const [rows, setRows] = useState<FileItem[]>(initial);
   const transfers = useTransfers();
   const files = useMemo(() => rows.map((f) => withTransfer(f, transfers[f.id])), [rows, transfers]);
@@ -121,16 +124,16 @@ export function useFiles({
   const send = useCallback(
     (ticket: UploadTicket, blob: File) => {
       upsert({ ...ticket.file, status: "pending" });
-      startTransfer(ticket, blob);
+      startTransfer(ticket, blob, t);
     },
-    [upsert],
+    [upsert, t],
   );
 
   const upload = useCallback(
     async (list: Iterable<File>) => {
       for (const blob of list) {
         // 서버도 같은 검사를 다시 하지만 형식·크기 위반은 여기서 바로 알린다
-        const check = checkUpload(blob.name, blob.size);
+        const check = checkUpload(blob.name, blob.size, t);
         if (!check.ok) {
           toast.error(check.error);
           announce(check.error);
@@ -138,17 +141,17 @@ export function useFiles({
         }
         const r = await prepareUpload(projectId, taskId, blob.name, blob.size).catch(() => ({
           ok: false as const,
-          error: NETWORK_ERROR,
+          error: t("tasks.errors.network"),
         }));
         if (!r.ok) {
-          toast.error(`${check.name} 업로드 실패. ${r.error}`);
-          announce(`${check.name} 업로드 실패. ${r.error}`);
+          toast.error(t("files.uploadFailedFor", { name: check.name, error: r.error }));
+          announce(t("files.uploadFailedFor", { name: check.name, error: r.error }));
           continue;
         }
         send(r.data, blob);
       }
     },
-    [projectId, taskId, send],
+    [projectId, taskId, send, t],
   );
 
   const retry = useCallback(
@@ -159,14 +162,14 @@ export function useFiles({
         if (!blob) return;
         // finalize가 크기를 확인하므로 처음과 같은 파일이어야 한다
         if (blob.size !== item.size_bytes || extOf(blob.name) !== extOf(item.name)) {
-          return void toast.error(`처음 올린 것과 같은 파일(${item.name})을 골라 주세요.`);
+          return void toast.error(t("files.errors.sameFile", { name: item.name }));
         }
       }
-      const r = await retryUpload(item.id).catch(() => ({ ok: false as const, error: NETWORK_ERROR }));
+      const r = await retryUpload(item.id).catch(() => ({ ok: false as const, error: t("tasks.errors.network") }));
       if (!r.ok) return void toast.error(r.error);
       send(r.data, blob);
     },
-    [send],
+    [send, t],
   );
 
   const cancel = useCallback((id: string) => uploadXhrs.get(id)?.abort(), []);
@@ -174,51 +177,53 @@ export function useFiles({
   // 소프트 삭제. 토스트의 실행 취소는 받은 토큰을 그대로 넘긴다
   const remove = useCallback(
     async (item: FileItem) => {
-      const r = await deleteFile(item.id).catch(() => ({ ok: false as const, error: NETWORK_ERROR }));
+      const r = await deleteFile(item.id).catch(() => ({ ok: false as const, error: t("tasks.errors.network") }));
       if (!r.ok) return void toast.error(r.error);
       setRows((list) => list.filter((f) => f.id !== item.id));
       setTransfer(item.id, null);
       uploadBlobs.delete(item.id);
-      announce(`파일을 삭제했습니다. ${item.name}`);
-      toast("파일을 삭제했습니다", {
+      announce(t("files.deletedFor", { name: item.name }));
+      toast(t("files.deleted"), {
         description: item.name,
         action: {
-          label: "실행 취소",
+          label: t("files.undo"),
           onClick: async () => {
             const back = await restoreFile(item.id, r.data.token).catch(() => ({
               ok: false as const,
-              error: NETWORK_ERROR,
+              error: t("tasks.errors.network"),
             }));
             if (!back.ok) return void toast.error(back.error);
             upsert(back.data);
-            toast.success("파일을 되돌렸습니다", { description: item.name });
+            toast.success(t("files.restored"), { description: item.name });
           },
         },
       });
     },
-    [upsert],
+    [upsert, t],
   );
 
   const download = useCallback(async (item: FileItem) => {
-    const r = await fileDownloadUrl(item.id).catch(() => ({ ok: false as const, error: NETWORK_ERROR }));
+    const r = await fileDownloadUrl(item.id).catch(() => ({ ok: false as const, error: t("tasks.errors.network") }));
     if (!r.ok) return void toast.error(r.error);
     // 서명 URL 응답이 Content-Disposition: attachment라 페이지를 떠나지 않고 내려받는다
     const a = document.createElement("a");
     a.href = r.data;
     a.rel = "noopener";
     a.click();
-  }, []);
+  }, [t]);
 
   const link = useCallback(
     async (item: FileItem, taskId: string | null) => {
-      const r = await linkFileTask(item.id, taskId).catch(() => ({ ok: false as const, error: NETWORK_ERROR }));
+      const r = await linkFileTask(item.id, taskId).catch(() => ({ ok: false as const, error: t("tasks.errors.network") }));
       if (!r.ok) return void toast.error(r.error);
       upsert(r.data);
-      const msg = r.data.task ? `${r.data.task.key}에 연결했습니다. ${item.name}` : `작업 연결을 해제했습니다. ${item.name}`;
+      const msg = r.data.task
+        ? t("files.linkedTo", { key: r.data.task.key, name: item.name })
+        : t("files.unlinked", { name: item.name });
       toast.success(msg);
       announce(msg);
     },
-    [upsert],
+    [upsert, t],
   );
 
   return { files, transfers, upload, retry, cancel, remove, download, link };

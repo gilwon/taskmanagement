@@ -6,10 +6,11 @@ import { TaskActivity } from "@/components/activity/task-activity";
 import { TaskComments } from "@/components/comments/task-comments";
 import { TaskAttachments } from "@/components/files/task-attachments";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
-import { DETAIL_TAB_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import type { TaskItem } from "@/lib/tasks/types";
 
 export function DetailTabs({ task }: { task: TaskItem }) {
+  const t = useT();
   const { workspace } = useTasks();
   const { patchLocal } = useTaskActions();
   // 첨부 수가 바뀌면 목록 카드의 첨부 수도 맞춘다
@@ -24,14 +25,14 @@ export function DetailTabs({ task }: { task: TaskItem }) {
     <Tabs defaultValue="comments" className="gap-3">
       <TabsList>
         <TabsTrigger value="comments">
-          {DETAIL_TAB_LABELS.comments} ({task.commentCount})
+          {t("common.detailTab.comments")} ({task.commentCount})
         </TabsTrigger>
         <TabsTrigger value="activity">
-          {DETAIL_TAB_LABELS.activity}
+          {t("common.detailTab.activity")}
           {shownActivity !== null && ` (${shownActivity})`}
         </TabsTrigger>
         <TabsTrigger value="files">
-          {DETAIL_TAB_LABELS.files} ({task.attachmentCount})
+          {t("common.detailTab.files")} ({task.attachmentCount})
         </TabsTrigger>
       </TabsList>
       <TabsContent value="comments">

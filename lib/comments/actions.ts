@@ -1,8 +1,10 @@
 "use server";
-// 댓글·반응 Server Action과 드로어용 댓글·활동 읽기. 입력을 다시 검증하고 범위는 RLS·RPC가 판정한다. 오류는 한국어 결과로 돌려준다
-import { MSG } from "@/lib/auth/errors";
+// 댓글·반응 Server Action과 드로어용 댓글·활동 읽기. 입력을 다시 검증하고 범위는 RLS·RPC가 판정한다. 오류는 현재 로캘 문구로 돌려준다
 import { mentionIds } from "@/lib/comments/mentions";
 import { NAMELESS_MEMBER_LABEL, REACTION_EMOJIS } from "@/lib/i18n/labels";
+import type { Messages } from "@/lib/i18n/messages/types";
+import { getT } from "@/lib/i18n/server";
+import type { T } from "@/lib/i18n/t";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import type { ActionResult } from "@/lib/tasks/types";
@@ -14,7 +16,6 @@ import {
 } from "@/lib/comments/queries";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const INVALID = "입력값을 다시 확인해 주세요.";
 // comments.body check 제약과 같은 길이
 const BODY_MAX = 10_000;
 const MENTION_MAX = 50;
@@ -22,19 +23,19 @@ const MENTION_MAX = 50;
 const isId = (v: unknown): v is string => typeof v === "string" && UUID_RE.test(v);
 
 // 댓글에 맞춘 문구. 나머지는 작업 오류 문구를 그대로 쓴다
-const COMMENT_MESSAGES: Record<string, string> = {
-  not_found: "댓글을 찾을 수 없습니다. 삭제되었거나 볼 권한이 없습니다.",
-  forbidden: "이 댓글에 대한 권한이 없습니다.",
-  conflict: "삭제한 뒤 바뀐 댓글이라 되돌릴 수 없습니다.",
-  invalid_input: "댓글 내용을 입력해 주세요.",
+const COMMENT_MESSAGES: Record<string, `comments.errors.${keyof Messages["comments"]["errors"]}`> = {
+  not_found: "comments.errors.notFound",
+  forbidden: "comments.errors.forbidden",
+  conflict: "comments.errors.conflict",
+  invalid_input: "comments.errors.invalidInput",
 };
 
-function commentError(what: string, error: { code?: string; message?: string }) {
+function commentError(what: string, error: { code?: string; message?: string }, t: T) {
   console.error(`[${what}]`, error.code, error.message);
   if (error.code === "P0001" && error.message && Object.hasOwn(COMMENT_MESSAGES, error.message)) {
-    return COMMENT_MESSAGES[error.message];
+    return t(COMMENT_MESSAGES[error.message]);
   }
-  return taskErrorMessage(error);
+  return taskErrorMessage(error, t);
 }
 
 async function session() {
@@ -73,12 +74,13 @@ function countActivities(s: Session, taskId: string) {
 }
 
 export async function loadComments(taskId: string): Promise<ActionResult<CommentThread>> {
-  if (!isId(taskId)) return { ok: false, error: INVALID };
+  const t = await getT();
+  if (!isId(taskId)) return { ok: false, error: t("errors.rpc.invalidInput") };
   const s = await session();
-  if (!s) return { ok: false, error: MSG.sessionExpired };
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
   const task = await taskScope(s, taskId);
-  if (task.error) return { ok: false, error: commentError("댓글 읽기", task.error) };
-  if (!task.data) return { ok: false, error: taskErrorMessage({ code: "PGRST116" }) };
+  if (task.error) return { ok: false, error: commentError("댓글 읽기", task.error, t) };
+  if (!task.data) return { ok: false, error: taskErrorMessage({ code: "PGRST116" }, t) };
   const projectId = task.data.project_id;
   const [comments, canComment, canManage, activities] = await Promise.all([
     selectTaskComments(s.supabase, taskId),
@@ -86,10 +88,10 @@ export async function loadComments(taskId: string): Promise<ActionResult<Comment
     s.supabase.rpc("can_manage_project", { p: projectId }),
     countActivities(s, taskId),
   ]);
-  if (comments.error) return { ok: false, error: commentError("댓글 읽기", comments.error) };
-  if (canComment.error) return { ok: false, error: commentError("댓글 권한", canComment.error) };
-  if (canManage.error) return { ok: false, error: commentError("댓글 권한", canManage.error) };
-  if (activities.error) return { ok: false, error: commentError("활동 개수", activities.error) };
+  if (comments.error) return { ok: false, error: commentError("댓글 읽기", comments.error, t) };
+  if (canComment.error) return { ok: false, error: commentError("댓글 권한", canComment.error, t) };
+  if (canManage.error) return { ok: false, error: commentError("댓글 권한", canManage.error, t) };
+  if (activities.error) return { ok: false, error: commentError("활동 개수", activities.error, t) };
   return {
     ok: true,
     data: {
@@ -105,12 +107,13 @@ export async function loadComments(taskId: string): Promise<ActionResult<Comment
 export async function loadTaskActivities(
   taskId: string,
 ): Promise<ActionResult<{ rows: TaskActivity[]; total: number }>> {
-  if (!isId(taskId)) return { ok: false, error: INVALID };
+  const t = await getT();
+  if (!isId(taskId)) return { ok: false, error: t("errors.rpc.invalidInput") };
   const s = await session();
-  if (!s) return { ok: false, error: MSG.sessionExpired };
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
   const [r, count] = await Promise.all([selectTaskActivities(s.supabase, taskId), countActivities(s, taskId)]);
-  if (r.error) return { ok: false, error: commentError("작업 활동 읽기", r.error) };
-  if (count.error) return { ok: false, error: commentError("활동 개수", count.error) };
+  if (r.error) return { ok: false, error: commentError("작업 활동 읽기", r.error, t) };
+  if (count.error) return { ok: false, error: commentError("활동 개수", count.error, t) };
   return { ok: true, data: { rows: r.data, total: count.count ?? r.data.length } };
 }
 
@@ -135,33 +138,35 @@ async function verifiedMentions(s: Session, workspaceId: string, body: string, r
 
 // add_comment가 작성자를 호출자로 고정하고 멘션 대상 중 그 프로젝트를 볼 수 있는 사람에게만 알림을 보낸다
 export async function addComment(taskId: string, body: string, mentions: string[]): Promise<ActionResult<SavedComment>> {
+  const t = await getT();
   const text = cleanBody(body);
   if (!isId(taskId) || !text || !Array.isArray(mentions) || mentions.length > MENTION_MAX || !mentions.every(isId)) {
-    return { ok: false, error: INVALID };
+    return { ok: false, error: t("errors.rpc.invalidInput") };
   }
   const s = await session();
-  if (!s) return { ok: false, error: MSG.sessionExpired };
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
   const task = await taskScope(s, taskId);
-  if (task.error) return { ok: false, error: commentError("댓글 작성", task.error) };
-  if (!task.data) return { ok: false, error: taskErrorMessage({ code: "PGRST116" }) };
+  if (task.error) return { ok: false, error: commentError("댓글 작성", task.error, t) };
+  if (!task.data) return { ok: false, error: taskErrorMessage({ code: "PGRST116" }, t) };
   const verified = await verifiedMentions(s, task.data.workspace_id, text, mentions);
-  if (verified.error) return { ok: false, error: commentError("멘션 확인", verified.error) };
+  if (verified.error) return { ok: false, error: commentError("멘션 확인", verified.error, t) };
   const { data, error } = await s.supabase.rpc("add_comment", {
     p_task: taskId,
     p_body: text,
     p_mentions: verified.data,
   });
-  if (error) return { ok: false, error: commentError("댓글 작성", error) };
+  if (error) return { ok: false, error: commentError("댓글 작성", error, t) };
   return { ok: true, data: { id: data.id, body: data.body, created_at: data.created_at, updated_at: data.updated_at } };
 }
 
 // 본문만 바꾼다. 댓글 권한이 남은 작성자 본인만 RLS를 통과하고, 막히면 0행이 돌아온다.
 // 수정은 멘션 알림을 다시 보내지 않는다(알림은 add_comment에서만 만든다)
 export async function editComment(commentId: string, body: string): Promise<ActionResult<SavedComment>> {
+  const t = await getT();
   const text = cleanBody(body);
-  if (!isId(commentId) || !text) return { ok: false, error: INVALID };
+  if (!isId(commentId) || !text) return { ok: false, error: t("errors.rpc.invalidInput") };
   const s = await session();
-  if (!s) return { ok: false, error: MSG.sessionExpired };
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
   const { data, error } = await s.supabase
     .from("comments")
     .update({ body: text })
@@ -169,37 +174,40 @@ export async function editComment(commentId: string, body: string): Promise<Acti
     .is("deleted_at", null)
     .select("id, body, created_at, updated_at")
     .maybeSingle();
-  if (error) return { ok: false, error: commentError("댓글 수정", error) };
-  if (!data) return { ok: false, error: COMMENT_MESSAGES.forbidden };
+  if (error) return { ok: false, error: commentError("댓글 수정", error, t) };
+  if (!data) return { ok: false, error: t("comments.errors.forbidden") };
   return { ok: true, data };
 }
 
 // 소프트 삭제. 돌려받은 토큰(updated_at 문자열)은 바꾸지 않고 restoreComment에 그대로 넘긴다
 export async function deleteComment(commentId: string): Promise<ActionResult<{ token: string }>> {
-  if (!isId(commentId)) return { ok: false, error: INVALID };
+  const t = await getT();
+  if (!isId(commentId)) return { ok: false, error: t("errors.rpc.invalidInput") };
   const s = await session();
-  if (!s) return { ok: false, error: MSG.sessionExpired };
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
   const { data, error } = await s.supabase.rpc("soft_delete_comment", { p_comment: commentId });
-  if (error) return { ok: false, error: commentError("댓글 삭제", error) };
+  if (error) return { ok: false, error: commentError("댓글 삭제", error, t) };
   return { ok: true, data: { token: data } };
 }
 
 export async function restoreComment(commentId: string, token: string): Promise<ActionResult<SavedComment>> {
-  if (!isId(commentId) || typeof token !== "string" || token.length > 64) return { ok: false, error: INVALID };
+  const t = await getT();
+  if (!isId(commentId) || typeof token !== "string" || token.length > 64) return { ok: false, error: t("errors.rpc.invalidInput") };
   const s = await session();
-  if (!s) return { ok: false, error: MSG.sessionExpired };
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
   const { data, error } = await s.supabase.rpc("restore_comment", { p_comment: commentId, p_token: token });
-  if (error) return { ok: false, error: commentError("댓글 복원", error) };
+  if (error) return { ok: false, error: commentError("댓글 복원", error, t) };
   return { ok: true, data: { id: data.id, body: data.body, created_at: data.created_at, updated_at: data.updated_at } };
 }
 
 // 내 반응을 켜고 끈다. user_id는 guard 트리거가 호출자로 덮는다
 export async function setReaction(commentId: string, emoji: string, on: boolean): Promise<ActionResult<boolean>> {
+  const t = await getT();
   if (!isId(commentId) || !(REACTION_EMOJIS as readonly string[]).includes(emoji) || typeof on !== "boolean") {
-    return { ok: false, error: INVALID };
+    return { ok: false, error: t("errors.rpc.invalidInput") };
   }
   const s = await session();
-  if (!s) return { ok: false, error: MSG.sessionExpired };
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
   const { error } = on
     ? await s.supabase.from("comment_reactions").insert({ comment_id: commentId, user_id: s.sub, emoji })
     : await s.supabase
@@ -209,6 +217,6 @@ export async function setReaction(commentId: string, emoji: string, on: boolean)
         .eq("user_id", s.sub)
         .eq("emoji", emoji);
   // 이미 누른 반응은 성공으로 본다
-  if (error && error.code !== "23505") return { ok: false, error: commentError("반응 저장", error) };
+  if (error && error.code !== "23505") return { ok: false, error: commentError("반응 저장", error, t) };
   return { ok: true, data: on };
 }

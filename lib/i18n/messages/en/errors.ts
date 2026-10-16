@@ -45,4 +45,18 @@ export default {
     invalidInput: "Check your input and try again.",
     slugTaken: "This URL is already taken. Try another one.",
   },
+  notFound: {
+    title: "Page not found",
+    titleIn: "Page not found · {workspace}",
+    workspace: "The address may have changed, been deleted, or belong to a workspace you can't access.",
+    item: "The address may have changed, been deleted, or point to something you can't access.",
+  },
+  retryWithCode: "Please try again in a moment. Error code {code}",
+  global: {
+    title: "Something went wrong",
+    heading: "Something went wrong.",
+    retryLater: "Please try again in a moment.",
+    retry: "Try again",
+  },
+  proxyFailed: "The page couldn't be opened because of a server configuration error. Please contact your administrator.",
 } satisfies Messages["errors"];

@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button";
 import { TaskDrawerHost } from "@/components/tasks/drawer";
 import { useNewTask } from "@/components/tasks/new-task";
 import { useTasks } from "@/components/tasks/task-store";
-import { HOME_STAT_LABELS, HOME_STAT_NOTES, NAV_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import type { HomeActivity, HomeProject } from "@/lib/home/queries";
 import { homeStats } from "@/lib/home/stats";
 import { cn } from "@/lib/utils";
 
 // 머리말 오른쪽 버튼. 구성원 초대는 owner·admin만 할 수 있어(RLS) 그 역할에게만 보인다
 export function HomeActions() {
+  const t = useT();
   const { openNewTask } = useNewTask();
   const { openNewProject } = useNewProject();
   const { members, meId, workspace } = useTasks();
@@ -28,23 +29,23 @@ export function HomeActions() {
         <InviteDialog
           workspaceId={workspace.id}
           trigger={
-            <Button variant="outline" size="sm" aria-label={NAV_LABELS.inviteMember}>
+            <Button variant="outline" size="sm" aria-label={t("common.nav.inviteMember")}>
               <UserPlus aria-hidden strokeWidth={1.8} />
-              <span className="hide-m">{NAV_LABELS.inviteMember}</span>
+              <span className="hide-m">{t("common.nav.inviteMember")}</span>
             </Button>
           }
         />
       )}
       {/* 게스트는 create_project가 거부하므로 새 프로젝트 버튼을 보이지 않는다 */}
       {role !== "guest" && (
-        <Button variant="outline" size="sm" aria-label={NAV_LABELS.newProject} onClick={openNewProject}>
+        <Button variant="outline" size="sm" aria-label={t("common.nav.newProject")} onClick={openNewProject}>
           <FolderPlus aria-hidden strokeWidth={1.8} />
-          <span className="hide-m">{NAV_LABELS.newProject}</span>
+          <span className="hide-m">{t("common.nav.newProject")}</span>
         </Button>
       )}
       <Button size="sm" onClick={() => openNewTask()}>
         <Plus aria-hidden strokeWidth={1.8} />
-        {NAV_LABELS.newTask}
+        {t("common.nav.newTask")}
       </Button>
     </>
   );
@@ -81,39 +82,40 @@ export function HomeView({
   activities: HomeActivity[];
   nowIso: string;
 }) {
+  const t = useT();
   const { items, meId } = useTasks();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const s = useMemo(() => homeStats(items, projects, meId, now), [items, projects, meId, now]);
 
   return (
     <div className="px-(--gutter) pb-(--s-8)">
-      <h2 className="sr-only">요약</h2>
+      <h2 className="sr-only">{t("home.summary")}</h2>
       <dl className="grid grid-cols-4 gap-(--s-3) max-[901px]:grid-cols-2">
         <Stat
-          label={HOME_STAT_LABELS.activeProjects}
+          label={t("common.homeStat.activeProjects")}
           value={s.activeProjects}
-          note={HOME_STAT_NOTES.risk(s.riskProjects)}
+          note={t("common.homeStatNote.risk", { n: s.riskProjects })}
           tone={s.riskProjects > 0 ? "red" : "muted"}
           delay={0}
         />
         <Stat
-          label={HOME_STAT_LABELS.openTasks}
+          label={t("common.homeStat.openTasks")}
           value={s.openTasks}
-          note={HOME_STAT_NOTES.mine(s.myOpenTasks)}
+          note={t("common.homeStatNote.mine", { n: s.myOpenTasks })}
           tone="muted"
           delay={40}
         />
         <Stat
-          label={HOME_STAT_LABELS.completed}
+          label={t("common.homeStat.completed")}
           value={s.doneThisWeek}
-          note={HOME_STAT_NOTES.thisWeek}
+          note={t("common.homeStatNote.thisWeek")}
           tone="green"
           delay={80}
         />
         <Stat
-          label={HOME_STAT_LABELS.overdue}
+          label={t("common.homeStat.overdue")}
           value={s.overdue}
-          note={s.overdue > 0 ? HOME_STAT_NOTES.needAttention : HOME_STAT_NOTES.allOnTrack}
+          note={s.overdue > 0 ? t("common.homeStatNote.needAttention") : t("common.homeStatNote.allOnTrack")}
           tone={s.overdue > 0 ? "red" : "green"}
           delay={120}
         />

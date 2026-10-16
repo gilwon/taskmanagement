@@ -6,14 +6,17 @@ import { PageHeader } from "@/components/shell/page-header";
 import { TaskStoreProvider } from "@/components/tasks/task-store";
 import { hasViewState } from "@/lib/data/project";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { todayIso } from "@/lib/schedule/dates";
 import { getMilestones } from "@/lib/schedule/queries";
 import { getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.timeline };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.timeline") };
+}
 
 export default async function TimelinePage({ params }: { params: Promise<{ ws: string }> }) {
+  const t = await getT();
   const { ws } = await params;
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
@@ -29,7 +32,7 @@ export default async function TimelinePage({ params }: { params: Promise<{ ws: s
 
   return (
     <>
-      <PageHeader title={NAV_LABELS.timeline} subtitle="프로젝트 전반의 일정, 의존성, 마일스톤" />
+      <PageHeader title={t("common.nav.timeline")} subtitle={t("schedule.timelineSubtitle")} />
       <TaskStoreProvider
         initialItems={items}
         workspace={{ id: workspace.id, slug: workspace.slug, name: workspace.name }}

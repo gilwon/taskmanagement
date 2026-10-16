@@ -3,17 +3,19 @@
 import { InfoRow, SettingsCard } from "@/components/org/settings-parts";
 import { SHORTCUT_GROUPS } from "@/components/shortcuts/shortcut-list";
 import { ShortcutKeys, useIsMac } from "@/components/shortcuts/shortcuts-dialog";
+import { useT } from "@/lib/i18n/client";
 
 export function ShortcutSettings() {
+  const t = useT();
   const mac = useIsMac();
   return SHORTCUT_GROUPS.map((group, i) => (
     <SettingsCard
       key={group.title}
-      title={group.title}
-      description={i === 0 ? "입력 칸에 커서가 있을 때는 한 글자 단축키가 동작하지 않습니다." : undefined}
+      title={t(group.title)}
+      description={i === 0 ? t("shortcuts.settingsHint") : undefined}
     >
       {group.items.map((item) => (
-        <InfoRow key={item.label} label={item.label} value={<ShortcutKeys item={item} mac={mac} />} />
+        <InfoRow key={item.label} label={t(item.label)} value={<ShortcutKeys item={item} mac={mac} />} />
       ))}
     </SettingsCard>
   ));

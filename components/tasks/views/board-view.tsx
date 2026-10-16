@@ -25,7 +25,7 @@ import {
   type ViewCtl,
 } from "@/components/tasks/views/shared";
 import { useTaskDrag } from "@/components/tasks/views/use-drag";
-import { REPEAT_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import type { TaskGroup, TaskItem, TaskStatus } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,8 @@ const iconBtn =
   "inline-flex size-(--h-sm) shrink-0 items-center justify-center rounded-(--r-xs) text-(--text-3) outline-none hover:bg-(--surface-3) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)";
 
 export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }) {
+  // t는 작업 변수로 쓰여 번역 함수는 tr로 둔다
+  const tr = useT();
   const { dragId, target, onPointerDown } = useTaskDrag((id, t) => ctl.drop(id, t, groups, "status"));
   const { bulkUpdate, update } = useTaskActions();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
@@ -86,21 +88,21 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
           // 열 메뉴 항목. ⋯ 메뉴와 열 머리 우클릭 메뉴가 같이 쓴다
           const columnMenu = (Item: MenuItemComponent) => (
             <>
-              {canAdd && <Item onSelect={() => setComposing(g.key)}>작업 추가</Item>}
-              <Item onSelect={() => setCollapse(g.key, true)}>열 접기</Item>
+              {canAdd && <Item onSelect={() => setComposing(g.key)}>{tr("tasks.views.addTask")}</Item>}
+              <Item onSelect={() => setCollapse(g.key, true)}>{tr("tasks.board.collapse")}</Item>
               {done ? (
                 <Item
                   disabled={archivable.length === 0}
                   onSelect={() => void Promise.all(archivable.map((t) => update(t.id, { archived: true })))}
                 >
-                  완료 항목 보관
+                  {tr("tasks.board.archiveDone")}
                 </Item>
               ) : (
                 <Item disabled={open.length === 0} onSelect={() => void bulkUpdate(open, { status: "done" })}>
-                  모두 완료로 표시
+                  {tr("tasks.board.completeAll")}
                 </Item>
               )}
-              <Item onSelect={() => ctl.setState({ ...ctl.state, sort: { f: "priority", dir: 1 } })}>우선순위로 정렬</Item>
+              <Item onSelect={() => ctl.setState({ ...ctl.state, sort: { f: "priority", dir: 1 } })}>{tr("tasks.board.sortByPriority")}</Item>
             </>
           );
           return (
@@ -113,7 +115,7 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                 target?.group === g.key && dragId && "ring-2 ring-(--accent-line)",
               )}
             >
-              <KeyContextMenu label={`${g.label} 열 메뉴`} className="w-48" menu={columnMenu(ContextMenuItem)}>
+              <KeyContextMenu label={tr("tasks.board.columnMenu", { group: g.label })} className="w-48" menu={columnMenu(ContextMenuItem)}>
                 <div className="flex h-10 items-center gap-1.5 px-2.5">
                   <StatusIcon status={status} size={14} />
                   <h2 id={headingId} className="truncate text-(length:--fs-sm) font-semibold text-(--text)">
@@ -124,7 +126,7 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                   {canAdd && (
                     <button
                       type="button"
-                      aria-label={`${g.label}에 작업 추가`}
+                      aria-label={tr("tasks.cell.addToGroup", { group: g.label })}
                       onClick={() => setComposing(g.key)}
                       className={iconBtn}
                     >
@@ -133,7 +135,7 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button type="button" aria-label={`${g.label} 열 메뉴`} className={iconBtn}>
+                      <button type="button" aria-label={tr("tasks.board.columnMenu", { group: g.label })} className={iconBtn}>
                         <MoreHorizontal aria-hidden size={15} strokeWidth={1.8} />
                       </button>
                     </DropdownMenuTrigger>
@@ -190,6 +192,7 @@ function Card({
   dragging: boolean;
   onPointerDown: (e: React.PointerEvent<HTMLElement>, id: string) => void;
 }) {
+  const tr = useT();
   const { open } = useTaskDrawer();
   const checked = ctl.selected.has(t.id);
   const progress = t.subtaskTotal > 0 ? Math.round((t.subtaskDone / t.subtaskTotal) * 100) : 0;
@@ -237,7 +240,7 @@ function Card({
             </span>
             <span
               role="progressbar"
-              aria-label="서브태스크 진행률"
+              aria-label={tr("tasks.board.subtaskProgress")}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={progress}
@@ -253,19 +256,19 @@ function Card({
           {t.due_date && <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />}
           <span className="flex-1" />
           {t.commentCount > 0 && (
-            <span className="inline-flex items-center gap-0.5" aria-label={`댓글 ${t.commentCount}개`}>
+            <span className="inline-flex items-center gap-0.5" aria-label={tr("tasks.board.comments", { count: t.commentCount })}>
               <MessageSquare aria-hidden size={12} strokeWidth={1.8} />
               {t.commentCount}
             </span>
           )}
           {t.attachmentCount > 0 && (
-            <span className="inline-flex items-center gap-0.5" aria-label={`첨부 ${t.attachmentCount}개`}>
+            <span className="inline-flex items-center gap-0.5" aria-label={tr("tasks.board.attachments", { count: t.attachmentCount })}>
               <Paperclip aria-hidden size={12} strokeWidth={1.8} />
               {t.attachmentCount}
             </span>
           )}
           {t.recur !== "none" && (
-            <span role="img" aria-label={`반복 ${REPEAT_LABELS[t.recur]}`} className="inline-flex">
+            <span role="img" aria-label={tr("tasks.board.repeat", { label: tr(`common.repeat.${t.recur}`) })} className="inline-flex">
               <Repeat aria-hidden size={12} strokeWidth={1.8} />
             </span>
           )}

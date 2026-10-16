@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { announce } from "@/components/tasks/views/shared";
+import { useT } from "@/lib/i18n/client";
 import { deleteProject, restoreTrashItem, setProjectArchived, setProjectFavorite } from "@/lib/projects/actions";
 import { cn } from "@/lib/utils";
 
@@ -61,10 +62,11 @@ export function MemberStack({
   max?: number;
   size?: number;
 }) {
+  const t = useT();
   if (members.length === 0) return <span className="text-(--text-4)">—</span>;
   const rest = members.length - max;
   return (
-    <span role="img" aria-label={`구성원 ${members.map((m) => m.name).join(", ")}`} className="flex items-center">
+    <span role="img" aria-label={t("projects.menu.members", { names: members.map((m) => m.name).join(", ") })} className="flex items-center">
       {members.slice(0, max).map((m) => (
         <MemberAvatar key={m.id} name={m.name} color={m.color} size={size} className="-ml-1.5 ring-2 ring-(--surface) first:ml-0" />
       ))}
@@ -84,6 +86,7 @@ type MenuProject = { id: string; key: string; name: string; favorite: boolean; a
 type MenuAction = { key: string; label: string; icon: React.ReactNode; onSelect: () => void; destructive?: boolean };
 
 function useProjectActions(project: MenuProject, workspaceId: string) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const act = async (fn: () => Promise<{ ok: boolean; error?: string }>, done: string) => {
     setBusy(true);
@@ -99,13 +102,13 @@ function useProjectActions(project: MenuProject, workspaceId: string) {
     setBusy(false);
     if (!r.ok) return void toast.error(r.error);
     const { token } = r.data;
-    toast(`${project.name} 프로젝트를 삭제했습니다`, {
-      description: "보관함에서 복원하거나 영구 삭제할 수 있습니다.",
+    toast(t("projects.menu.deleted", { name: project.name }), {
+      description: t("projects.menu.deletedHint"),
       action: {
-        label: "실행 취소",
+        label: t("projects.menu.undo"),
         onClick: async () => {
           const back = await restoreTrashItem("project", project.id, token);
-          if (back.ok) toast.success(`${project.name} 프로젝트를 되돌렸습니다`);
+          if (back.ok) toast.success(t("projects.menu.restored", { name: project.name }));
           else toast.error(back.error);
         },
       },
@@ -115,12 +118,12 @@ function useProjectActions(project: MenuProject, workspaceId: string) {
   const actions: MenuAction[] = [
     {
       key: "favorite",
-      label: project.favorite ? "즐겨찾기 해제" : "즐겨찾기에 추가",
+      label: project.favorite ? t("projects.menu.removeFavorite") : t("projects.menu.addFavorite"),
       icon: project.favorite ? <StarOff {...ICON} /> : <Star {...ICON} />,
       onSelect: () =>
         void act(
           () => setProjectFavorite(workspaceId, project.id, !project.favorite),
-          project.favorite ? "즐겨찾기에서 뺐습니다" : "즐겨찾기에 추가했습니다",
+          project.favorite ? t("projects.menu.favoriteRemoved") : t("projects.menu.favoriteAdded"),
         ),
     },
   ];
@@ -129,26 +132,27 @@ function useProjectActions(project: MenuProject, workspaceId: string) {
     actions.push(
       {
         key: "archive",
-        label: archived ? "보관 해제" : "보관",
+        label: archived ? t("projects.menu.unarchive") : t("projects.menu.archive"),
         icon: archived ? <ArchiveRestore {...ICON} /> : <Archive {...ICON} />,
         onSelect: () =>
           void act(
             () => setProjectArchived(project.id, !archived),
-            archived ? `${project.name} 프로젝트 보관을 해제했습니다` : `${project.name} 프로젝트를 보관했습니다`,
+            archived ? t("projects.menu.unarchived", { name: project.name }) : t("projects.menu.archived", { name: project.name }),
           ),
       },
-      { key: "delete", label: "삭제", icon: <Trash {...ICON} />, onSelect: () => void remove(), destructive: true },
+      { key: "delete", label: t("projects.menu.delete"), icon: <Trash {...ICON} />, onSelect: () => void remove(), destructive: true },
     );
   }
   return { busy, actions };
 }
 
 export function ProjectMenu({ project, workspaceId }: { project: MenuProject; workspaceId: string }) {
+  const t = useT();
   const { busy, actions } = useProjectActions(project, workspaceId);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-xs" aria-label={`${project.name} 동작`} disabled={busy}>
+        <Button variant="ghost" size="icon-xs" aria-label={t("projects.menu.actions", { name: project.name })} disabled={busy}>
           <Ellipsis {...ICON} />
         </Button>
       </DropdownMenuTrigger>
@@ -185,6 +189,7 @@ export function ProjectContextMenu({
   workspaceId: string;
   children: React.ReactElement;
 }) {
+  const t = useT();
   const { actions } = useProjectActions(project, workspaceId);
   // 키보드로 연 경우 닫을 때 포커스를 돌려줄 요소
   const keyboardOpener = useRef<HTMLElement | null>(null);
@@ -207,7 +212,7 @@ export function ProjectContextMenu({
       </ContextMenuTrigger>
       <ContextMenuContent
         className={MENU_CLASS}
-        aria-label={`${project.name} 프로젝트 메뉴`}
+        aria-label={t("projects.menu.label", { name: project.name })}
         onCloseAutoFocus={(e) => {
           const el = keyboardOpener.current;
           keyboardOpener.current = null;

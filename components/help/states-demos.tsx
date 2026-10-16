@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/lib/i18n/client";
 
 const row = "flex flex-wrap items-center gap-(--s-3)";
 const spin = "animate-[spin_.7s_linear_infinite]";
@@ -37,23 +38,25 @@ function useFakeBusy(ms: number) {
 }
 
 function BusyButton() {
+  const t = useT();
   const [busy, start] = useFakeBusy(1500);
   return (
     <Button onClick={start} disabled={busy} aria-busy={busy}>
       {busy && <Loader2 aria-hidden strokeWidth={1.8} className={spin} />}
-      {busy ? "저장 중…" : "저장"}
+      {busy ? t("common.action.saving") : t("common.action.save")}
     </Button>
   );
 }
 
 function RetryError() {
+  const t = useT();
   const [busy, start] = useFakeBusy(1200);
   return (
     <ErrorState
       action={
         <Button variant="outline" size="sm" onClick={start} disabled={busy} aria-busy={busy}>
           {busy && <Loader2 aria-hidden strokeWidth={1.8} className={spin} />}
-          {busy ? "다시 시도 중…" : "다시 시도"}
+          {busy ? t("help.states.retrying") : t("common.action.retry")}
         </Button>
       }
     />
@@ -61,8 +64,9 @@ function RetryError() {
 }
 
 function FieldError() {
+  const t = useT();
   const [value, setValue] = useState("");
-  const [error, setError] = useState<string | null>("이메일 주소를 입력해 주세요.");
+  const [error, setError] = useState<string | null>(t("help.states.emailRequired"));
   return (
     <form
       noValidate
@@ -70,15 +74,15 @@ function FieldError() {
       onSubmit={(e) => {
         e.preventDefault();
         const v = value.trim();
-        if (!v) setError("이메일 주소를 입력해 주세요.");
-        else if (!/^[^\s@]+@[^\s@]+$/.test(v)) setError("올바른 이메일 주소 형식이 아닙니다.");
+        if (!v) setError(t("help.states.emailRequired"));
+        else if (!/^[^\s@]+@[^\s@]+$/.test(v)) setError(t("help.states.emailInvalid"));
         else {
           setError(null);
-          toast.success("확인했습니다");
+          toast.success(t("help.states.checked"));
         }
       }}
     >
-      <Label htmlFor="st-email">이메일</Label>
+      <Label htmlFor="st-email">{t("help.states.email")}</Label>
       <div className="flex gap-(--s-2)">
         <Input
           id="st-email"
@@ -93,7 +97,7 @@ function FieldError() {
           }}
         />
         <Button type="submit" variant="outline">
-          확인
+          {t("help.states.confirm")}
         </Button>
       </div>
       {error && (
@@ -106,27 +110,28 @@ function FieldError() {
 }
 
 function DeleteConfirm() {
+  const t = useT();
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="destructive">
-          <Trash2 aria-hidden strokeWidth={1.8} /> 영구 삭제
+          <Trash2 aria-hidden strokeWidth={1.8} /> {t("help.states.deleteForever")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>작업을 영구 삭제할까요?</DialogTitle>
+          <DialogTitle>{t("help.states.deleteTitle")}</DialogTitle>
           <DialogDescription>
-            영구 삭제하면 되돌릴 수 없습니다. 이 작업의 댓글과 첨부 파일도 함께 삭제됩니다.
+            {t("help.states.deleteDescription")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">취소</Button>
+            <Button variant="outline">{t("common.action.cancel")}</Button>
           </DialogClose>
           <DialogClose asChild>
-            <Button variant="destructive" onClick={() => toast("견본이라 실제로 삭제하지 않았습니다")}>
-              영구 삭제
+            <Button variant="destructive" onClick={() => toast(t("help.states.notReallyDeleted"))}>
+              {t("help.states.deleteForever")}
             </Button>
           </DialogClose>
         </DialogFooter>
@@ -136,49 +141,50 @@ function DeleteConfirm() {
 }
 
 export function StatesDemos() {
+  const t = useT();
   return (
     <>
-      <ShowcaseSection id="st-busy" title="처리 중">
+      <ShowcaseSection id="st-busy" title={t("help.states.busy")}>
         <div className={row}>
           <BusyButton />
         </div>
       </ShowcaseSection>
 
-      <ShowcaseSection id="st-error" title="오류">
-        <ShowcaseGroup title="불러오기 실패">
+      <ShowcaseSection id="st-error" title={t("help.states.error")}>
+        <ShowcaseGroup title={t("help.states.loadFailed")}>
           <div className="rounded-(--r-lg) border border-(--border)">
             <RetryError />
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="폼 필드 오류">
+        <ShowcaseGroup title={t("help.states.fieldError")}>
           <FieldError />
         </ShowcaseGroup>
       </ShowcaseSection>
 
-      <ShowcaseSection id="st-confirm" title="확인·알림">
-        <ShowcaseGroup title="삭제 확인">
+      <ShowcaseSection id="st-confirm" title={t("help.states.confirmAndToast")}>
+        <ShowcaseGroup title={t("help.states.deleteConfirm")}>
           <DeleteConfirm />
         </ShowcaseGroup>
-        <ShowcaseGroup title="토스트">
+        <ShowcaseGroup title={t("help.states.toast")}>
           <div className={row}>
-            <Button variant="outline" onClick={() => toast("보기를 저장했습니다")}>
-              기본
+            <Button variant="outline" onClick={() => toast(t("help.states.viewSaved"))}>
+              {t("help.states.toastDefault")}
             </Button>
-            <Button variant="outline" onClick={() => toast.success("변경 사항을 저장했습니다")}>
-              성공
+            <Button variant="outline" onClick={() => toast.success(t("help.states.changesSaved"))}>
+              {t("help.states.toastSuccess")}
             </Button>
-            <Button variant="outline" onClick={() => toast.error("저장하지 못했습니다. 잠시 후 다시 시도해 주세요.")}>
-              오류
+            <Button variant="outline" onClick={() => toast.error(t("help.states.saveFailed"))}>
+              {t("help.states.toastError")}
             </Button>
             <Button
               variant="outline"
               onClick={() =>
-                toast("작업을 삭제했습니다", {
-                  action: { label: "실행 취소", onClick: () => toast.success("작업을 되돌렸습니다") },
+                toast(t("help.states.taskDeleted"), {
+                  action: { label: t("help.states.undo"), onClick: () => toast.success(t("help.states.taskRestored")) },
                 })
               }
             >
-              실행 취소 포함
+              {t("help.states.withUndo")}
             </Button>
           </div>
         </ShowcaseGroup>

@@ -5,8 +5,6 @@ import type { TaskStatus } from "@/lib/tasks/types";
 const HTTPS_RE = /^https:\/\/[^\s/]+\S*$/i;
 const DAY_MS = 86_400_000;
 
-export const LINK_ERROR = "https://로 시작하는 주소만 넣을 수 있습니다.";
-
 // 링크 주소 검사. 통과하면 다듬은 주소, 아니면 null. 서버 정제기도 https만 남긴다
 export function validLink(raw: string): string | null {
   const url = raw.trim();

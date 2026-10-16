@@ -1,11 +1,7 @@
 // 작업 목록에 뷰 상태(필터·검색·정렬·그룹)를 적용하는 순수 함수와 뷰 상태 기본값·파서
 import { seoulDay } from "@/lib/format/date";
-import {
-  DUE_BUCKET_LABELS,
-  TASK_PRIORITY_LABELS,
-  TASK_STATUS_LABELS,
-  UNASSIGNED_LABEL,
-} from "@/lib/i18n/labels";
+import type { T } from "@/lib/i18n/t";
+import { koTasksT } from "@/lib/tasks/errors";
 import {
   COLUMN_KEYS,
   DATE_RANGES,
@@ -145,31 +141,33 @@ export function sortItems(items: readonly TaskItem[], sort: ViewState["sort"]): 
   });
 }
 
-function groupOf(item: TaskItem, group: ViewState["group"], now: Date): { key: string; label: string } {
+function groupOf(item: TaskItem, group: ViewState["group"], now: Date, t: T): { key: string; label: string } {
   switch (group) {
     case "status":
-      return { key: item.status, label: TASK_STATUS_LABELS[item.status] };
+      return { key: item.status, label: t(`common.taskStatus.${item.status}`) };
     case "priority":
-      return { key: item.priority, label: TASK_PRIORITY_LABELS[item.priority] };
+      return { key: item.priority, label: t(`common.taskPriority.${item.priority}`) };
     case "assignee":
       return item.assignee
         ? { key: item.assignee.id, label: item.assignee.name }
-        : { key: "none", label: UNASSIGNED_LABEL };
+        : { key: "none", label: t("common.unassigned") };
     case "project":
       return { key: item.project_id, label: item.project.name };
     case "due": {
       const bucket = dueBucket(item.due_date, now);
-      return { key: bucket, label: DUE_BUCKET_LABELS[bucket] };
+      return { key: bucket, label: t(`common.dueBucket.${bucket}`) };
     }
     case "none":
-      return { key: "all", label: "모든 작업" };
+      return { key: "all", label: t("tasks.view.allTasks") };
   }
 }
 
 // 필터 → 완료 숨김 → 검색 → 정렬 → 그룹 순서로 적용한다.
 // 상태·우선순위 그룹은 빈 묶음도 고정 순서로 모두 돌려준다(보드 열). 완료 숨김이면 done 묶음은 뺀다.
-// 그 밖의 그룹은 작업이 있는 묶음만, 기한은 구간 순서, 담당자·프로젝트는 이름순(담당자 없음은 맨 뒤)이다
-export function applyView(items: readonly TaskItem[], state: ViewState, ctx: { now: Date }): TaskGroup[] {
+// 그 밖의 그룹은 작업이 있는 묶음만, 기한은 구간 순서, 담당자·프로젝트는 이름순(담당자 없음은 맨 뒤)이다.
+// 묶음 이름은 ctx.t의 로캘로 짓고, t가 없으면 한국어다
+export function applyView(items: readonly TaskItem[], state: ViewState, ctx: { now: Date; t?: T }): TaskGroup[] {
+  const t = ctx.t ?? koTasksT;
   const q = state.q.trim().toLowerCase();
   const visible = items.filter(
     (item) =>
@@ -182,14 +180,14 @@ export function applyView(items: readonly TaskItem[], state: ViewState, ctx: { n
   const groups = new Map<string, TaskGroup>();
   const seed = (key: string, label: string) => groups.set(key, { key, label, items: [] });
   if (state.group === "status") {
-    for (const s of STATUS_ORDER) if (state.showDone || s !== "done") seed(s, TASK_STATUS_LABELS[s]);
+    for (const s of STATUS_ORDER) if (state.showDone || s !== "done") seed(s, t(`common.taskStatus.${s}`));
   } else if (state.group === "priority") {
-    for (const p of PRIORITY_ORDER) seed(p, TASK_PRIORITY_LABELS[p]);
+    for (const p of PRIORITY_ORDER) seed(p, t(`common.taskPriority.${p}`));
   } else if (state.group === "due") {
-    for (const b of DUE_BUCKETS) seed(b, DUE_BUCKET_LABELS[b]);
+    for (const b of DUE_BUCKETS) seed(b, t(`common.dueBucket.${b}`));
   }
   for (const item of sorted) {
-    const { key, label } = groupOf(item, state.group, ctx.now);
+    const { key, label } = groupOf(item, state.group, ctx.now, t);
     if (!groups.has(key)) seed(key, label);
     groups.get(key)!.items.push(item);
   }
@@ -202,7 +200,7 @@ export function applyView(items: readonly TaskItem[], state: ViewState, ctx: { n
       return a.label.localeCompare(b.label, "ko");
     });
   }
-  if (state.group === "none" && result.length === 0) return [{ key: "all", label: "모든 작업", items: [] }];
+  if (state.group === "none" && result.length === 0) return [{ key: "all", label: t("tasks.view.allTasks"), items: [] }];
   return result;
 }
 

@@ -21,8 +21,10 @@ import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { FilterChipBar, TaskToolbar, useViewState } from "@/components/tasks/toolbar";
 import { TOOLBAR_BTN } from "@/components/tasks/toolbar/task-toolbar";
 import { announce } from "@/components/tasks/views/shared";
-import { seoulDay } from "@/lib/format/date";
-import { colorHex, GROUP_FIELD_LABELS, TASK_STATUS_LABELS } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import type { Formatter } from "@/lib/i18n/format";
+import type { T } from "@/lib/i18n/t";
+import { colorHex } from "@/lib/i18n/labels";
 import { addDays, diffDays, editBar, timelineRange, weekdayIndex, type BarEdit } from "@/lib/schedule/dates";
 import type { Milestone } from "@/lib/schedule/types";
 import type { GroupField, TaskItem, TaskPatch, ViewKey, ViewState } from "@/lib/tasks/types";
@@ -38,10 +40,6 @@ const GROUPS: readonly GroupField[] = ["project", "status", "assignee", "none"];
 // 이 거리보다 적게 움직이면 클릭(작업 열기)으로 본다
 const THRESHOLD = 4;
 
-const monthDayFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", month: "long", day: "numeric" });
-const monthFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", year: "numeric", month: "long" });
-const monthDay = (iso: string) => monthDayFmt.format(new Date(seoulDay(iso)));
-
 type Row = { kind: "group"; key: string; label: string; count: number } | { kind: "task"; t: TaskItem };
 type Dates = { start: string | null; due: string | null };
 type Preview = { id: string } & Dates;
@@ -53,10 +51,10 @@ function span(d: Dates): [string, string] | null {
   return s && e ? [s, e] : null;
 }
 
-function rangeLabel(d: Dates) {
+function rangeLabel(d: Dates, t: T, f: Formatter) {
   const sp = span(d);
-  if (!sp) return "일정 없음";
-  return sp[0] === sp[1] ? monthDay(sp[0]) : `${monthDay(sp[0])}부터 ${monthDay(sp[1])}까지`;
+  if (!sp) return t("schedule.timeline.noSchedule");
+  return sp[0] === sp[1] ? f.date(sp[0]) : t("schedule.timeline.range", { from: f.date(sp[0]), to: f.date(sp[1]) });
 }
 
 export function Timeline({
@@ -75,6 +73,8 @@ export function Timeline({
   // 프로젝트 탭이면 그 프로젝트 id. 드로어가 잠시 빌려 넣은 다른 프로젝트 작업을 뺀다
   projectId?: string;
 }) {
+  const t = useT();
+  const f = useFormatter();
   const { items: storeItems, workspace } = useTasks();
   const actions = useTaskActions();
   const { open } = useTaskDrawer();
@@ -91,7 +91,7 @@ export function Timeline({
     () => (projectId ? storeItems.filter((t) => t.project_id === projectId) : storeItems),
     [storeItems, projectId],
   );
-  const groups = useMemo(() => applyView(scoped, state, { now }), [scoped, state, now]);
+  const groups = useMemo(() => applyView(scoped, state, { now, t }), [scoped, state, now, t]);
   const rows = useMemo<Row[]>(
     () =>
       groups.flatMap((g): Row[] => [
@@ -136,13 +136,15 @@ export function Timeline({
   }, [rows]);
 
   // ─── 저장 ───
-  const commit = (t: TaskItem, next: Dates) => {
+  const commit = (task: TaskItem, next: Dates) => {
     const patch: TaskPatch = {};
-    if (next.start !== t.start_date) patch.start = next.start;
-    if (next.due !== t.due_date) patch.due = next.due;
+    if (next.start !== task.start_date) patch.start = next.start;
+    if (next.due !== task.due_date) patch.due = next.due;
     if (Object.keys(patch).length === 0) return;
     // 실패하면 store가 되돌리고 토스트를 띄우므로 성공했을 때만 알린다
-    void actions.update(t.id, patch).then((ok) => ok && announce(`${t.key} 작업 일정을 ${rangeLabel(next)}로 옮겼습니다`));
+    void actions
+      .update(task.id, patch)
+      .then((ok) => ok && announce(t("schedule.timeline.moved", { key: task.key, range: rangeLabel(next, t, f) })));
   };
 
   // ─── 스크롤. 처음과 "오늘"에서 오늘이 왼쪽 목록 바로 옆에 보이게 한다 ───
@@ -162,7 +164,7 @@ export function Timeline({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className={TOOLBAR_BTN}>
-              그룹: {GROUP_FIELD_LABELS[state.group]}
+              {t("schedule.timeline.group", { group: t(`common.groupField.${state.group}`) })}
               <ChevronDown aria-hidden size={13} strokeWidth={1.8} />
             </Button>
           </DropdownMenuTrigger>
@@ -170,7 +172,7 @@ export function Timeline({
             <DropdownMenuRadioGroup value={state.group} onValueChange={(v) => setState({ ...state, group: v as GroupField })}>
               {GROUPS.map((g) => (
                 <DropdownMenuRadioItem key={g} value={g}>
-                  {GROUP_FIELD_LABELS[g]}
+                  {t(`common.groupField.${g}`)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -182,18 +184,18 @@ export function Timeline({
           variant="outline"
           spacing={0}
           value={zoom}
-          aria-label="확대"
+          aria-label={t("schedule.timeline.zoom")}
           onValueChange={(v) => v && setZoom(v as Zoom)}
         >
           <ToggleGroupItem value="week" className="h-(--h-md) px-2.5 text-(length:--fs-sm)">
-            주
+            {t("schedule.timeline.week")}
           </ToggleGroupItem>
           <ToggleGroupItem value="month" className="h-(--h-md) px-2.5 text-(length:--fs-sm)">
-            월
+            {t("schedule.timeline.month")}
           </ToggleGroupItem>
         </ToggleGroup>
         <Button variant="outline" size="sm" className="h-(--h-md) text-(length:--fs-sm)" onClick={scrollToToday}>
-          오늘
+          {t("schedule.timeline.today")}
         </Button>
       </TaskToolbar>
       <FilterChipBar state={state} onChange={setState} />
@@ -204,18 +206,18 @@ export function Timeline({
   const notice = empty ? (
     <EmptyState
       icon={ChartGantt}
-      title="타임라인에 표시할 작업이 없습니다"
-      description="작업에 시작일과 기한을 넣으면 여기에 보입니다."
+      title={t("schedule.timeline.emptyTitle")}
+      description={t("schedule.timeline.emptyDescription")}
     />
   ) : !anyDated ? (
     <EmptyState
       icon={SearchX}
-      title="결과가 없습니다"
-      description="이 조건에 맞는 작업이 없습니다."
+      title={t("schedule.noResults.title")}
+      description={t("schedule.noResults.description")}
       action={
         filtered && (
           <Button size="sm" variant="outline" onClick={() => setState({ ...state, filters: [], q: "" })}>
-            필터 지우기
+            {t("schedule.noResults.clearFilters")}
           </Button>
         )
       }
@@ -258,7 +260,7 @@ export function Timeline({
     <>
       {toolbar}
       <p id={hintId} className="sr-only">
-        Enter로 작업을 엽니다. 좌우 화살표로 일정을 하루씩 옮기고, Shift+좌우 화살표로 기한 끝을 조절합니다.
+        {t("schedule.timeline.hint")}
       </p>
       <div className="px-(--gutter) pb-(--s-6)">
         <div
@@ -273,13 +275,13 @@ export function Timeline({
                 style={{ height: HEADER_H }}
                 className="flex items-end border-b border-(--border) bg-(--surface-2) px-3 pb-1.5 text-(length:--fs-2xs) font-medium text-(--text-3)"
               >
-                작업
+                {t("schedule.timeline.taskColumn")}
               </div>
               <div
                 style={{ height: ROW_H }}
                 className="flex items-center border-b border-(--divider) px-3 text-(length:--fs-xs) text-(--text-3)"
               >
-                마일스톤
+                {t("schedule.timeline.milestones")}
               </div>
               {rows.map((r) =>
                 r.kind === "group" ? (
@@ -310,7 +312,7 @@ export function Timeline({
                     </span>
                     {r.t.subtaskTotal > 0 && (
                       <span
-                        aria-label={`하위 작업 ${r.t.subtaskTotal}개 중 ${r.t.subtaskDone}개 완료`}
+                        aria-label={t("schedule.timeline.subtasks", { total: r.t.subtaskTotal, done: r.t.subtaskDone })}
                         className="hide-m shrink-0 text-(length:--fs-2xs) text-(--text-4) tabular-nums"
                       >
                         {r.t.subtaskDone}/{r.t.subtaskTotal}
@@ -331,7 +333,7 @@ export function Timeline({
               >
                 {months.map((d) => (
                   <span key={d} className="absolute top-1.5 pl-1.5 font-medium whitespace-nowrap" style={{ left: x(d) }}>
-                    {monthFmt.format(new Date(seoulDay(d)))}
+                    {f.monthTitle(d)}
                   </span>
                 ))}
                 {days.map((d) =>
@@ -387,7 +389,7 @@ export function Timeline({
                       <span
                         role="img"
                         tabIndex={0}
-                        aria-label={`마일스톤 ${m.name}, ${monthDay(m.date)}, ${m.project.name}`}
+                        aria-label={t("schedule.timeline.milestone", { name: m.name, date: f.date(m.date), project: m.project.name })}
                         className="absolute flex size-4 -translate-x-1/2 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
                         style={{ left: x(m.date) + colW / 2, top: ROW_H / 2 - 8 }}
                       >
@@ -395,7 +397,7 @@ export function Timeline({
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {m.name} · {monthDay(m.date)}
+                      {m.name} · {f.date(m.date)}
                     </TooltipContent>
                   </Tooltip>
                 ))}
@@ -412,7 +414,7 @@ export function Timeline({
                         className="absolute flex items-center text-(length:--fs-2xs) whitespace-nowrap text-(--text-4)"
                         style={{ top, height: ROW_H, left: todayX + colW + 6 }}
                       >
-                        일정 없음
+                        {t("schedule.timeline.noSchedule")}
                       </span>
                     );
                   }
@@ -494,6 +496,9 @@ function Bar({
   onCommit: (next: Dates) => void;
   onOpen: () => void;
 }) {
+  // 작업 prop이 t라서 번역 함수는 tr로 부른다
+  const tr = useT();
+  const f = useFormatter();
   const drag = useRef<{ pointerId: number; x0: number; edit: BarEdit; delta: number; moved: boolean } | null>(null);
   // 끈 직후 따라오는 click이 작업을 열지 않게 한다
   const suppressClick = useRef(false);
@@ -550,7 +555,7 @@ function Bar({
     <button
       type="button"
       data-bar={t.id}
-      aria-label={`${t.key} ${t.title}, ${TASK_STATUS_LABELS[t.status]}, ${rangeLabel(dates)}`}
+      aria-label={`${t.key} ${t.title}, ${tr(`common.taskStatus.${t.status}`)}, ${rangeLabel(dates, tr, f)}`}
       aria-describedby={t.canEdit ? hintId : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

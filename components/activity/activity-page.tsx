@@ -2,6 +2,7 @@
 import { ActivityFeed } from "@/components/activity/activity-feed";
 import { TaskStoreProvider } from "@/components/tasks/task-store";
 import { ACTIVITY_KINDS, type ActivityFilter, type ActivityKind, selectActivities } from "@/lib/activity/queries";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import { getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
@@ -41,7 +42,8 @@ export async function ActivityPageBody({
   // 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22)
   if (page.error) {
     console.error("[활동]", page.error.code, page.error.message);
-    throw new Error(`활동을 불러오지 못했습니다. ${taskErrorMessage(page.error)}`);
+    const t = await getT();
+    throw new Error(t("activity.loadFailed", { error: taskErrorMessage(page.error, t) }));
   }
   return (
     <TaskStoreProvider

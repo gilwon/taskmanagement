@@ -2,7 +2,7 @@
 // 필터 값 선택 목록과 필터 갱신 함수. 툴바의 필터 팝오버와 칩바가 함께 쓴다
 import { useFilterOptions } from "@/components/tasks/toolbar/filter-options";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { FILTER_FIELD_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import type { FilterField, ViewState } from "@/lib/tasks/types";
 
 // 필드의 값을 켜고 끈다. 필드마다 필터는 하나이고, 값이 모두 빠지면 필터를 지운다
@@ -25,14 +25,15 @@ export function FilterValueList({
   state: ViewState;
   onChange: (next: ViewState) => void;
 }) {
+  const t = useT();
   const options = useFilterOptions()(field);
   const selected = state.filters.find((f) => f.f === field)?.v ?? [];
-  const placeholder = `${FILTER_FIELD_LABELS[field]} 검색…`;
+  const placeholder = t("tasks.toolbar.valueSearch", { field: t(`common.filterField.${field}`) });
   return (
     <Command loop className="rounded-(--r)! bg-transparent">
       <CommandInput placeholder={placeholder} aria-label={placeholder} autoFocus />
       <CommandList aria-multiselectable>
-        <CommandEmpty className="py-4 text-(length:--fs-sm) text-(--text-3)">결과가 없습니다</CommandEmpty>
+        <CommandEmpty className="py-4 text-(length:--fs-sm) text-(--text-3)">{t("tasks.picker.noResults")}</CommandEmpty>
         <CommandGroup>
           {options.map((o) => {
             const on = selected.includes(o.value);
@@ -47,7 +48,7 @@ export function FilterValueList({
               >
                 {o.icon && <span aria-hidden className="contents">{o.icon}</span>}
                 <span className="truncate">{o.label}</span>
-                {on && <span className="sr-only">(선택됨)</span>}
+                {on && <span className="sr-only">{t("tasks.picker.selected")}</span>}
               </CommandItem>
             );
           })}

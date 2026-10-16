@@ -52,19 +52,22 @@ export function canOpenSettingsSection(role: Role | null | undefined, section: S
   return canOpenOrgScreens(role) || (role === "guest" && !GUEST_BLOCKED_SECTIONS.includes(section));
 }
 
-// 역할별 권한 표(spec R8, DB 판정과 같은 내용). 값이 문자열이면 조건부로 가능하다는 설명이다.
+// 역할별 권한 표(spec R8, DB 판정과 같은 내용). id는 사전 키(org.permissions.row.<id>)다.
+// 값이 문자열이면 조건부로 가능하다는 설명의 사전 키(org.permissions.cond.<값>)다.
 // 화면에 보이기만 하고 판정에는 쓰지 않는다(판정은 DB 정책·함수가 한다)
-export const ROLE_PERMISSIONS: { label: string; allow: Record<Role, boolean | string> }[] = [
-  { label: "워크스페이스 이름·URL 변경", allow: { owner: true, admin: true, member: false, guest: false } },
-  { label: "워크스페이스 삭제", allow: { owner: true, admin: false, member: false, guest: false } },
-  { label: "구성원 초대·비활성화", allow: { owner: true, admin: "소유자 제외", member: false, guest: false } },
-  { label: "역할 변경", allow: { owner: "자기 자신 제외", admin: "소유자 제외", member: false, guest: false } },
-  { label: "팀 만들기·편집·삭제", allow: { owner: true, admin: true, member: false, guest: false } },
-  { label: "프로젝트 만들기", allow: { owner: true, admin: true, member: true, guest: false } },
-  { label: "모든 프로젝트 관리", allow: { owner: true, admin: true, member: false, guest: false } },
-  { label: "공개 프로젝트 보기·편집", allow: { owner: true, admin: true, member: true, guest: false } },
+export type PermissionCond = "exceptOwner" | "exceptSelf" | "addedGranted" | "addedViewComment";
+
+export const ROLE_PERMISSIONS = [
+  { id: "wsNameUrl", allow: { owner: true, admin: true, member: false, guest: false } },
+  { id: "wsDelete", allow: { owner: true, admin: false, member: false, guest: false } },
+  { id: "inviteDeactivate", allow: { owner: true, admin: "exceptOwner", member: false, guest: false } },
+  { id: "changeRole", allow: { owner: "exceptSelf", admin: "exceptOwner", member: false, guest: false } },
+  { id: "manageTeams", allow: { owner: true, admin: true, member: false, guest: false } },
+  { id: "createProject", allow: { owner: true, admin: true, member: true, guest: false } },
+  { id: "manageAllProjects", allow: { owner: true, admin: true, member: false, guest: false } },
+  { id: "publicProjects", allow: { owner: true, admin: true, member: true, guest: false } },
   {
-    label: "비공개 프로젝트",
-    allow: { owner: true, admin: true, member: "추가된 프로젝트, 받은 권한만큼", guest: "추가된 프로젝트, 보기·댓글만" },
+    id: "privateProjects",
+    allow: { owner: true, admin: true, member: "addedGranted", guest: "addedViewComment" },
   },
-];
+] as const satisfies readonly { id: string; allow: Record<Role, boolean | PermissionCond> }[];

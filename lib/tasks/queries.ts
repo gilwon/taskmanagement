@@ -2,7 +2,9 @@
 import "server-only";
 import { cache } from "react";
 import { sanitizeTaskHtml } from "@/lib/html/sanitize";
-import { NAMELESS_MEMBER_LABEL, TASK_LABEL_LABELS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { TASK_LABEL_LABELS } from "@/lib/i18n/labels";
+import type { MessageKey } from "@/lib/i18n/messages/types";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import type { TaskDetail, TaskItem, ViewKey, ViewState, WorkspaceMember } from "@/lib/tasks/types";
@@ -19,9 +21,15 @@ const TASK_SELECT = `*,
   deps:task_deps!task_deps_task_id_fkey(blocked_by_id)`;
 
 // 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22)
-function fail(what: string, error: { code?: string; message: string }): never {
+// what은 로그 태그, target은 화면에 보일 대상 이름이다
+async function fail(
+  what: string,
+  target: Extract<MessageKey, `tasks.errors.loadTarget.${string}`>,
+  error: { code?: string; message: string },
+): Promise<never> {
   console.error(`[${what}]`, error.code, error.message);
-  throw new Error(`${what}을(를) 불러오지 못했습니다. ${taskErrorMessage(error)}`);
+  const t = await getT();
+  throw new Error(t("tasks.errors.loadFailed", { what: t(target), error: taskErrorMessage(error, t) }));
 }
 
 // 작업 목록 조회. 삭제된 작업·삭제된 프로젝트의 작업은 빼고, 목록 조회에서는 보관된 작업·보관된 프로젝트도 뺀다.
@@ -72,6 +80,7 @@ export async function selectTaskItems(
   }
   if (memberRows.error) return { items: null, error: memberRows.error };
 
+  const t = await getT();
   const byId = new Map(memberRows.data.map((m) => [m.id, m]));
   const items = tasks.data.map(({ project, subtasks, comments, files, deps, ...row }): TaskItem => {
     const member = row.assignee_id ? byId.get(row.assignee_id) : undefined;
@@ -79,7 +88,7 @@ export async function selectTaskItems(
       ...row,
       description_html: row.description_html ? sanitizeTaskHtml(row.description_html) : null,
       assignee: row.assignee_id
-        ? { id: row.assignee_id, name: member?.name ?? UNKNOWN_USER_LABEL, color: member?.color ?? "slate" }
+        ? { id: row.assignee_id, name: member?.name ?? t("common.unknownUser"), color: member?.color ?? "slate" }
         : null,
       project: { id: project.id, key: project.key, name: project.name, color: project.color, icon: project.icon },
       subtaskDone: subtasks.filter((s) => s.done).length,
@@ -102,11 +111,12 @@ async function selectMembers(
     .select("user_id, role, status, title, color, profiles(name, email, color)")
     .eq("workspace_id", workspaceId);
   if (error) return { data: null, error };
+  const t = await getT();
   return {
     data: data
       .map((m) => ({
         id: m.user_id,
-        name: m.profiles?.name || m.profiles?.email || NAMELESS_MEMBER_LABEL,
+        name: m.profiles?.name || m.profiles?.email || t("common.namelessMember"),
         email: m.profiles?.email ?? "",
         color: m.color ?? m.profiles?.color ?? "indigo",
         role: m.role,
@@ -135,7 +145,7 @@ export async function getTaskItems(
     workspaceId: scope.workspaceId,
     projectId: "projectId" in scope ? scope.projectId : undefined,
   });
-  if (error) fail("작업 목록", error);
+  if (error) return fail("작업 목록", "tasks.errors.loadTarget.taskList", error);
   return items;
 }
 
@@ -144,7 +154,7 @@ export async function getTaskItemByKey(workspaceId: string, key: string): Promis
   if (!/^[A-Z][A-Z0-9]{0,9}-\d+$/.test(key)) return null;
   const supabase = await createClient();
   const { items, error } = await selectTaskItems(supabase, { workspaceId, key, includeArchived: true });
-  if (error) fail("작업", error);
+  if (error) return fail("작업", "tasks.errors.loadTarget.task", error);
   return items[0] ?? null;
 }
 
@@ -157,14 +167,14 @@ export async function getViewState(workspaceId: string, viewKey: ViewKey): Promi
     .eq("workspace_id", workspaceId)
     .eq("view_key", viewKey)
     .maybeSingle();
-  if (error) fail("뷰 설정", error);
+  if (error) return fail("뷰 설정", "tasks.errors.loadTarget.viewState", error);
   return parseViewState(data?.state);
 }
 
 // 담당자 선택용. 비활성 구성원은 뺀다
 export async function getWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
   const { data, error } = await membersOf(workspaceId);
-  if (error) fail("구성원 목록", error);
+  if (error) return fail("구성원 목록", "tasks.errors.loadTarget.members", error);
   return data.filter((m) => m.status !== "deactivated");
 }
 

@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { StatusIcon } from "@/components/tasks/parts";
 import { searchWorkspaceTasks, type TaskHit } from "@/components/tasks/drawer/actions";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
+import { useT } from "@/lib/i18n/client";
 import { addDependency, removeDependency } from "@/lib/tasks/actions";
 import type { TaskDetail, TaskItem } from "@/lib/tasks/types";
 
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export function BlockedBy({ task, deps, setDeps, onOpenTask }: Props) {
+  const t = useT();
   const { workspace } = useTasks();
   const actions = useTaskActions();
   const [open, setOpen] = useState(false);
@@ -85,7 +87,7 @@ export function BlockedBy({ task, deps, setDeps, onOpenTask }: Props) {
           </button>
           <button
             type="button"
-            aria-label={`${d.key} 선행 작업에서 빼기`}
+            aria-label={t("tasks.blockedBy.remove", { key: d.key })}
             onClick={() => void remove(d)}
             className="inline-flex size-5 shrink-0 items-center justify-center rounded-(--r-xs) text-(--text-3) opacity-0 outline-none group-hover:opacity-100 hover:text-(--text) focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-(--accent)"
           >
@@ -106,12 +108,12 @@ export function BlockedBy({ task, deps, setDeps, onOpenTask }: Props) {
             className="inline-flex h-(--h-sm) items-center gap-1.5 rounded-(--r-sm) px-1.5 text-(length:--fs-base) text-(--text-4) outline-none hover:bg-(--surface-2) hover:text-(--text-2) focus-visible:ring-2 focus-visible:ring-(--accent)"
           >
             <Plus size={14} strokeWidth={1.8} aria-hidden />
-            선행 작업 추가
+            {t("tasks.blockedBy.add")}
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-80 p-0">
-          <Command shouldFilter={false} label="선행 작업 검색">
-            <CommandInput value={q} onValueChange={setQ} placeholder="작업 키나 제목으로 검색" />
+          <Command shouldFilter={false} label={t("tasks.blockedBy.search")}>
+            <CommandInput value={q} onValueChange={setQ} placeholder={t("tasks.blockedBy.searchPlaceholder")} />
             <CommandList>
               {error ? (
                 <p role="alert" className="px-3 py-4 text-center text-(length:--fs-sm) text-(--red)">
@@ -119,10 +121,10 @@ export function BlockedBy({ task, deps, setDeps, onOpenTask }: Props) {
                 </p>
               ) : hits === null ? (
                 <p aria-busy="true" className="px-3 py-4 text-center text-(length:--fs-sm) text-(--text-3)">
-                  찾는 중…
+                  {t("tasks.blockedBy.searching")}
                 </p>
               ) : (
-                <CommandEmpty>일치하는 작업이 없습니다</CommandEmpty>
+                <CommandEmpty>{t("tasks.blockedBy.noMatch")}</CommandEmpty>
               )}
               {!error &&
                 candidates.map((h) => (

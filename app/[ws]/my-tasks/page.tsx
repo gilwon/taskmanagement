@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { MyTasksView } from "@/components/my-tasks/my-tasks-view";
 import { TaskStoreProvider } from "@/components/tasks/task-store";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { parseCalendarParams, todayIso } from "@/lib/schedule/dates";
 import { getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.myTasks };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.myTasks") };
+}
 
 type Props = {
   params: Promise<{ ws: string }>;

@@ -6,12 +6,17 @@ import { AuthCard, linkClass } from "@/components/auth/auth-card";
 import { RouteAnnouncer } from "@/components/auth/route-announcer";
 import { InvitesList } from "@/components/org/invites-list";
 import { isDemoUser } from "@/lib/demo/config";
+import { getT } from "@/lib/i18n/server";
 import { getMyInvites } from "@/lib/org/queries";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "받은 초대 · 작업 공간" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: `${t("org.myInvites.title")} · ${t("common.appName")}` };
+}
 
 export default async function InvitesPage() {
+  const t = await getT();
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/login?next=/invites");
@@ -24,19 +29,19 @@ export default async function InvitesPage() {
   return (
     <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center p-(--gutter) outline-none">
       <AuthCard
-        title="받은 초대"
-        description="이 계정의 이메일로 온 워크스페이스 초대입니다."
+        title={t("org.myInvites.title")}
+        description={t("org.myInvites.description")}
         footer={
           <span className="flex flex-wrap justify-center gap-x-4 gap-y-1">
             {/* 데모 계정은 워크스페이스를 만들 수 없어 진입점을 숨긴다 */}
             {!isDemoUser(data.claims) && (
               <Link href="/onboarding" className={linkClass}>
-                새 워크스페이스 만들기
+                {t("org.myInvites.newWorkspace")}
               </Link>
             )}
             {(mine.count ?? 0) > 0 && (
               <Link href="/" className={linkClass}>
-                내 워크스페이스로 가기
+                {t("org.myInvites.goToWorkspace")}
               </Link>
             )}
           </span>

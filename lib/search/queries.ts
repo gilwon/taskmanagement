@@ -1,6 +1,8 @@
 // 워크스페이스 검색 서버 조회. 범위는 RLS가 자르고, 필드별 ilike 쿼리를 나눠 돌린 뒤 id로 합친다
 import "server-only";
-import { NAMELESS_MEMBER_LABEL, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { NAMELESS_MEMBER_LABEL } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
+import type { T } from "@/lib/i18n/t";
 import { containsQuery, excerpt, likePattern, normalizeQuery } from "@/lib/search/text";
 import { SEARCH_LIMIT_DEFAULT, SEARCH_LIMIT_MAX, type SearchResults, type SearchScope } from "@/lib/search/types";
 import { createClient } from "@/lib/supabase/server";
@@ -15,9 +17,9 @@ const EMPTY: SearchResults = { tasks: [], projects: [], people: [], files: [], c
 export class SearchError extends Error {}
 
 // 오류는 빈 결과로 바꾸지 않고 호출부로 올린다(spec R22)
-function fail(what: string, error: DbError): never {
+function fail(what: string, error: DbError, t: T): never {
   console.error(`[검색 ${what}]`, error.code, error.message);
-  throw new SearchError(`검색 결과를 불러오지 못했습니다. ${taskErrorMessage(error)}`);
+  throw new SearchError(t("search.loadFailed", { error: taskErrorMessage(error, t) }));
 }
 
 // 여러 쿼리 결과를 id로 합쳐 중복을 없앤다. 앞 쿼리 결과의 순서를 먼저 따른다
@@ -27,13 +29,13 @@ function mergeById<T>(lists: T[][], idOf: (row: T) => string): T[] {
   return [...byId.values()];
 }
 
-function unwrap<T>(what: string, r: { data: T[] | null; error: DbError | null }): T[] {
-  if (r.error) fail(what, r.error);
+function unwrap<R>(what: string, r: { data: R[] | null; error: DbError | null }, t: T): R[] {
+  if (r.error) fail(what, r.error, t);
   return r.data ?? [];
 }
 
 // .or()에 사용자 입력을 넣지 않는다. PostgREST 구문 문자(, ( ) . :)가 필터를 깨뜨리므로 필드마다 따로 묻는다
-async function searchTasks(supabase: Client, ws: string, q: string, limit: number) {
+async function searchTasks(supabase: Client, ws: string, q: string, limit: number, t: T) {
   const base = () =>
     supabase
       .from("tasks")
@@ -49,14 +51,14 @@ async function searchTasks(supabase: Client, ws: string, q: string, limit: numbe
       .limit(limit);
   const pattern = likePattern(q);
   const [byTitle, byKey] = await Promise.all([base().ilike("title", pattern), base().ilike("key", pattern)]);
-  return mergeById([unwrap("작업", byTitle), unwrap("작업", byKey)], (t) => t.id)
+  return mergeById([unwrap("작업", byTitle, t), unwrap("작업", byKey, t)], (t) => t.id)
     .filter((t) => containsQuery(t.title, q) || containsQuery(t.key, q))
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
     .slice(0, limit)
     .map(({ id, key, title, status, project }) => ({ id, key, title, status, project }));
 }
 
-async function searchProjects(supabase: Client, ws: string, q: string, limit: number) {
+async function searchProjects(supabase: Client, ws: string, q: string, limit: number, t: T) {
   const base = () =>
     supabase
       .from("projects")
@@ -68,14 +70,14 @@ async function searchProjects(supabase: Client, ws: string, q: string, limit: nu
       .limit(limit);
   const pattern = likePattern(q);
   const [byName, byKey] = await Promise.all([base().ilike("name", pattern), base().ilike("key", pattern)]);
-  return mergeById([unwrap("프로젝트", byName), unwrap("프로젝트", byKey)], (p) => p.id)
+  return mergeById([unwrap("프로젝트", byName, t), unwrap("프로젝트", byKey, t)], (p) => p.id)
     .filter((p) => containsQuery(p.name, q) || containsQuery(p.key, q))
     .sort((a, b) => a.name.localeCompare(b.name, "ko"))
     .slice(0, limit);
 }
 
 // 표시 이름·색 규칙은 lib/tasks/queries.ts의 selectMembers와 같다
-async function searchPeople(supabase: Client, ws: string, q: string, limit: number) {
+async function searchPeople(supabase: Client, ws: string, q: string, limit: number, t: T) {
   const base = () =>
     supabase
       .from("workspace_members")
@@ -88,7 +90,7 @@ async function searchPeople(supabase: Client, ws: string, q: string, limit: numb
     base().ilike("profiles.name", pattern),
     base().ilike("profiles.email", pattern),
   ]);
-  return mergeById([unwrap("구성원", byName), unwrap("구성원", byEmail)], (m) => m.user_id)
+  return mergeById([unwrap("구성원", byName, t), unwrap("구성원", byEmail, t)], (m) => m.user_id)
     .filter((m) => containsQuery(m.profiles.name, q) || containsQuery(m.profiles.email, q))
     .map((m) => ({
       id: m.user_id,
@@ -101,7 +103,7 @@ async function searchPeople(supabase: Client, ws: string, q: string, limit: numb
     .slice(0, limit);
 }
 
-async function searchFiles(supabase: Client, ws: string, q: string, limit: number) {
+async function searchFiles(supabase: Client, ws: string, q: string, limit: number, t: T) {
   const r = await supabase
     .from("files")
     .select(
@@ -117,7 +119,7 @@ async function searchFiles(supabase: Client, ws: string, q: string, limit: numbe
     .ilike("name", likePattern(q))
     .order("created_at", { ascending: false })
     .limit(limit);
-  return unwrap("파일", r)
+  return unwrap("파일", r, t)
     .filter((f) => containsQuery(f.name, q))
     .map(({ id, name, type, project, task }) => ({
       id,
@@ -130,7 +132,7 @@ async function searchFiles(supabase: Client, ws: string, q: string, limit: numbe
 }
 
 // comments에는 workspace_id가 없어 작업으로 묶어 워크스페이스를 거른다
-async function searchComments(supabase: Client, ws: string, q: string, limit: number) {
+async function searchComments(supabase: Client, ws: string, q: string, limit: number, t: T) {
   const r = await supabase
     .from("comments")
     .select(
@@ -149,14 +151,14 @@ async function searchComments(supabase: Client, ws: string, q: string, limit: nu
     .ilike("body", likePattern(q))
     .order("created_at", { ascending: false })
     .limit(limit);
-  return unwrap("댓글", r)
+  return unwrap("댓글", r, t)
     .filter((c) => containsQuery(c.body, q))
     .map((c) => ({
       id: c.id,
       excerpt: excerpt(c.body, q),
       taskKey: c.task.key,
       taskTitle: c.task.title,
-      authorName: c.author ? c.author.name || c.author.email || NAMELESS_MEMBER_LABEL : UNKNOWN_USER_LABEL,
+      authorName: c.author ? c.author.name || c.author.email || NAMELESS_MEMBER_LABEL : t("common.unknownUser"),
       createdAt: c.created_at,
     }));
 }
@@ -172,13 +174,14 @@ export async function searchWorkspace(
   if (!query) return EMPTY;
   const n = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), SEARCH_LIMIT_MAX) : SEARCH_LIMIT_DEFAULT;
   const supabase = await createClient();
+  const t = await getT();
   const want = (s: SearchScope) => scope === "all" || scope === s;
   const [tasks, projects, people, files, comments] = await Promise.all([
-    want("tasks") ? searchTasks(supabase, workspaceId, query, n) : [],
-    want("projects") ? searchProjects(supabase, workspaceId, query, n) : [],
-    want("people") ? searchPeople(supabase, workspaceId, query, n) : [],
-    want("files") ? searchFiles(supabase, workspaceId, query, n) : [],
-    want("comments") ? searchComments(supabase, workspaceId, query, n) : [],
+    want("tasks") ? searchTasks(supabase, workspaceId, query, n, t) : [],
+    want("projects") ? searchProjects(supabase, workspaceId, query, n, t) : [],
+    want("people") ? searchPeople(supabase, workspaceId, query, n, t) : [],
+    want("files") ? searchFiles(supabase, workspaceId, query, n, t) : [],
+    want("comments") ? searchComments(supabase, workspaceId, query, n, t) : [],
   ]);
   return { tasks, projects, people, files, comments };
 }

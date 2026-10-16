@@ -6,30 +6,27 @@ import { PageHeader } from "@/components/shell/page-header";
 import { TaskStoreProvider } from "@/components/tasks/task-store";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { getHomeProjects, getRecentActivities } from "@/lib/home/queries";
-import { NAV_LABELS, NAMELESS_MEMBER_LABEL } from "@/lib/i18n/labels";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { getTaskItems, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.home };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.home") };
+}
 
 const ACTIVITY_LIMIT = 8;
 
 const hourFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "numeric", hourCycle: "h23" });
-const todayFmt = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "Asia/Seoul",
-  month: "long",
-  day: "numeric",
-  weekday: "long",
-});
 
 // 서울 시각 5~11시 아침, 12~17시 오후, 그 밖은 저녁
 function greeting(now: Date) {
   const hour = Number(hourFmt.formatToParts(now).find((p) => p.type === "hour")?.value);
-  if (hour >= 5 && hour < 12) return "좋은 아침이에요";
-  if (hour >= 12 && hour < 18) return "좋은 오후예요";
-  return "좋은 저녁이에요";
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 18) return "afternoon";
+  return "evening";
 }
 
 export default async function HomePage({ params }: { params: Promise<{ ws: string }> }) {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const { ws } = await params;
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
@@ -41,7 +38,8 @@ export default async function HomePage({ params }: { params: Promise<{ ws: strin
     getRecentActivities(workspace.id, ACTIVITY_LIMIT),
   ]);
   const now = new Date();
-  const name = members.find((m) => m.id === userId)?.name ?? NAMELESS_MEMBER_LABEL;
+  const name = members.find((m) => m.id === userId)?.name ?? t("common.namelessMember");
+  const todayFmt = new Intl.DateTimeFormat(locale, { timeZone: "Asia/Seoul", month: "long", day: "numeric", weekday: "long" });
 
   return (
     <TaskStoreProvider
@@ -52,8 +50,8 @@ export default async function HomePage({ params }: { params: Promise<{ ws: strin
       meId={userId}
     >
       <PageHeader
-        title={`${greeting(now)}, ${name}님`}
-        subtitle={`${todayFmt.format(now)} · 워크스페이스 전체에서 일어나는 일을 확인하세요.`}
+        title={t(`home.greeting.${greeting(now)}`, { name })}
+        subtitle={t("home.subtitle", { date: todayFmt.format(now) })}
         actions={<HomeActions />}
       />
       <HomeView projects={projects} activities={activities} nowIso={now.toISOString()} />

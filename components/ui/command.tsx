@@ -17,6 +17,7 @@ import {
   InputGroupAddon,
 } from "@/components/ui/input-group"
 import { SearchIcon, CheckIcon } from "lucide-react"
+import { useT } from "@/lib/i18n/client"
 
 function Command({
   className,
@@ -35,8 +36,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = "명령 팔레트",
-  description = "실행할 명령을 검색하세요",
+  title,
+  description,
   children,
   className,
   showCloseButton = false,
@@ -47,11 +48,12 @@ function CommandDialog({
   className?: string
   showCloseButton?: boolean
 }) {
+  const t = useT()
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle>{title ?? t("common.commandDialog.title")}</DialogTitle>
+        <DialogDescription>{description ?? t("common.commandDialog.description")}</DialogDescription>
       </DialogHeader>
       <DialogContent
         className={cn(
@@ -94,11 +96,12 @@ function CommandList({
   label,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.List>) {
+  const t = useT()
   return (
     <CommandPrimitive.List
       data-slot="command-list"
-      // cmdk는 label로 aria-label을 덮어쓰고 기본값이 "Suggestions"다. 호출부의 aria-label을 살리고 없으면 한국어 이름을 준다
-      label={label ?? props["aria-label"] ?? "검색 결과"}
+      // cmdk는 label로 aria-label을 덮어쓰고 기본값이 "Suggestions"다. 호출부의 aria-label을 살리고 없으면 사전 이름을 준다
+      label={label ?? props["aria-label"] ?? t("common.commandList")}
       className={cn(
         "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
         className

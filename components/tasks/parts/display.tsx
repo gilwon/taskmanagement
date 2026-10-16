@@ -1,13 +1,8 @@
+"use client";
 // 작업 표시 부품(상태·우선순위 아이콘, 키, 기한, 라벨 칩, 담당자 아바타). META §3·§4 모양을 디자인 토큰으로 그린다
 import { MemberAvatar } from "@/components/shell/member-avatar";
-import { formatDue } from "@/lib/format/date";
-import {
-  TASK_LABEL_LABELS,
-  TASK_PRIORITY_LABELS,
-  TASK_STATUS_LABELS,
-  UNASSIGNED_LABEL,
-  type TaskLabel,
-} from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import { TASK_LABEL_LABELS, type TaskLabel } from "@/lib/i18n/labels";
 import type { TaskItem, TaskPriority, TaskStatus } from "@/lib/tasks/types";
 import { dueBucket } from "@/lib/tasks/view";
 import { cn } from "@/lib/utils";
@@ -22,12 +17,13 @@ export function StatusIcon({
   size?: number;
   className?: string;
 }) {
+  const t = useT();
   const color = `var(--st-${status})`;
-  const label = TASK_STATUS_LABELS[status];
+  const label = t(`common.taskStatus.${status}`);
   return (
     <svg
       role="img"
-      aria-label={`상태 ${label}`}
+      aria-label={t("tasks.display.status", { label })}
       width={size}
       height={size}
       viewBox="0 0 14 14"
@@ -68,9 +64,10 @@ export function PriorityIcon({
   size?: number;
   className?: string;
 }) {
-  const label = TASK_PRIORITY_LABELS[priority];
+  const t = useT();
+  const label = t(`common.taskPriority.${priority}`);
   // none의 표시명("우선순위 없음")에 이미 "우선순위"가 들어 있어 접두어를 붙이지 않는다
-  const name = priority === "none" ? label : `우선순위 ${label}`;
+  const name = priority === "none" ? label : t("tasks.display.priority", { label });
   const filled = { urgent: 3, high: 3, medium: 2, low: 1, none: 0 }[priority];
   return (
     <svg
@@ -135,6 +132,7 @@ export function DueLabel({
   placeholder?: React.ReactNode;
   className?: string;
 }) {
+  const f = useFormatter();
   if (!due) {
     return placeholder ? <span className={cn("text-(--text-4)", className)}>{placeholder}</span> : null;
   }
@@ -143,7 +141,7 @@ export function DueLabel({
   const tone = done ? "text-(--text-3)" : bucket === "overdue" ? "text-(--red)" : bucket === "today" ? "text-(--amber)" : "text-(--text-3)";
   return (
     <time dateTime={due} className={cn("whitespace-nowrap", tone, className)}>
-      {formatDue(due, at)}
+      {f.due(due, at)}
     </time>
   );
 }
@@ -161,6 +159,7 @@ const LABEL_COLOR: Record<TaskLabel, string> = {
 };
 
 export function LabelChip({ label, className }: { label: string; className?: string }) {
+  const t = useT();
   const color = LABEL_COLOR[label as TaskLabel] ?? "var(--gray)";
   return (
     <span
@@ -171,12 +170,13 @@ export function LabelChip({ label, className }: { label: string; className?: str
       // 글자는 본문색 쪽으로 30% 섞어 12% 배경 위에서도 AA(4.5:1)를 넘긴다
       style={{ color: `color-mix(in srgb, ${color} 70%, var(--text))`, background: `color-mix(in srgb, ${color} 12%, transparent)` }}
     >
-      {TASK_LABEL_LABELS[label as TaskLabel] ?? label}
+      {Object.hasOwn(TASK_LABEL_LABELS, label) ? t(`common.taskLabel.${label as TaskLabel}`) : label}
     </span>
   );
 }
 
 export function LabelChips({ labels, max, className }: { labels: string[]; max?: number; className?: string }) {
+  const t = useT();
   if (labels.length === 0) return null;
   const shown = max === undefined ? labels : labels.slice(0, max);
   const rest = labels.length - shown.length;
@@ -186,7 +186,7 @@ export function LabelChips({ labels, max, className }: { labels: string[]; max?:
         <LabelChip key={l} label={l} />
       ))}
       {rest > 0 && (
-        <span className="text-(length:--fs-2xs) text-(--text-3)" aria-label={`라벨 ${rest}개 더`}>
+        <span className="text-(length:--fs-2xs) text-(--text-3)" aria-label={t("tasks.display.moreLabels", { count: rest })}>
           +{rest}
         </span>
       )}
@@ -204,19 +204,20 @@ export function AssigneeAvatar({
   size?: number;
   className?: string;
 }) {
+  const t = useT();
   if (!assignee) {
     return (
       <span
         role="img"
-        aria-label={UNASSIGNED_LABEL}
-        title={UNASSIGNED_LABEL}
+        aria-label={t("common.unassigned")}
+        title={t("common.unassigned")}
         className={cn("inline-block shrink-0 rounded-full border border-dashed border-(--border-strong)", className)}
         style={{ width: size, height: size }}
       />
     );
   }
   return (
-    <span role="img" aria-label={`담당자 ${assignee.name}`} title={assignee.name} className={cn("inline-flex shrink-0", className)}>
+    <span role="img" aria-label={t("tasks.display.assignee", { name: assignee.name })} title={assignee.name} className={cn("inline-flex shrink-0", className)}>
       <MemberAvatar name={assignee.name} color={assignee.color} size={size} />
     </span>
   );

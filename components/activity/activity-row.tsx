@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { formatActivity } from "@/lib/activity/format";
-import { formatRelative } from "@/lib/format/date";
 import type { HomeActivity } from "@/lib/home/queries";
-import { UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 
 const strongLink =
   "rounded-(--r-xs) font-semibold text-(--text) outline-none hover:underline focus-visible:ring-2 focus-visible:ring-(--accent)";
@@ -21,7 +20,10 @@ type Props = {
 };
 
 export function ActivityRow({ a, now, wsSlug, member, onOpenTask, showProject = true }: Props) {
-  const segments = formatActivity({
+  const t = useT();
+  const f = useFormatter();
+  const segments = formatActivity(
+    {
     verb: a.verb,
     extra: a.extra,
     actorName: a.actorName,
@@ -29,12 +31,15 @@ export function ActivityRow({ a, now, wsSlug, member, onOpenTask, showProject = 
     hasTask: a.hasTask,
     projectName: a.project.name,
     memberName: (id) => member(id)?.name,
-  });
+    },
+    t,
+    f,
+  );
   const actor = a.actorId ? member(a.actorId) : undefined;
   const task = a.task;
   return (
     <div className="flex gap-2.5">
-      <MemberAvatar name={a.actorName ?? UNKNOWN_USER_LABEL} color={actor?.color} size={24} className="mt-0.5" />
+      <MemberAvatar name={a.actorName ?? t("common.unknownUser")} color={actor?.color} size={24} className="mt-0.5" />
       <p className="min-w-0 flex-1 text-(length:--fs-sm) leading-relaxed break-words text-(--text-2)">
         {segments.map((s, i) =>
           !s.strong ? (
@@ -55,7 +60,7 @@ export function ActivityRow({ a, now, wsSlug, member, onOpenTask, showProject = 
         )}
         <span className="text-(--text-3)">
           {showProject && a.hasTask && ` · ${a.project.name}`} ·{" "}
-          <time dateTime={a.created_at}>{formatRelative(a.created_at, now)}</time>
+          <time dateTime={a.created_at}>{f.relative(a.created_at, now)}</time>
         </span>
       </p>
     </div>

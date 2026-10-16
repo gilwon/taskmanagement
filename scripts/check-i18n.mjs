@@ -1,6 +1,6 @@
 // 사전 밖에 남은 한국어 화면 문구를 센다. app·components·lib의 .ts/.tsx에서 문자열·템플릿·JSX 텍스트에 한글이 든 것을 파일별로 보인다.
-// 주석·*.test.*·database.types·lib/i18n/messages는 뺀다. 지금은 보고용이라 항상 종료 코드 0이다(0개가 되면 CI용으로 바꾼다).
-// 사용법: node scripts/check-i18n.mjs [--all]  (--all이면 줄 번호와 문구까지 보인다)
+// 주석·*.test.*·database.types·lib/i18n/messages·lib/i18n/labels.ts(ko 사전 원본)와 console.* 인자(로그 태그)는 뺀다.
+// 사용법: node scripts/check-i18n.mjs [--all] [--strict]  (--all이면 줄 번호와 문구까지 보이고, --strict면 남은 문구가 있을 때 종료 코드 1이다)
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import ts from 'typescript';
@@ -9,9 +9,26 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const DIRS = ['app', 'components', 'lib'];
 const HANGUL = /[ㄱ-ㆎ가-힣]/;
 const showAll = process.argv.includes('--all');
+const strict = process.argv.includes('--strict');
 
 const skip = (rel) =>
-  /\.test\.tsx?$/.test(rel) || rel === join('lib', 'database.types.ts') || rel.startsWith(join('lib', 'i18n', 'messages') + sep);
+  /\.test\.tsx?$/.test(rel) ||
+  rel === join('lib', 'database.types.ts') ||
+  rel === join('lib', 'i18n', 'labels.ts') ||
+  rel.startsWith(join('lib', 'i18n', 'messages') + sep);
+
+// console.error("[태그]", …)처럼 console.* 호출의 인자는 서버 로그라 화면 문구가 아니다
+const isConsoleArg = (node) => {
+  const call = node.parent;
+  return (
+    call &&
+    ts.isCallExpression(call) &&
+    call.arguments.includes(node) &&
+    ts.isPropertyAccessExpression(call.expression) &&
+    ts.isIdentifier(call.expression.expression) &&
+    call.expression.expression.text === 'console'
+  );
+};
 
 function* walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -37,7 +54,7 @@ function findKorean(file) {
       k === ts.SyntaxKind.JsxText
     ) {
       const value = node.text ?? node.getText(source);
-      if (HANGUL.test(value)) {
+      if (HANGUL.test(value) && !isConsoleArg(node)) {
         const { line } = source.getLineAndCharacterOfPosition(node.getStart(source));
         hits.push({ line: line + 1, value: value.trim().replace(/\s+/g, ' ') });
       }
@@ -76,3 +93,4 @@ for (const [area, n] of [...byArea].sort((a, b) => b[1] - a[1])) console.log(`${
 
 const total = perFile.reduce((n, f) => n + f.hits.length, 0);
 console.log(`\n합계 ${total}개 (${perFile.length}개 파일)`);
+if (strict && total > 0) process.exit(1);

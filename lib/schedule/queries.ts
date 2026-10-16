@@ -1,14 +1,16 @@
 // 캘린더·타임라인용 서버 조회. 일정(events)과 마일스톤을 RLS 세션 클라이언트로 한 번씩 읽는다.
 // 작업 의존성(task_deps)은 작업 조회(TaskItem.blockedBy)에 이미 들어 있어 따로 읽지 않는다
 import "server-only";
+import { getT } from "@/lib/i18n/server";
+import type { T } from "@/lib/i18n/t";
 import { createClient } from "@/lib/supabase/server";
 import type { CalendarEvent, Milestone } from "@/lib/schedule/types";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 
 // 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22)
-function fail(what: string, error: { code?: string; message: string }): never {
+function fail(t: T, what: "events" | "milestones", error: { code?: string; message: string }): never {
   console.error(`[${what}]`, error.code, error.message);
-  throw new Error(`${what}을(를) 불러오지 못했습니다. ${taskErrorMessage(error)}`);
+  throw new Error(t("schedule.errors.loadFailed", { what: t(`schedule.load.${what}`), reason: taskErrorMessage(error, t) }));
 }
 
 // 기간 안의 일정. 삭제·보관된 프로젝트의 일정은 뺀다. time은 "HH:MM"으로 자른다
@@ -29,7 +31,7 @@ export async function getEvents(scope: {
     .is("project.archived_at", null);
   if (scope.projectId) q = q.eq("project_id", scope.projectId);
   const { data, error } = await q.order("date").order("time", { nullsFirst: true });
-  if (error) fail("일정", error);
+  if (error) fail(await getT(), "events", error);
   return data.map((e) => ({
     id: e.id,
     title: e.title,
@@ -50,7 +52,7 @@ export async function getMilestones(scope: { workspaceId: string; projectId?: st
     .is("project.archived_at", null);
   if (scope.projectId) q = q.eq("project_id", scope.projectId);
   const { data, error } = await q.order("date");
-  if (error) fail("마일스톤", error);
+  if (error) fail(await getT(), "milestones", error);
   return data.map((m) => ({
     id: m.id,
     name: m.name,

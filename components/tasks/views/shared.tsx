@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTaskActions } from "@/components/tasks/task-store";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
 import type { DropTarget } from "@/components/tasks/views/use-drag";
+import { useT } from "@/lib/i18n/client";
 import type { GroupField, TaskGroup, TaskItem, ViewState } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -40,11 +41,10 @@ export type ViewCtl = {
 // 드래그·키보드 이동 안내. 카드·행의 aria-describedby가 가리킨다
 export const MOVE_HINT_ID = "task-move-hint";
 export function MoveHint({ board }: { board?: boolean }) {
+  const t = useT();
   return (
     <p id={MOVE_HINT_ID} className="sr-only">
-      {board
-        ? "Enter로 작업을 엽니다. Alt+위아래 화살표로 순서를, Alt+좌우 화살표로 열을 옮깁니다. 상태 선택으로도 열을 바꿀 수 있습니다."
-        : "Enter로 작업을 엽니다. Alt+위아래 화살표로 순서를 옮깁니다. 상태 선택으로도 묶음을 바꿀 수 있습니다."}
+      {board ? t("tasks.views.moveHintBoard") : t("tasks.views.moveHintList")}
     </p>
   );
 }
@@ -101,6 +101,7 @@ export function InlineComposer({
   onClose: () => void;
   className?: string;
 }) {
+  const t = useT();
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const fixedProject = field === "project" ? groupKey : ctl.projects.length === 1 ? ctl.projects[0].id : null;
@@ -123,8 +124,8 @@ export function InlineComposer({
         // disabled는 포커스를 빼앗아 연속 입력이 끊기므로 readOnly로 막는다
         readOnly={busy}
         aria-busy={busy}
-        aria-label="새 작업 이름"
-        placeholder="작업 이름 — Enter로 추가, Esc로 취소"
+        aria-label={t("tasks.views.newTaskName")}
+        placeholder={t("tasks.views.composerPlaceholder")}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.nativeEvent.isComposing) {
@@ -144,7 +145,7 @@ export function InlineComposer({
       />
       {!fixedProject && ctl.projects.length > 1 && (
         <Select value={projectId} onValueChange={setProjectId}>
-          <SelectTrigger size="sm" aria-label="프로젝트" className="h-(--h-md) w-32 shrink-0 text-(length:--fs-sm)">
+          <SelectTrigger size="sm" aria-label={t("tasks.views.project")} className="h-(--h-md) w-32 shrink-0 text-(length:--fs-sm)">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -162,6 +163,7 @@ export function InlineComposer({
 
 // 그룹·열 하단의 "+ 작업 추가" 버튼
 export function AddTaskButton({ onClick, className }: { onClick: () => void; className?: string }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -171,7 +173,7 @@ export function AddTaskButton({ onClick, className }: { onClick: () => void; cla
         className,
       )}
     >
-      <span aria-hidden>+</span> 작업 추가
+      <span aria-hidden>+</span> {t("tasks.views.addTask")}
     </button>
   );
 }
@@ -210,6 +212,7 @@ export function EditCell({
 
 // 작업 ⋯ 메뉴. 열기·제목 편집·완료/다시 열기·보관·삭제. 편집 권한이 없으면 열기만 남긴다
 export function TaskMenu({ task, onRename }: { task: TaskItem; onRename?: () => void }) {
+  const t = useT();
   const { open } = useTaskDrawer();
   const { complete, reopen, update, remove } = useTaskActions();
   const done = task.status === "done";
@@ -218,24 +221,24 @@ export function TaskMenu({ task, onRename }: { task: TaskItem; onRename?: () => 
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label={`${task.key} 작업 메뉴`}
+          aria-label={t("tasks.taskMenu.label", { key: task.key })}
           className="inline-flex size-(--h-sm) shrink-0 items-center justify-center rounded-(--r-xs) text-(--text-3) outline-none hover:bg-(--surface-3) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
         >
           <MoreHorizontal aria-hidden size={15} strokeWidth={1.8} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuItem onSelect={() => open(task.key)}>열기</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => open(task.key)}>{t("tasks.taskMenu.open")}</DropdownMenuItem>
         {task.canEdit && (
           <>
-            {onRename && <DropdownMenuItem onSelect={onRename}>제목 편집</DropdownMenuItem>}
+            {onRename && <DropdownMenuItem onSelect={onRename}>{t("tasks.taskMenu.editTitle")}</DropdownMenuItem>}
             <DropdownMenuItem onSelect={() => void (done ? reopen(task.id) : complete(task.id))}>
-              {done ? "다시 열기" : "완료로 표시"}
+              {done ? t("tasks.taskMenu.reopen") : t("tasks.taskMenu.markDone")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => void update(task.id, { archived: true })}>보관</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void update(task.id, { archived: true })}>{t("tasks.taskMenu.archive")}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => void remove(task.id)}>
-              삭제
+              {t("tasks.taskMenu.delete")}
             </DropdownMenuItem>
           </>
         )}
@@ -246,6 +249,7 @@ export function TaskMenu({ task, onRename }: { task: TaskItem; onRename?: () => 
 
 // 제목 인라인 편집 입력. Enter·blur로 저장, Esc로 취소
 export function TitleEditor({ task, onDone, className }: { task: TaskItem; onDone: () => void; className?: string }) {
+  const t = useT();
   const { update } = useTaskActions();
   const save = (value: string) => {
     const title = value.trim();
@@ -256,7 +260,7 @@ export function TitleEditor({ task, onDone, className }: { task: TaskItem; onDon
     <input
       autoFocus
       defaultValue={task.title}
-      aria-label={`${task.key} 제목`}
+      aria-label={t("tasks.views.titleOf", { key: task.key })}
       maxLength={500}
       onFocus={(e) => e.currentTarget.select()}
       onClick={(e) => e.stopPropagation()}

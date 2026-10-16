@@ -4,13 +4,16 @@ import { notFound } from "next/navigation";
 import { NewProjectButton, ProjectsView } from "@/components/projects/projects-view";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { getProjectSummaries } from "@/lib/projects/queries";
 import { getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.projects };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.projects") };
+}
 
 export default async function ProjectsPage({ params }: { params: Promise<{ ws: string }> }) {
+  const t = await getT();
   const { ws } = await params;
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
@@ -25,8 +28,8 @@ export default async function ProjectsPage({ params }: { params: Promise<{ ws: s
   return (
     <>
       <PageHeader
-        title={NAV_LABELS.projects}
-        subtitle={`진행 중인 프로젝트 ${live}개${live < projects.length ? ` · 보관됨 ${projects.length - live}개` : ""}`}
+        title={t("common.nav.projects")}
+        subtitle={`${t("projects.page.subtitle", { count: live })}${live < projects.length ? t("projects.page.archivedSuffix", { count: projects.length - live }) : ""}`}
         actions={canCreate ? <NewProjectButton /> : undefined}
       />
       <ProjectsView

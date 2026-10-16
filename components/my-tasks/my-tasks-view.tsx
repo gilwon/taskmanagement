@@ -20,23 +20,22 @@ import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
 import { FilterChipBar, TaskToolbar, useViewState } from "@/components/tasks/toolbar";
 import { cellBtn } from "@/components/tasks/views/list-view";
 import { TaskMenu } from "@/components/tasks/views/shared";
-import { formatDue } from "@/lib/format/date";
 import { byDue, myTaskBucket, type MyTaskBucket } from "@/lib/home/stats";
-import { MY_TASK_BUCKET_LABELS, NAV_LABELS, TASK_PRIORITY_LABELS } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import type { TaskItem, ViewState } from "@/lib/tasks/types";
 import { applyView } from "@/lib/tasks/view";
 import { cn } from "@/lib/utils";
 
+// 보기 방식 이름은 common.nav.{list,calendar}다
 const MODES = ["list", "calendar"] as const;
 type Mode = (typeof MODES)[number];
-const MODE_LABELS: Record<Mode, string> = { list: NAV_LABELS.list, calendar: NAV_LABELS.calendar };
 
-const GROUPS = (["overdue", "today", "upcoming", "done"] as const).map((key) => ({
-  key,
-  label: MY_TASK_BUCKET_LABELS[key],
-}));
+const GROUPS = (["overdue", "today", "upcoming", "done"] as const).map((key) => ({ key }));
 
 function Row({ t, now }: { t: TaskItem; now: Date }) {
+  // 작업 prop이 t라서 번역 함수는 tr로 부른다
+  const tr = useT();
+  const f = useFormatter();
   const { open } = useTaskDrawer();
   const { update } = useTaskActions();
   const done = t.status === "done";
@@ -61,22 +60,26 @@ function Row({ t, now }: { t: TaskItem; now: Date }) {
       <PriorityPicker value={t.priority} onChange={(p) => p && p !== t.priority && void update(t.id, { priority: p })}>
         <button
           type="button"
-          aria-label={`${t.priority === "none" ? "" : "우선순위 "}${TASK_PRIORITY_LABELS[t.priority]}, 바꾸기`}
+          aria-label={tr(t.priority === "none" ? "schedule.myTasks.priorityNone" : "schedule.myTasks.priority", {
+            label: tr(`common.taskPriority.${t.priority}`),
+          })}
           className={cn(cellBtn, "hide-m")}
         >
           <PriorityIcon priority={t.priority} size={14} />
         </button>
       </PriorityPicker>
-      <DatePicker label="기한" value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
+      <DatePicker label={tr("schedule.myTasks.due")} value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
         <button
           type="button"
-          aria-label={`기한 ${t.due_date ? formatDue(t.due_date, now) : "없음"}, 바꾸기`}
+          aria-label={
+            t.due_date ? tr("schedule.myTasks.dueValue", { due: f.due(t.due_date, now) }) : tr("schedule.myTasks.dueNone")
+          }
           className={cn(cellBtn, "w-20 justify-start text-(length:--fs-sm) max-[640px]:w-14")}
         >
           {t.due_date ? (
             <DueLabel due={t.due_date} done={done} now={now} />
           ) : (
-            <span className="truncate text-(--text-4)">날짜 지정</span>
+            <span className="truncate text-(--text-4)">{tr("schedule.myTasks.setDate")}</span>
           )}
         </button>
       </DatePicker>
@@ -95,6 +98,7 @@ export function MyTasksView({
   // 캘린더 모드가 보는 범위(?m=·?w=)와 서울 기준 오늘
   calendar: { anchor: string; mode: CalendarMode; todayIso: string };
 }) {
+  const t = useT();
   const { items, workspace, meId } = useTasks();
   const { openNewTask } = useNewTask();
   const { open } = useTaskDrawer();
@@ -117,10 +121,10 @@ export function MyTasksView({
   };
 
   // 담당자가 바뀌면 바로 빠지도록 store에서 거른다. 드로어가 빌려 넣은 남의 작업도 섞이지 않는다
-  const mine = useMemo(() => items.filter((t) => t.assignee_id === meId), [items, meId]);
+  const mine = useMemo(() => items.filter((task) => task.assignee_id === meId), [items, meId]);
   const counts = useMemo(() => {
     const c: Record<MyTaskBucket, number> = { overdue: 0, today: 0, upcoming: 0, done: 0 };
-    for (const t of mine) c[myTaskBucket(t, now)] += 1;
+    for (const task of mine) c[myTaskBucket(task, now)] += 1;
     return c;
   }, [mine, now]);
 
@@ -128,7 +132,7 @@ export function MyTasksView({
   const groups = useMemo(() => {
     // 수동 정렬이면 기한 순으로 보인다. 여러 프로젝트의 수동 순서는 서로 비교할 뜻이 없다
     const sorted = state.sort.f === "manual" ? [...visible].sort(byDue) : visible;
-    return GROUPS.map((g) => ({ ...g, items: sorted.filter((t) => myTaskBucket(t, now) === g.key) })).filter(
+    return GROUPS.map((g) => ({ ...g, items: sorted.filter((task) => myTaskBucket(task, now) === g.key) })).filter(
       (g) => g.items.length > 0,
     );
   }, [visible, state.sort.f, now]);
@@ -145,12 +149,12 @@ export function MyTasksView({
   return (
     <>
       <PageHeader
-        title={NAV_LABELS.myTasks}
-        subtitle={`${MY_TASK_BUCKET_LABELS.today} 마감 ${counts.today}개 · ${MY_TASK_BUCKET_LABELS.overdue} ${counts.overdue}개 · ${MY_TASK_BUCKET_LABELS.upcoming} ${counts.upcoming}개`}
+        title={t("common.nav.myTasks")}
+        subtitle={t("schedule.myTasks.subtitle", { today: counts.today, overdue: counts.overdue, upcoming: counts.upcoming })}
         actions={
           <Button size="sm" onClick={() => openNewTask()}>
             <Plus aria-hidden strokeWidth={1.8} />
-            {NAV_LABELS.newTask}
+            {t("common.nav.newTask")}
           </Button>
         }
       />
@@ -162,12 +166,12 @@ export function MyTasksView({
             variant="outline"
             spacing={0}
             value={mode}
-            aria-label="보기 방식"
+            aria-label={t("schedule.myTasks.viewMode")}
             onValueChange={(v) => v && setMode(v as Mode)}
           >
             {MODES.map((m) => (
               <ToggleGroupItem key={m} value={m} className="h-(--h-md) px-2.5 text-(length:--fs-sm)">
-                {MODE_LABELS[m]}
+                {t(`common.nav.${m}`)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -191,23 +195,23 @@ export function MyTasksView({
       ) : mine.length === 0 ? (
         <EmptyState
           icon={ListChecks}
-          title="작업이 없습니다"
-          description="작업을 추가해 일을 시작하세요."
+          title={t("schedule.myTasks.emptyTitle")}
+          description={t("schedule.myTasks.emptyDescription")}
           action={
             <Button size="sm" onClick={() => openNewTask()}>
-              <Plus aria-hidden strokeWidth={1.8} /> 작업 추가
+              <Plus aria-hidden strokeWidth={1.8} /> {t("schedule.myTasks.addTask")}
             </Button>
           }
         />
       ) : groups.length === 0 ? (
         <EmptyState
           icon={SearchX}
-          title="결과가 없습니다"
-          description="이 조건에 맞는 작업이 없습니다."
+          title={t("schedule.noResults.title")}
+          description={t("schedule.noResults.description")}
           action={
             filtered && (
               <Button size="sm" variant="outline" onClick={() => setState({ ...state, filters: [], q: "" })}>
-                필터 지우기
+                {t("schedule.noResults.clearFilters")}
               </Button>
             )
           }
@@ -240,15 +244,15 @@ export function MyTasksView({
                         g.key === "overdue" ? "text-(--red)" : "text-(--text)",
                       )}
                     >
-                      {g.label}
+                      {t(`common.myTaskBucket.${g.key}`)}
                     </h2>
                     <span className="text-(length:--fs-xs) text-(--text-3)">{g.items.length}</span>
                   </button>
                 </div>
                 {!isCollapsed && (
                   <ul id={`${headingId}-list`}>
-                    {g.items.map((t) => (
-                      <Row key={t.id} t={t} now={now} />
+                    {g.items.map((task) => (
+                      <Row key={task.id} t={task} now={now} />
                     ))}
                   </ul>
                 )}

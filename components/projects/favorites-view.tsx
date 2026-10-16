@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DueLabel, PriorityIcon, StatusIcon, TaskKey } from "@/components/tasks/parts";
 import { announce } from "@/components/tasks/views/shared";
-import { ARCHIVE_STATE_LABELS, FAVORITE_SORT_LABELS, PROJECT_STATUS_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { FAVORITE_SORT_LABELS } from "@/lib/i18n/labels";
 import { removeFavorite } from "@/lib/projects/actions";
 import type { FavoriteProject, FavoriteTask } from "@/lib/projects/queries";
 import { cn } from "@/lib/utils";
@@ -30,20 +31,21 @@ type Sort = keyof typeof FAVORITE_SORT_LABELS;
 const archivedBadge = "shrink-0 rounded-(--r-xs) bg-(--surface-3) px-1.5 text-(length:--fs-2xs) text-(--text-3)";
 
 function Unstar({ favoriteId, label }: { favoriteId: string; label: string }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   return (
     <Button
       variant="ghost"
       size="icon-xs"
       aria-pressed
-      aria-label={`${label} 즐겨찾기 해제`}
+      aria-label={t("projects.favorites.unstar", { name: label })}
       disabled={busy}
       onClick={async () => {
         setBusy(true);
         const r = await removeFavorite(favoriteId);
         setBusy(false);
         if (!r.ok) return void toast.error(r.error);
-        announce(`${label} 즐겨찾기를 해제했습니다`);
+        announce(t("projects.favorites.unstarred", { name: label }));
       }}
     >
       <Star {...ICON} className="fill-(--amber) text-(--amber)" />
@@ -64,6 +66,7 @@ export function FavoritesView({
   wsSlug: string;
   nowIso: string;
 }) {
+  const t = useT();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const [sort, setSort] = useState<Sort>("recent");
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
@@ -79,26 +82,26 @@ export function FavoritesView({
 
   if (projects.length === 0 && tasks.length === 0) {
     return (
-      <EmptyState icon={Star} title="아직 즐겨찾기가 없습니다" description="프로젝트나 작업에 별표를 눌러 여기에 모아 보세요." />
+      <EmptyState icon={Star} title={t("projects.favorites.emptyTitle")} description={t("projects.favorites.emptyDescription")} />
     );
   }
 
   return (
     <div className="flex flex-col gap-(--s-4) px-(--gutter) pb-(--s-8)">
-      <div role="toolbar" aria-label="즐겨찾기 보기 설정" className="flex items-center gap-(--s-1)">
+      <div role="toolbar" aria-label={t("projects.favorites.toolbar")} className="flex items-center gap-(--s-1)">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={TOOLBAR_BTN}>
               <ArrowDownWideNarrow {...ICON} />
-              정렬: {FAVORITE_SORT_LABELS[sort]}
+              {t("projects.list.sortBy", { sort: t(`common.favoriteSort.${sort}`) })}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className={MENU_CLASS}>
-            <DropdownMenuLabel>정렬 기준</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("projects.list.sortMenu")}</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={sort} onValueChange={(v) => setSort(v as Sort)}>
               {(Object.keys(FAVORITE_SORT_LABELS) as Sort[]).map((s) => (
                 <DropdownMenuRadioItem key={s} value={s}>
-                  {FAVORITE_SORT_LABELS[s]}
+                  {t(`common.favoriteSort.${s}`)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -108,10 +111,10 @@ export function FavoritesView({
 
       <section aria-labelledby="fav-projects" className="flex flex-col gap-(--s-2)">
         <h2 id="fav-projects" className="text-(length:--fs-md) font-semibold text-(--text)">
-          프로젝트 <span className="font-normal text-(--text-3)">{projects.length}</span>
+          {t("projects.favorites.projects")} <span className="font-normal text-(--text-3)">{projects.length}</span>
         </h2>
         {shownProjects.length === 0 ? (
-          <p className="text-(length:--fs-sm) text-(--text-3)">즐겨찾기한 프로젝트가 없습니다.</p>
+          <p className="text-(length:--fs-sm) text-(--text-3)">{t("projects.favorites.noProjects")}</p>
         ) : (
           <ul className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-(--s-3) max-[480px]:grid-cols-1">
             {shownProjects.map((p) => (
@@ -126,8 +129,8 @@ export function FavoritesView({
                   </Link>
                   <span className="flex items-center gap-1.5 text-(length:--fs-xs) text-(--text-3)">
                     <ProjectStatusDot status={p.status} />
-                    <span aria-hidden>{PROJECT_STATUS_LABELS[p.status]}</span>
-                    {p.archived && <span className={archivedBadge}>{ARCHIVE_STATE_LABELS.archived}</span>}
+                    <span aria-hidden>{t(`common.projectStatus.${p.status}`)}</span>
+                    {p.archived && <span className={archivedBadge}>{t("common.archiveState.archived")}</span>}
                   </span>
                 </span>
                 <Unstar favoriteId={p.favoriteId} label={p.name} />
@@ -137,36 +140,36 @@ export function FavoritesView({
         )}
       </section>
 
-      <Panel title={`작업 ${tasks.length}`} titleId="fav-tasks">
+      <Panel title={t("projects.favorites.tasks", { count: tasks.length })} titleId="fav-tasks">
         {shownTasks.length === 0 ? (
-          <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">즐겨찾기한 작업이 없습니다</p>
+          <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.favorites.noTasks")}</p>
         ) : (
           <ul>
-            {shownTasks.map((t) => {
-              const a = t.assigneeId ? byId.get(t.assigneeId) : undefined;
-              const done = t.status === "done";
+            {shownTasks.map((task) => {
+              const a = task.assigneeId ? byId.get(task.assigneeId) : undefined;
+              const done = task.status === "done";
               return (
                 <li
-                  key={t.favoriteId}
+                  key={task.favoriteId}
                   className="flex h-(--row-h) items-center gap-2 border-b border-(--divider) px-(--s-3) last:border-b-0 hover:bg-(--surface-2)"
                 >
-                  <StatusIcon status={t.status} />
-                  <TaskKey value={t.key} className="hide-m" />
+                  <StatusIcon status={task.status} />
+                  <TaskKey value={task.key} className="hide-m" />
                   <Link
-                    href={`/${wsSlug}/task/${t.key}`}
+                    href={`/${wsSlug}/task/${task.key}`}
                     className={cn(LINK_CLS, "min-w-0 flex-1 truncate text-(--text)", done && "text-(--text-3) line-through")}
                   >
-                    {t.title}
+                    {task.title}
                   </Link>
-                  {t.archived && <span className={archivedBadge}>{ARCHIVE_STATE_LABELS.archived}</span>}
+                  {task.archived && <span className={archivedBadge}>{t("common.archiveState.archived")}</span>}
                   <span className="hide-m flex max-w-36 shrink-0 items-center gap-1.5 text-(length:--fs-xs) text-(--text-3)">
-                    <ProjectDot color={t.project.color} />
-                    <span className="truncate">{t.project.name}</span>
+                    <ProjectDot color={task.project.color} />
+                    <span className="truncate">{task.project.name}</span>
                   </span>
-                  <PriorityIcon priority={t.priority} size={14} />
+                  <PriorityIcon priority={task.priority} size={14} />
                   {a && <MemberAvatar name={a.name} color={a.color} size={20} className="hide-m" />}
-                  <DueLabel due={t.dueDate} done={done} now={now} className="w-14 shrink-0 text-right text-(length:--fs-sm)" />
-                  <Unstar favoriteId={t.favoriteId} label={t.title} />
+                  <DueLabel due={task.dueDate} done={done} now={now} className="w-14 shrink-0 text-right text-(length:--fs-sm)" />
+                  <Unstar favoriteId={task.favoriteId} label={task.title} />
                 </li>
               );
             })}

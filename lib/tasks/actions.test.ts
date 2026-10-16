@@ -13,6 +13,11 @@ let existing = new Set<string>();
 const selectTaskItems = vi.fn();
 
 vi.mock("server-only", () => ({}));
+// 로캘은 쿠키·Accept-Language가 없어 기본값 ko로 정해진다
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => new Headers()),
+  cookies: vi.fn(async () => ({ get: () => undefined, set: vi.fn() })),
+}));
 vi.mock("@/lib/tasks/queries", () => ({ selectTaskItems: (...a: unknown[]) => selectTaskItems(...a), selectTaskDetail: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => fakeClient() }));
 

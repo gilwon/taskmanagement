@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PROJECT_STATUS_LABELS, ROLE_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import { deleteTeam, setMemberTeam } from "@/lib/org/actions";
 import type { OrgMember, OrgTeam, TeamProject } from "@/lib/org/queries";
 
@@ -34,6 +34,7 @@ type Props = {
 const sectionTitle = "mb-(--s-3) text-(length:--fs-md) font-semibold text-(--text)";
 
 export function TeamDetail({ workspace, team, members, projects, openTasks, admin }: Props) {
+  const t = useT();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [editKey, setEditKey] = useState(0);
@@ -49,15 +50,17 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
     const r = await setMemberTeam(workspace.id, m.id, teamId);
     setBusy(false);
     if (!r.ok) return void toast.error(r.error);
-    const msg = teamId ? `${m.name}을(를) ${team.name} 팀에 넣었습니다.` : `${m.name}을(를) 팀에서 뺐습니다.`;
+    const msg = teamId
+      ? t("org.team.memberAdded", { name: m.name, team: team.name })
+      : t("org.team.memberRemoved", { name: m.name });
     toast.success(msg);
     announce(msg);
   };
 
   const stats = [
-    ["구성원", inTeam.length],
-    ["프로젝트", projects.length],
-    ["구성원 열린 작업", openTasks],
+    [t("org.team.members"), inTeam.length],
+    [t("org.team.projects"), projects.length],
+    [t("org.team.openTasks"), openTasks],
   ] as const;
 
   return (
@@ -75,7 +78,7 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
         {admin && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon-sm" aria-label="팀 메뉴">
+              <Button variant="outline" size="icon-sm" aria-label={t("org.team.menu")}>
                 <MoreHorizontal aria-hidden strokeWidth={1.8} />
               </Button>
             </DropdownMenuTrigger>
@@ -87,11 +90,11 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
                 }}
               >
                 <Pencil aria-hidden strokeWidth={1.8} />
-                팀 편집
+                {t("org.team.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onSelect={() => setDeleting(true)}>
                 <Trash2 aria-hidden strokeWidth={1.8} />
-                팀 삭제
+                {t("org.team.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -110,7 +113,7 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
       <div className="grid gap-(--s-8) px-(--gutter) pb-(--s-8) lg:grid-cols-2">
         <section aria-labelledby="team-members-title" className="min-w-0">
           <h2 id="team-members-title" className={sectionTitle}>
-            구성원
+            {t("org.team.members")}
           </h2>
           {admin && candidates.length > 0 && (
             <Select
@@ -120,21 +123,21 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
                 if (m) void assign(m, team.id);
               }}
             >
-              <SelectTrigger aria-label="팀에 구성원 추가" className="mb-(--s-3) w-full sm:w-64" disabled={busy}>
-                <SelectValue placeholder="구성원 추가" />
+              <SelectTrigger aria-label={t("org.team.addMember")} className="mb-(--s-3) w-full sm:w-64" disabled={busy}>
+                <SelectValue placeholder={t("org.team.addMemberPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {candidates.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.name}
-                    {m.teamId && <span className="text-(--text-3)"> · 다른 팀에서 옮김</span>}
+                    {m.teamId && <span className="text-(--text-3)"> · {t("org.team.fromOtherTeam")}</span>}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
           {inTeam.length === 0 ? (
-            <p className="text-(length:--fs-sm) text-(--text-3)">아직 팀 구성원이 없습니다.</p>
+            <p className="text-(length:--fs-sm) text-(--text-3)">{t("org.team.noMembers")}</p>
           ) : (
             <ul className="divide-y divide-(--divider) rounded-(--r) border border-(--border)">
               {inTeam.map((m) => (
@@ -146,12 +149,12 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
                   >
                     {m.name}
                   </Link>
-                  <span className="text-(length:--fs-sm) text-(--text-3)">{ROLE_LABELS[m.role]}</span>
+                  <span className="text-(length:--fs-sm) text-(--text-3)">{t(`common.role.${m.role}`)}</span>
                   {admin && (
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label={`${m.name} 팀에서 빼기`}
+                      aria-label={t("org.team.removeOf", { name: m.name })}
                       disabled={busy}
                       onClick={() => assign(m, null)}
                     >
@@ -166,10 +169,10 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
 
         <section aria-labelledby="team-projects-title" className="min-w-0">
           <h2 id="team-projects-title" className={sectionTitle}>
-            프로젝트
+            {t("org.team.projects")}
           </h2>
           {projects.length === 0 ? (
-            <p className="text-(length:--fs-sm) text-(--text-3)">이 팀에 연결된 프로젝트가 없습니다.</p>
+            <p className="text-(length:--fs-sm) text-(--text-3)">{t("org.team.noProjects")}</p>
           ) : (
             <ul className="divide-y divide-(--divider) rounded-(--r) border border-(--border)">
               {projects.map((p) => (
@@ -185,7 +188,7 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
                       <span aria-hidden className="inline-flex">
                         <ProjectStatusDot status={p.status} />
                       </span>
-                      {PROJECT_STATUS_LABELS[p.status]}
+                      {t(`common.projectStatus.${p.status}`)}
                     </span>
                   </Link>
                 </li>
@@ -201,13 +204,13 @@ export function TeamDetail({ workspace, team, members, projects, openTasks, admi
           <ConfirmDialog
             open={deleting}
             onOpenChange={setDeleting}
-            title="팀 삭제"
-            description={`${team.name} 팀을 삭제합니다. 구성원과 프로젝트는 지워지지 않고 팀 연결만 해제됩니다. 되돌릴 수 없습니다.`}
-            confirmLabel="삭제"
+            title={t("org.team.delete")}
+            description={t("org.team.confirmDeleteDescription", { name: team.name })}
+            confirmLabel={t("org.team.confirmDeleteLabel")}
             onConfirm={async () => {
               const r = await deleteTeam(team.id);
               if (!r.ok) return r.error;
-              toast.success("팀을 삭제했습니다.");
+              toast.success(t("org.team.deleted"));
               router.push(`/${workspace.slug}/teams`);
               return null;
             }}

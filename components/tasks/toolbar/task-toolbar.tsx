@@ -16,12 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  COLUMN_LABELS,
-  FILTER_FIELD_LABELS,
-  GROUP_FIELD_LABELS,
-  SORT_FIELD_LABELS,
-} from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import {
   COLUMN_KEYS,
   FILTER_FIELDS,
@@ -55,8 +50,9 @@ export function TaskToolbar({
   // 오른쪽 끝 슬롯(목록·보드·표 전환 등)
   children?: React.ReactNode;
 }) {
+  const t = useT();
   return (
-    <div role="toolbar" aria-label="작업 보기 설정" className="flex flex-wrap items-center gap-(--s-1)">
+    <div role="toolbar" aria-label={t("tasks.toolbar.label")} className="flex flex-wrap items-center gap-(--s-1)">
       <SearchBox value={state.q} onChange={(q) => onChange({ ...state, q })} />
       <FilterButton state={state} onChange={onChange} />
       <SortMenu state={state} onChange={onChange} />
@@ -68,6 +64,7 @@ export function TaskToolbar({
 }
 
 function SearchBox({ value, onChange }: { value: string; onChange: (q: string) => void }) {
+  const t = useT();
   return (
     <div className="relative flex items-center">
       <Search {...ICON} className="pointer-events-none absolute left-2 text-(--text-4)" />
@@ -82,8 +79,8 @@ function SearchBox({ value, onChange }: { value: string; onChange: (q: string) =
             onChange("");
           }
         }}
-        placeholder="작업 검색"
-        aria-label="작업 검색"
+        placeholder={t("tasks.toolbar.search")}
+        aria-label={t("tasks.toolbar.search")}
         className="h-(--h-sm) w-48 rounded-(--r-sm) border border-(--border) bg-(--surface) pr-2 pl-7 text-(length:--fs-sm) text-(--text) placeholder:text-(--text-4) focus-visible:border-(--accent-line) focus-visible:outline-none max-sm:w-36 [&::-webkit-search-cancel-button]:hidden"
       />
     </div>
@@ -91,6 +88,7 @@ function SearchBox({ value, onChange }: { value: string; onChange: (q: string) =
 }
 
 function FilterButton({ state, onChange }: { state: ViewState; onChange: (next: ViewState) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [field, setField] = useState<FilterField | null>(null);
   const count = state.filters.filter((f) => f.v.length > 0).length;
@@ -103,9 +101,9 @@ function FilterButton({ state, onChange }: { state: ViewState; onChange: (next: 
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="ghost" className={TOOLBAR_BTN} aria-label={count ? `필터 ${count}개 적용됨` : "필터"}>
+        <Button variant="ghost" className={TOOLBAR_BTN} aria-label={count ? t("tasks.toolbar.filterApplied", { count }) : t("tasks.toolbar.filter")}>
           <ListFilter {...ICON} />
-          필터
+          {t("tasks.toolbar.filter")}
           {count > 0 && (
             <span
               aria-hidden
@@ -118,7 +116,7 @@ function FilterButton({ state, onChange }: { state: ViewState; onChange: (next: 
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        aria-label="필터 추가"
+        aria-label={t("tasks.toolbar.addFilter")}
         className="w-60 gap-0 rounded-(--r) bg-(--surface) p-0 text-(--text) shadow-(--shadow-pop) ring-0"
       >
         {field ? (
@@ -129,24 +127,24 @@ function FilterButton({ state, onChange }: { state: ViewState; onChange: (next: 
               className="flex h-(--h-md) w-full items-center gap-1 border-b border-(--divider) px-2 text-(length:--fs-sm) text-(--text-2) hover:bg-(--surface-2)"
             >
               <ChevronLeft {...ICON} />
-              {FILTER_FIELD_LABELS[field]}
+              {t(`common.filterField.${field}`)}
             </button>
             <FilterValueList field={field} state={state} onChange={onChange} />
           </>
         ) : (
           <Command loop className="rounded-(--r)! bg-transparent">
-            <CommandInput placeholder="필터 필드 검색…" aria-label="필터 필드 검색" />
-            <CommandList aria-label="필터 필드">
-              <CommandGroup heading="필터 추가">
+            <CommandInput placeholder={t("tasks.toolbar.filterFieldSearchPlaceholder")} aria-label={t("tasks.toolbar.filterFieldSearch")} />
+            <CommandList aria-label={t("tasks.toolbar.filterFields")}>
+              <CommandGroup heading={t("tasks.toolbar.addFilter")}>
                 {FILTER_FIELDS.map((f) => (
                   <CommandItem
                     key={f}
                     value={f}
-                    keywords={[FILTER_FIELD_LABELS[f]]}
+                    keywords={[t(`common.filterField.${f}`)]}
                     onSelect={() => setField(f)}
                     className="h-(--h-md) text-(length:--fs-sm)"
                   >
-                    {FILTER_FIELD_LABELS[f]}
+                    {t(`common.filterField.${f}`)}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -159,24 +157,25 @@ function FilterButton({ state, onChange }: { state: ViewState; onChange: (next: 
 }
 
 function SortMenu({ state, onChange }: { state: ViewState; onChange: (next: ViewState) => void }) {
+  const t = useT();
   const DirIcon = state.sort.dir === 1 ? ArrowUpNarrowWide : ArrowDownWideNarrow;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className={TOOLBAR_BTN}>
           <DirIcon {...ICON} />
-          정렬: {SORT_FIELD_LABELS[state.sort.f]}
+          {t("tasks.toolbar.sortBy", { field: t(`common.sortField.${state.sort.f}`) })}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className={MENU_CLASS}>
-        <DropdownMenuLabel>정렬 기준</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("tasks.toolbar.sortHeading")}</DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={state.sort.f}
           onValueChange={(f) => onChange({ ...state, sort: { ...state.sort, f: f as SortField } })}
         >
           {SORT_FIELDS.map((f) => (
             <DropdownMenuRadioItem key={f} value={f}>
-              {SORT_FIELD_LABELS[f]}
+              {t(`common.sortField.${f}`)}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
@@ -185,8 +184,8 @@ function SortMenu({ state, onChange }: { state: ViewState; onChange: (next: View
           value={String(state.sort.dir)}
           onValueChange={(d) => onChange({ ...state, sort: { ...state.sort, dir: d === "-1" ? -1 : 1 } })}
         >
-          <DropdownMenuRadioItem value="1">오름차순</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="-1">내림차순</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="1">{t("tasks.toolbar.ascending")}</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="-1">{t("tasks.toolbar.descending")}</DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -194,20 +193,21 @@ function SortMenu({ state, onChange }: { state: ViewState; onChange: (next: View
 }
 
 function GroupMenu({ state, onChange }: { state: ViewState; onChange: (next: ViewState) => void }) {
+  const t = useT();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className={TOOLBAR_BTN}>
           <Layers {...ICON} />
-          그룹: {GROUP_FIELD_LABELS[state.group]}
+          {t("tasks.toolbar.groupBy", { field: t(`common.groupField.${state.group}`) })}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className={MENU_CLASS}>
-        <DropdownMenuLabel>그룹 기준</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("tasks.toolbar.groupHeading")}</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={state.group} onValueChange={(g) => onChange({ ...state, group: g as GroupField })}>
           {GROUP_FIELDS.map((g) => (
             <DropdownMenuRadioItem key={g} value={g}>
-              {GROUP_FIELD_LABELS[g]}
+              {t(`common.groupField.${g}`)}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
@@ -225,6 +225,7 @@ function DisplayMenu({
   onChange: (next: ViewState) => void;
   showColumns: boolean;
 }) {
+  const t = useT();
   const toggleColumn = (c: (typeof COLUMN_KEYS)[number], visible: boolean) =>
     onChange({ ...state, hidden: visible ? state.hidden.filter((h) => h !== c) : [...state.hidden, c] });
   return (
@@ -232,13 +233,13 @@ function DisplayMenu({
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className={TOOLBAR_BTN}>
           <Columns3 {...ICON} />
-          {showColumns ? "열" : "표시"}
+          {showColumns ? t("tasks.toolbar.columns") : t("tasks.toolbar.display")}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className={MENU_CLASS}>
         {showColumns && (
           <>
-            <DropdownMenuLabel>표시할 열</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("tasks.toolbar.visibleColumns")}</DropdownMenuLabel>
             {COLUMN_KEYS.filter((c) => c !== "task").map((c) => (
               <DropdownMenuCheckboxItem
                 key={c}
@@ -247,7 +248,7 @@ function DisplayMenu({
                 // 여러 열을 연달아 바꿀 수 있게 열어 둔다
                 onSelect={(e) => e.preventDefault()}
               >
-                {COLUMN_LABELS[c]}
+                {t(`common.column.${c}`)}
               </DropdownMenuCheckboxItem>
             ))}
             <DropdownMenuSeparator />
@@ -258,7 +259,7 @@ function DisplayMenu({
           onCheckedChange={(v) => onChange({ ...state, showDone: v === true })}
           onSelect={(e) => e.preventDefault()}
         >
-          완료된 작업 표시
+          {t("tasks.toolbar.showDone")}
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>

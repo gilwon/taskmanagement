@@ -51,21 +51,11 @@ export function suggestSlug(name: string) {
   return SLUG_RE.test(slug) ? slug : "";
 }
 
-export const USAGES = [
-  { id: "work", label: "업무" },
-  { id: "personal", label: "개인" },
-  { id: "school", label: "학교·교육" },
-  { id: "other", label: "기타" },
-] as const;
+// 표시명은 사전(org.onboarding.usage.<id>)에 있다
+export const USAGES = [{ id: "work" }, { id: "personal" }, { id: "school" }, { id: "other" }] as const;
 
-// 저장값은 workspaces.team_size check 값이다
-export const TEAM_SIZES = [
-  { id: "solo", label: "혼자" },
-  { id: "2-10", label: "2–10명" },
-  { id: "11-50", label: "11–50명" },
-  { id: "51-200", label: "51–200명" },
-  { id: "200+", label: "200명 이상" },
-] as const;
+// 저장값은 workspaces.team_size check 값이다. 표시명은 사전(org.onboarding.teamSize.<id>)에 있다
+export const TEAM_SIZES = [{ id: "solo" }, { id: "2-10" }, { id: "11-50" }, { id: "51-200" }, { id: "200+" }] as const;
 
 // 저장값은 create_project의 템플릿 검사 값이다. 표시명은 단일 사전(TEMPLATE_LABELS)에서 가져온다
 export const TEMPLATES = (Object.keys(TEMPLATE_LABELS) as (keyof typeof TEMPLATE_LABELS)[]).map((id) => ({

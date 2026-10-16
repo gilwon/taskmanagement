@@ -79,7 +79,7 @@ export async function signInDemo(): Promise<ActionState> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!isDemoUser(data?.claims)) {
-    const { data: anon, error } = await supabase.auth.signInAnonymously({ options: { data: { name: "데모 사용자" } } });
+    const { data: anon, error } = await supabase.auth.signInAnonymously({ options: { data: { name: t("auth.login.demoUserName") } } });
     if (error) {
       console.error("[데모 로그인]", error.code);
       // 익명 로그인 한도(서버 IP당 시간당 횟수)에 걸리면 폼 안내 대신 토스트로 보이도록 표시 필드를 붙인다

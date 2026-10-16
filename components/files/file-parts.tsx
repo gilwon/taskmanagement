@@ -31,11 +31,9 @@ import { ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-m
 import type { Transfer } from "@/components/files/upload-store";
 import type { FilesCtl } from "@/components/files/use-files";
 import { KeyContextMenu, type MenuItemComponent } from "@/components/shortcuts/key-context-menu";
-import { UPLOAD_UNFINISHED } from "@/lib/files/errors";
-import { formatRelative } from "@/lib/format/date";
 import { ACCEPT_ATTR, ALLOWED_EXT_LABEL, formatSize, MAX_FILE_LABEL, type FileType } from "@/lib/files/mime";
 import type { FileItem } from "@/lib/files/types";
-import { FILE_STATUS_LABELS } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 const TYPE_ICONS: Record<FileType, LucideIcon> = {
@@ -81,6 +79,7 @@ function phaseOf(item: FileItem, transfer: Transfer | undefined, meId: string): 
 
 // 완료가 아닌 행의 상태. 전송 중이면 진행률, 실패면 사유, 중단된 내 업로드·남의 업로드는 안내
 export function FileStatus({ item, transfer, meId }: { item: FileItem; transfer?: Transfer; meId: string }) {
+  const t = useT();
   const phase = phaseOf(item, transfer, meId);
   if (phase === "ready") return null;
   if (phase === "active" && transfer) {
@@ -88,7 +87,7 @@ export function FileStatus({ item, transfer, meId }: { item: FileItem; transfer?
       <div className="flex min-w-0 items-center gap-2">
         <div
           role="progressbar"
-          aria-label={`${item.name} 업로드 진행률`}
+          aria-label={t("files.progress", { name: item.name })}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={transfer.pct}
@@ -101,17 +100,17 @@ export function FileStatus({ item, transfer, meId }: { item: FileItem; transfer?
     );
   }
   if (phase === "failed") {
-    const reason = transfer?.error ?? UPLOAD_UNFINISHED;
+    const reason = transfer?.error ?? t("files.errors.uploadUnfinished");
     return (
       <p className={cn("truncate text-(length:--fs-xs)", transfer?.canceled ? "text-(--text-3)" : "text-(--red)")} title={reason}>
-        {transfer?.canceled ? reason : `${FILE_STATUS_LABELS.failed} · ${reason}`}
+        {transfer?.canceled ? reason : `${t("common.fileStatus.failed")} · ${reason}`}
       </p>
     );
   }
   if (phase === "stalled") {
-    return <p className="truncate text-(length:--fs-xs) text-(--red)">업로드 중단됨 · 다시 시도하거나 삭제해 주세요</p>;
+    return <p className="truncate text-(length:--fs-xs) text-(--red)">{t("files.stalled")}</p>;
   }
-  return <p className="truncate text-(length:--fs-xs) text-(--text-3)">{FILE_STATUS_LABELS.pending} · 아직 완료되지 않았습니다</p>;
+  return <p className="truncate text-(length:--fs-xs) text-(--text-3)">{t("common.fileStatus.pending")} {t("files.notFinished")}</p>;
 }
 
 // 행 동작. 전송 중이면 취소(완료 확인 대기 중에는 숨김), 실패·중단된 행은 재시도, ⋯ 메뉴의 다운로드·작업 연결·삭제
@@ -134,6 +133,7 @@ export function FileActions({
   // 프로젝트 파일 화면에서만 준다(작업 고르기 창을 연다)
   onLinkRequest?: (item: FileItem) => void;
 }) {
+  const t = useT();
   const phase = phaseOf(item, transfer, meId);
   const ready = phase === "ready";
   const canRetry =
@@ -143,20 +143,20 @@ export function FileActions({
   return (
     <div className="flex shrink-0 items-center gap-0.5">
       {phase === "active" && transfer && transfer.pct < 100 && (
-        <Button variant="ghost" size="icon-xs" aria-label={`${item.name} 업로드 취소`} onClick={() => ctl.cancel(item.id)}>
+        <Button variant="ghost" size="icon-xs" aria-label={t("files.cancelUpload", { name: item.name })} onClick={() => ctl.cancel(item.id)}>
           <X {...ICON} />
         </Button>
       )}
       {canRetry && (
-        <Button variant="ghost" size="xs" onClick={() => void ctl.retry(item)} aria-label={`${item.name} 다시 올리기`}>
+        <Button variant="ghost" size="xs" onClick={() => void ctl.retry(item)} aria-label={t("files.reupload", { name: item.name })}>
           <RotateCcw size={12} strokeWidth={1.8} aria-hidden />
-          재시도
+          {t("files.retry")}
         </Button>
       )}
       {hasMenu && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-xs" aria-label={`${item.name} 동작`} data-file-menu={item.id}>
+            <Button variant="ghost" size="icon-xs" aria-label={t("files.actions", { name: item.name })} data-file-menu={item.id}>
               <Ellipsis {...ICON} />
             </Button>
           </DropdownMenuTrigger>
@@ -195,24 +195,25 @@ function FileMenuItems({
   ctl: FilesCtl;
   onLinkRequest?: (item: FileItem) => void;
 }) {
+  const t = useT();
   return (
     <>
       {ready && (
         <Item onSelect={() => void ctl.download(item)}>
           <Download {...ICON} />
-          다운로드
+          {t("files.download")}
         </Item>
       )}
       {canEdit && onLinkRequest && (
         <Item onSelect={() => onLinkRequest(item)}>
           <Link2 {...ICON} />
-          {item.task_id ? "다른 작업에 연결" : "작업에 연결"}
+          {item.task_id ? t("files.linkOther") : t("files.link")}
         </Item>
       )}
       {canEdit && onLinkRequest && item.task_id && (
         <Item onSelect={() => void ctl.link(item, null)}>
           <Unlink {...ICON} />
-          작업 연결 해제
+          {t("files.unlink")}
         </Item>
       )}
       {canEdit && (
@@ -220,7 +221,7 @@ function FileMenuItems({
           {(ready || onLinkRequest) && <Separator />}
           <Item variant="destructive" onSelect={() => void ctl.remove(item)}>
             <Trash {...ICON} />
-            삭제
+            {t("files.delete")}
           </Item>
         </>
       )}
@@ -246,12 +247,13 @@ export function FileContextMenu({
   onLinkRequest?: (item: FileItem) => void;
   children: React.ReactElement;
 }) {
+  const t = useT();
   const phase = phaseOf(item, transfer, meId);
   const ready = phase === "ready";
   if (!(ready || (canEdit && phase !== "active"))) return children;
   return (
     <KeyContextMenu
-      label={`${item.name} 메뉴`}
+      label={t("files.menu", { name: item.name })}
       className={MENU_CLASS}
       menu={
         <FileMenuItems
@@ -291,12 +293,13 @@ function HiddenFileInput({ inputRef, onFiles }: { inputRef: React.RefObject<HTML
 }
 
 export function UploadButton({ onFiles, className }: { onFiles: (files: File[]) => void; className?: string }) {
+  const t = useT();
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
       <Button size="sm" className={className} onClick={() => input.current?.click()}>
         <Upload size={14} strokeWidth={1.8} aria-hidden />
-        올리기
+        {t("files.upload")}
       </Button>
       <HiddenFileInput inputRef={input} onFiles={onFiles} />
     </>
@@ -313,6 +316,7 @@ export function DropZone({
   label: string;
   compact?: boolean;
 }) {
+  const t = useT();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   return (
@@ -343,7 +347,7 @@ export function DropZone({
         <span className="min-w-0">
           <span className="block text-(--text-2)">{label}</span>
           <span className="block text-(length:--fs-xs) text-(--text-4)">
-            파일당 최대 {MAX_FILE_LABEL} · {ALLOWED_EXT_LABEL}
+            {t("files.limit", { max: MAX_FILE_LABEL, exts: ALLOWED_EXT_LABEL })}
           </span>
         </span>
       </button>
@@ -420,11 +424,12 @@ export function FileListRow({
 }
 
 export function FileMeta({ item, now }: { item: FileItem; now: Date }) {
+  const f = useFormatter();
   return (
     <p className="truncate text-(length:--fs-xs) text-(--text-3)">
       {formatSize(item.size_bytes)}
       {item.uploader && ` · ${item.uploader.name}`}
-      {` · ${formatRelative(item.created_at, now)}`}
+      {` · ${f.relative(item.created_at, now)}`}
     </p>
   );
 }

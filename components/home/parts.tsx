@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTaskActions } from "@/components/tasks/task-store";
+import { useT } from "@/lib/i18n/client";
 import { colorHex } from "@/lib/i18n/labels";
 import type { TaskItem } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
@@ -39,13 +40,14 @@ export function CountUp({ value, className }: { value: number; className?: strin
 
 // 완료 토글. 열린 작업은 완료로, 완료된 작업은 다시 연다(store가 낙관적으로 바꾸고 실패하면 되돌린다)
 export function CompleteToggle({ task, size = 16 }: { task: TaskItem; size?: number }) {
+  const t = useT();
   const { complete, reopen } = useTaskActions();
   const done = task.status === "done";
   return (
     <button
       type="button"
       aria-pressed={done}
-      aria-label={done ? `${task.key} 다시 열기` : `${task.key} 완료로 표시`}
+      aria-label={done ? t("home.complete.reopen", { key: task.key }) : t("home.complete.markDone", { key: task.key })}
       onClick={(e) => {
         e.stopPropagation();
         void (done ? reopen(task.id) : complete(task.id));

@@ -5,6 +5,7 @@ import { ProjectHeader } from "@/components/tasks/project-header";
 import { TaskStoreProvider } from "@/components/tasks/task-store";
 import { loadProject, projectMetadata, type ProjectParams } from "@/lib/data/project";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
+import { getT } from "@/lib/i18n/server";
 import { calendarRange, parseCalendarParams, todayIso } from "@/lib/schedule/dates";
 import { getEvents } from "@/lib/schedule/queries";
 import { canEditProject, getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
@@ -38,7 +39,7 @@ export default async function ProjectCalendarPage({
   ]);
   if (perm.error) {
     console.error("[프로젝트 권한]", perm.error.message);
-    throw new Error("프로젝트 권한을 불러오지 못했습니다.");
+    throw new Error((await getT())("schedule.errors.permsLoadFailed"));
   }
 
   return (

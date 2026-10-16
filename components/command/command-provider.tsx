@@ -25,7 +25,7 @@ const CommandContext = createContext<Ctx | null>(null);
 
 export function useCommand() {
   const ctx = useContext(CommandContext);
-  if (!ctx) throw new Error("useCommand는 CommandProvider 안에서만 쓸 수 있습니다");
+  if (!ctx) throw new Error("useCommand must be used inside CommandProvider");
   return ctx;
 }
 

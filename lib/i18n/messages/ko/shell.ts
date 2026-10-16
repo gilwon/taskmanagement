@@ -12,7 +12,7 @@ export default {
   bottomNav: "하단 메뉴",
   hasUnread: ", 안 읽은 알림 있음",
   // 숫자 뒤 스크린리더용 단위(", 3개")
-  countSuffix: "개",
+  countSuffix: { one: "개", other: "개" },
   online: "온라인",
   breadcrumb: "현재 위치",
   savedView: "저장 뷰",

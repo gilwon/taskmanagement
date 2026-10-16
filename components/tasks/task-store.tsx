@@ -3,7 +3,9 @@
 // 목록과 드로어가 같은 store를 보므로 한쪽 편집이 다른 쪽에 바로 보인다
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import type { Formatter } from "@/lib/i18n/format";
+import type { T as Translate } from "@/lib/i18n/t";
 import {
   bulkDelete,
   bulkRestore,
@@ -58,21 +60,19 @@ const DataContext = createContext<TaskData | null>(null);
 const ActionsContext = createContext<TaskActions | null>(null);
 
 // Server Action 호출이 예외를 던지면(네트워크 끊김 등) 실패 결과로 바꿔 되돌림·오류 토스트 경로를 그대로 타게 한다
-async function call<T>(action: () => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+async function call<T>(action: () => Promise<ActionResult<T>>, t: Translate): Promise<ActionResult<T>> {
   try {
     return await action();
   } catch (e) {
     console.error("[작업 store]", e);
-    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }) };
+    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }, t) };
   }
 }
 
-// 반복 회차 예약일. "10월 26일"
-const nextDateFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", month: "long", day: "numeric" });
-
-function nextMessage(next: TaskItem) {
-  if (!next.due_date) return `다음 “${next.title}” 작업을 만들었습니다`;
-  return `다음 “${next.title}” 작업이 ${nextDateFmt.format(new Date(`${next.due_date}T00:00:00Z`))}에 예약되었습니다`;
+// 반복 회차 예약일은 서울 달력 날짜("10월 26일")로 보인다
+function nextMessage(next: TaskItem, t: Translate, f: Formatter) {
+  if (!next.due_date) return t("tasks.store.nextCreated", { title: next.title });
+  return t("tasks.store.nextScheduled", { title: next.title, date: f.date(next.due_date) });
 }
 
 function replaceOrAppend(list: TaskItem[], item: TaskItem) {
@@ -94,6 +94,8 @@ export function TaskStoreProvider(props: Props) {
 }
 
 function Store({ initialItems, workspace, members, labels, meId, children }: Props) {
+  const t = useT();
+  const f = useFormatter();
   const [items, setItems] = useState(initialItems);
   // 서버가 새 목록을 내려 주면(router.refresh 등) 낙관적 상태를 버리고 서버 값으로 맞춘다
   const [prevInitial, setPrevInitial] = useState(initialItems);
@@ -131,7 +133,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
     const assigneeOf = (id: string | null): TaskItem["assignee"] => {
       if (!id) return null;
       const m = membersRef.current.find((x) => x.id === id);
-      return { id, name: m?.name ?? UNKNOWN_USER_LABEL, color: m?.color ?? "slate" };
+      return { id, name: m?.name ?? t("common.unknownUser"), color: m?.color ?? "slate" };
     };
 
     // TaskPatch를 화면 필드로 옮긴다(낙관적 갱신용)
@@ -154,14 +156,14 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
 
     const settleComplete = (item: TaskItem, next: TaskItem | null) => {
       setItems((list) => (next ? replaceOrAppend(replaceOrAppend(list, item), next) : replaceOrAppend(list, item)));
-      if (next) toast.success(nextMessage(next));
+      if (next) toast.success(nextMessage(next, t, f));
     };
 
     const restoreOne = async (id: string, token: string) => {
-      const r = await call(() => restoreTask(id, token));
+      const r = await call(() => restoreTask(id, token), t);
       if (!r.ok) return void toast.error(r.error);
       setItems((list) => replaceOrAppend(list, r.data));
-      toast.success("작업을 되돌렸습니다");
+      toast.success(t("tasks.store.restored"));
     };
 
     return {
@@ -170,7 +172,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
       removeLocal,
 
       async create(input) {
-        const r = await call(() => createTask(input));
+        const r = await call(() => createTask(input), t);
         if (!r.ok) {
           toast.error(r.error);
           return null;
@@ -185,7 +187,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         // 보관하면 목록에서 빠진다(서버 목록 조회와 같은 기준)
         if (patch.archived) setItems((list) => list.filter((t) => t.id !== id));
         else setItems((list) => list.map((t) => (t.id === id ? optimistic(t, patch) : t)));
-        const r = await call(() => updateTask(id, patch));
+        const r = await call(() => updateTask(id, patch), t);
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -200,7 +202,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         setItems((list) =>
           list.map((t) => (t.id === id ? { ...t, status, sort_order: sortOrder ?? t.sort_order } : t)),
         );
-        const r = await call(() => moveTask(id, status, sortOrder));
+        const r = await call(() => moveTask(id, status, sortOrder), t);
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -213,7 +215,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         const before = find(id);
         if (!before) return false;
         setItems((list) => list.map((t) => (t.id === id ? { ...t, status: "done" } : t)));
-        const r = await call(() => completeTask(id));
+        const r = await call(() => completeTask(id), t);
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -228,7 +230,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         setItems((list) =>
           list.map((t) => (t.id === id ? { ...t, status: t.prev_status ?? "todo", completed_at: null } : t)),
         );
-        const r = await call(() => reopenTask(id));
+        const r = await call(() => reopenTask(id), t);
         if (!r.ok) {
           revert([before], r.error);
           return false;
@@ -242,14 +244,14 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         const before = find(id);
         if (!before) return false;
         setItems((list) => list.filter((t) => t.id !== id));
-        const r = await call(() => deleteTask(id));
+        const r = await call(() => deleteTask(id), t);
         if (!r.ok) {
           revert([before], r.error);
           return false;
         }
         const { token } = r.data;
-        toast("작업을 삭제했습니다", {
-          action: { label: "실행 취소", onClick: () => void restoreOne(id, token) },
+        toast(t("tasks.store.deleted"), {
+          action: { label: t("tasks.store.undo"), onClick: () => void restoreOne(id, token) },
         });
         return true;
       },
@@ -273,18 +275,18 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
               : t,
           ),
         );
-        const r = await call(() => bulkUpdateAction(ids, patch));
+        const r = await call(() => bulkUpdateAction(ids, patch), t);
         if (!r.ok) {
           revert(before, r.error);
           return false;
         }
         const { updated, created, failedIds } = r.data;
         setItems((list) => [...updated, ...created].reduce(replaceOrAppend, list));
-        for (const next of created) toast.success(nextMessage(next));
+        for (const next of created) toast.success(nextMessage(next, t, f));
         if (failedIds.length > 0) {
           revert(
             before.filter((t) => failedIds.includes(t.id)),
-            `작업 ${failedIds.length}개는 권한이 없거나 삭제되어 바꾸지 못했습니다.`,
+            t("tasks.store.bulkUpdateFailed", { count: failedIds.length }),
           );
           return false;
         }
@@ -296,7 +298,7 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         if (before.length === 0) return false;
         const set = new Set(ids);
         setItems((list) => list.filter((t) => !set.has(t.id)));
-        const r = await call(() => bulkDelete(ids));
+        const r = await call(() => bulkDelete(ids), t);
         if (!r.ok) {
           revert(before, r.error);
           return false;
@@ -305,32 +307,32 @@ function Store({ initialItems, workspace, members, labels, meId, children }: Pro
         if (failedIds.length > 0) {
           revert(
             before.filter((t) => failedIds.includes(t.id)),
-            `작업 ${failedIds.length}개는 삭제하지 못했습니다.`,
+            t("tasks.store.bulkDeleteFailed", { count: failedIds.length }),
           );
         }
         const count = Object.keys(tokens).length;
-        toast(`작업 ${count}개를 삭제했습니다`, {
+        toast(t("tasks.store.bulkDeleted", { count }), {
           action: {
-            label: "실행 취소",
+            label: t("tasks.store.undo"),
             onClick: async () => {
-              const res = await call(() => bulkRestore(tokens));
+              const res = await call(() => bulkRestore(tokens), t);
               if (!res.ok) return void toast.error(res.error);
               const { restored, failedIds: notRestored, conflictIds, error } = res.data;
               setItems((list) => restored.reduce(replaceOrAppend, list));
-              if (notRestored.length === 0) return void toast.success("작업을 되돌렸습니다");
+              if (notRestored.length === 0) return void toast.success(t("tasks.store.restored"));
               // 토큰 불일치(삭제 뒤 바뀜)와 그 밖의 실패(권한·네트워크)는 원인이 달라 문구를 나눈다
               if (conflictIds.length > 0) {
-                toast.error(`작업 ${conflictIds.length}개는 삭제 후 바뀌어 되돌리지 못했습니다.`);
+                toast.error(t("tasks.store.bulkRestoreConflict", { count: conflictIds.length }));
               }
               const others = notRestored.length - conflictIds.length;
-              if (others > 0) toast.error(`작업 ${others}개를 되돌리지 못했습니다. ${error ?? ""}`.trim());
+              if (others > 0) toast.error(t("tasks.store.bulkRestoreFailed", { count: others, error: error ?? "" }).trim());
             },
           },
         });
         return failedIds.length === 0;
       },
     };
-  }, [upsertLocal, patchLocal, removeLocal, revert]);
+  }, [upsertLocal, patchLocal, removeLocal, revert, t, f]);
 
   const data = useMemo(
     () => ({ items, workspace, members, labels, meId }),
@@ -351,12 +353,12 @@ export function useTasksOptional(): TaskData | null {
 
 export function useTasks(): TaskData {
   const ctx = useContext(DataContext);
-  if (!ctx) throw new Error("useTasks는 TaskStoreProvider 안에서만 쓸 수 있습니다");
+  if (!ctx) throw new Error("useTasks must be used inside TaskStoreProvider");
   return ctx;
 }
 
 export function useTaskActions(): TaskActions {
   const ctx = useContext(ActionsContext);
-  if (!ctx) throw new Error("useTaskActions는 TaskStoreProvider 안에서만 쓸 수 있습니다");
+  if (!ctx) throw new Error("useTaskActions must be used inside TaskStoreProvider");
   return ctx;
 }

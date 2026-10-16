@@ -3,9 +3,11 @@
 // 매번 검증된 클레임으로 사용자를 확인하고 입력을 다시 검증한 뒤 RLS가 걸린 세션 클라이언트로만 쓴다.
 // 성공하면 refresh로 셸(사이드바 프로젝트 목록·★)과 현재 화면을 새로 그린다
 import { refresh } from "next/cache";
-import { MSG } from "@/lib/auth/errors";
 import { PROJECT_COLORS, PROJECT_ICON_LABELS } from "@/lib/i18n/labels";
-import { projectErrorMessage, STORAGE_REMOVE_FAILED } from "@/lib/projects/errors";
+import type { MessageKey } from "@/lib/i18n/messages/types";
+import { getT } from "@/lib/i18n/server";
+import type { T as Translate } from "@/lib/i18n/t";
+import { projectErrorMessage } from "@/lib/projects/errors";
 import type { CreateProjectInput, ProjectPatch, SharePerm, TrashKind } from "@/lib/projects/types";
 import { isIsoDate } from "@/lib/schedule/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -15,11 +17,10 @@ import type { ActionResult, WorkspaceMember } from "@/lib/tasks/types";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 type DbError = { code?: string; message: string };
-type Session = { supabase: Client; uid: string };
+type Session = { supabase: Client; uid: string; t: Translate };
 
 const BUCKET = "files";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const INVALID = "입력값을 다시 확인해 주세요.";
 const STATUSES = ["planning", "active", "risk", "hold", "complete"] as const;
 const ACCESS = ["workspace", "private"] as const;
 const PERMS = ["view", "comment", "edit", "full"] as const;
@@ -33,8 +34,12 @@ const REMOVE_CHUNK = 100;
 const FILE_PAGE = 1000;
 
 class InputError extends Error {}
-// 권한·상태 판정으로 멈출 때. 메시지는 이미 한국어다
-class StopError extends Error {}
+// 권한·상태 판정으로 멈출 때. 화면 문구는 run이 이 사전 키로 만든다
+class StopError extends Error {
+  constructor(readonly key: MessageKey) {
+    super(key);
+  }
+}
 
 function ok<T>(data: T): ActionResult<T> {
   return { ok: true, data };
@@ -44,13 +49,13 @@ function err<T>(error: string): ActionResult<T> {
   return { ok: false, error };
 }
 
-function dbErr<T>(what: string, error: DbError): ActionResult<T> {
+async function dbErr<T>(what: string, error: DbError): Promise<ActionResult<T>> {
   console.error(`[${what}]`, error.code, error.message);
-  return err(projectErrorMessage(error));
+  return err(projectErrorMessage(error, await getT()));
 }
 
 // Server Action은 직접 POST로도 불릴 수 있다. 매번 검증된 클레임으로 사용자를 확인한다
-async function session(): Promise<Session | null> {
+async function session(): Promise<Omit<Session, "t"> | null> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const uid = data?.claims?.sub;
@@ -59,15 +64,16 @@ async function session(): Promise<Session | null> {
 
 // 검증 실패와 예상하지 못한 예외를 결과로 바꾼다. 실패를 빈 성공으로 숨기지 않는다
 async function run<T>(what: string, body: (s: Session) => Promise<ActionResult<T>>) {
+  const t = await getT();
   try {
     const s = await session();
-    if (!s) return err<T>(MSG.sessionExpired);
-    return await body(s);
+    if (!s) return err<T>(t("errors.msg.sessionExpired"));
+    return await body({ ...s, t });
   } catch (e) {
-    if (e instanceof InputError) return err<T>(INVALID);
-    if (e instanceof StopError) return err<T>(e.message);
+    if (e instanceof InputError) return err<T>(t("errors.rpc.invalidInput"));
+    if (e instanceof StopError) return err<T>((t as (key: string) => string)(e.key));
     console.error(`[${what}]`, e);
-    return err<T>(projectErrorMessage({ message: e instanceof Error ? e.message : String(e) }));
+    return err<T>(projectErrorMessage({ message: e instanceof Error ? e.message : String(e) }, t));
   }
 }
 
@@ -120,7 +126,7 @@ function token(value: unknown): string {
 async function projectWorkspace(supabase: Client, projectId: string) {
   const { data, error } = await supabase.from("projects").select("workspace_id").eq("id", projectId).maybeSingle();
   if (error) throw error;
-  if (!data) throw new StopError(projectErrorMessage({ code: "P0001", message: "not_found" }));
+  if (!data) throw new StopError("projects.errors.notFound");
   return data.workspace_id;
 }
 
@@ -134,18 +140,18 @@ async function requireMember(supabase: Client, workspaceId: string, userId: stri
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
-  if (!data || data.status === "deactivated") throw new StopError("워크스페이스의 활성 구성원만 고를 수 있습니다.");
+  if (!data || data.status === "deactivated") throw new StopError("projects.errors.inactiveMember");
 }
 
 async function requireManage(supabase: Client, projectId: string) {
   const { data, error } = await supabase.rpc("project_perm", { p: projectId });
   if (error) throw error;
-  if (data !== "full") throw new StopError(projectErrorMessage({ code: "P0001", message: "forbidden" }));
+  if (data !== "full") throw new StopError("projects.errors.forbidden");
 }
 
 // 갱신 결과가 0행이면 RLS가 막은 것이다(오류 없이 0행을 돌려준다)
 function forbiddenIfEmpty(rows: unknown[]) {
-  if (rows.length === 0) throw new StopError(projectErrorMessage({ code: "P0001", message: "forbidden" }));
+  if (rows.length === 0) throw new StopError("projects.errors.forbidden");
 }
 
 // Storage 객체를 지운다. remove는 RLS가 거부한 경로를 오류 없이 건너뛰고 응답에서만 빼므로,
@@ -199,7 +205,7 @@ export async function createProject(input: CreateProjectInput): Promise<ActionRe
 }
 
 export async function updateProject(projectId: string, patch: ProjectPatch): Promise<ActionResult<null>> {
-  return run("프로젝트 수정", async ({ supabase }) => {
+  return run("프로젝트 수정", async ({ supabase, t }) => {
     const id = uuid(projectId);
     if (!patch || typeof patch !== "object") throw new InputError();
     const row: TablesUpdate<"projects"> = {};
@@ -214,7 +220,7 @@ export async function updateProject(projectId: string, patch: ProjectPatch): Pro
     }
     if (Object.keys(row).length === 0) throw new InputError();
     if (row.start_date && row.due_date && row.start_date > row.due_date) {
-      return err("시작일은 기한보다 늦을 수 없습니다.");
+      return err(t("projects.errors.startAfterDue"));
     }
     const { data, error } = await supabase.from("projects").update(row).eq("id", id).select("id");
     if (error) return dbErr("프로젝트 수정", error);
@@ -272,14 +278,14 @@ export async function removeFavorite(favoriteId: string): Promise<ActionResult<n
 // ─────────────────────────────────────────────
 
 export async function addProjectMember(projectId: string, userId: string, perm: SharePerm): Promise<ActionResult<null>> {
-  return run("프로젝트 구성원 추가", async ({ supabase }) => {
+  return run("프로젝트 구성원 추가", async ({ supabase, t }) => {
     const id = uuid(projectId);
     const user = uuid(userId);
     const p = oneOf(PERMS, perm);
     await requireMember(supabase, await projectWorkspace(supabase, id), user);
     const { error } = await supabase.from("project_members").insert({ project_id: id, user_id: user, perm: p });
     if (error) {
-      if (error.code === "23505") return err("이미 이 프로젝트의 구성원입니다.");
+      if (error.code === "23505") return err(t("projects.errors.alreadyMember"));
       return dbErr("프로젝트 구성원 추가", error);
     }
     refresh();
@@ -405,7 +411,7 @@ export async function unarchiveItem(kind: "project" | "task", id: string): Promi
 // 영구 삭제. 되돌릴 수 없다. 관리 권한자만.
 // 파일·프로젝트는 Storage 객체를 세션 클라이언트로 먼저 지우고, 하나라도 남으면 purge를 부르지 않는다
 export async function purgeTrashItem(kind: TrashKind, id: string): Promise<ActionResult<null>> {
-  return run("영구 삭제", async ({ supabase }) => {
+  return run("영구 삭제", async ({ supabase, t }) => {
     const k = oneOf(KINDS, kind);
     const target = uuid(id);
     let error: DbError | null = null;
@@ -428,7 +434,7 @@ export async function purgeTrashItem(kind: TrashKind, id: string): Promise<Actio
         paths.push(...files.map((f) => f.storage_path));
         if (files.length < FILE_PAGE) break;
       }
-      if (!(await removeObjects(supabase, paths))) return err(STORAGE_REMOVE_FAILED);
+      if (!(await removeObjects(supabase, paths))) return err(t("projects.errors.storageRemoveFailed"));
       ({ error } = await supabase.rpc("purge_project", { p_project: target }));
     } else if (k === "file") {
       const { data: f, error: fe } = await supabase
@@ -440,7 +446,7 @@ export async function purgeTrashItem(kind: TrashKind, id: string): Promise<Actio
       if (!f) return dbErr("영구 삭제", { code: "P0001", message: "not_found" });
       if (!f.deleted_at) return dbErr("영구 삭제", { code: "P0001", message: "invalid_state" });
       await requireManage(supabase, f.project_id);
-      if (!(await removeObjects(supabase, [f.storage_path]))) return err(STORAGE_REMOVE_FAILED);
+      if (!(await removeObjects(supabase, [f.storage_path]))) return err(t("projects.errors.storageRemoveFailed"));
       ({ error } = await supabase.rpc("purge_file", { p_file: target }));
     } else if (k === "task") {
       ({ error } = await supabase.rpc("purge_task", { p_task: target }));

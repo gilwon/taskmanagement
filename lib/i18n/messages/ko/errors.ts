@@ -46,4 +46,22 @@ export default {
     invalidInput: "입력값을 다시 확인해 주세요.",
     slugTaken: "이미 쓰이고 있는 URL입니다. 다른 URL을 입력해 주세요.",
   },
+  // 404 화면. workspace는 앱 전체 404, item은 워크스페이스 안 404
+  notFound: {
+    title: "페이지를 찾을 수 없습니다",
+    titleIn: "페이지를 찾을 수 없습니다 · {workspace}",
+    workspace: "주소가 바뀌었거나 삭제되었거나, 볼 권한이 없는 워크스페이스입니다.",
+    item: "주소가 바뀌었거나 삭제되었거나, 볼 권한이 없는 항목입니다.",
+  },
+  // 오류 경계에서 오류 코드(digest)가 있을 때의 안내
+  retryWithCode: "잠시 후 다시 시도해 주세요. 오류 코드 {code}",
+  // 루트 레이아웃까지 실패했을 때(global-error). 사전 전체를 쓸 수 없어 errors 영역에 모아 둔다
+  global: {
+    title: "문제가 발생했습니다",
+    heading: "문제가 발생했습니다.",
+    retryLater: "잠시 후 다시 시도해 주세요.",
+    retry: "다시 시도",
+  },
+  // proxy 오류 응답(text/plain)
+  proxyFailed: "서버 설정 오류로 페이지를 열 수 없습니다. 관리자에게 문의해 주세요.",
 } as const;

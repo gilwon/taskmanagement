@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shell/empty-state";
 import { NotificationLine, UnreadDot, useNotificationState } from "@/components/notifications/notification-parts";
-import { NOTIFICATION_FILTER_LABELS, NOTIFICATION_GROUP_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { NOTIFICATION_FILTER_LABELS } from "@/lib/i18n/labels";
 import { groupInOrder, notificationGroup } from "@/lib/notifications/groups";
 import type { NotificationItem } from "@/lib/notifications/queries";
 
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function NotificationsView({ initial, workspace, colors, nowIso }: Props) {
+  const t = useT();
   const { items, markAll, openItem } = useNotificationState(initial, workspace.id);
   const [filter, setFilter] = useState<Filter>("all");
   const now = useMemo(() => new Date(nowIso), [nowIso]);
@@ -31,16 +33,16 @@ export function NotificationsView({ initial, workspace, colors, nowIso }: Props)
       return (
         <EmptyState
           icon={Bell}
-          title={f === "unread" ? "모두 확인했습니다" : "알림이 없습니다"}
-          description={f === "unread" ? "읽지 않은 알림이 없습니다." : "멘션·담당자 지정·댓글 알림이 여기에 모입니다."}
+          title={f === "unread" ? t("notifications.allCaughtUp") : t("notifications.emptyTitle")}
+          description={f === "unread" ? t("notifications.noUnread") : t("notifications.emptyDescription")}
         />
       );
     }
     return (
       <div className="flex flex-col gap-(--s-5) px-(--gutter)">
         {groupInOrder(shown, (n) => notificationGroup(n.created_at, now)).map((g) => (
-          <section key={g.key} aria-label={NOTIFICATION_GROUP_LABELS[g.key]} className="flex flex-col gap-1">
-            <h2 className="text-(length:--fs-xs) font-semibold text-(--text-3)">{NOTIFICATION_GROUP_LABELS[g.key]}</h2>
+          <section key={g.key} aria-label={t(`common.notificationGroup.${g.key}`)} className="flex flex-col gap-1">
+            <h2 className="text-(length:--fs-xs) font-semibold text-(--text-3)">{t(`common.notificationGroup.${g.key}`)}</h2>
             <ul className="flex flex-col rounded-(--r-lg) border border-(--border) bg-(--surface)">
               {g.items.map((n) => (
                 <li key={n.id} className="border-b border-(--divider) last:border-b-0">
@@ -65,15 +67,15 @@ export function NotificationsView({ initial, workspace, colors, nowIso }: Props)
     <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)} className="gap-(--s-4) pb-(--s-8)">
       <div className="flex flex-wrap items-center gap-2 px-(--gutter)">
         <TabsList>
-          <TabsTrigger value="all">{NOTIFICATION_FILTER_LABELS.all}</TabsTrigger>
+          <TabsTrigger value="all">{t("common.notificationFilter.all")}</TabsTrigger>
           <TabsTrigger value="unread">
-            {NOTIFICATION_FILTER_LABELS.unread}
+            {t("common.notificationFilter.unread")}
             {unread > 0 && ` (${unread})`}
           </TabsTrigger>
         </TabsList>
         <Button variant="outline" size="sm" className="ml-auto" onClick={() => void markAll()} disabled={unread === 0}>
           <CheckCheck size={14} strokeWidth={1.8} aria-hidden />
-          모두 읽음으로 표시
+          {t("notifications.markAllRead")}
         </Button>
       </div>
       <TabsContent value="all">{list("all")}</TabsContent>

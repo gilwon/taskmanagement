@@ -28,18 +28,19 @@ import {
   type CommentThread,
 } from "@/lib/comments/actions";
 import type { CommentItem } from "@/lib/comments/queries";
-import { formatRelative } from "@/lib/format/date";
 import { taskErrorMessage } from "@/lib/tasks/errors";
-import { REACTION_EMOJIS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import type { T } from "@/lib/i18n/t";
+import { REACTION_EMOJIS } from "@/lib/i18n/labels";
 import type { ActionResult, TaskItem } from "@/lib/tasks/types";
 
 // 서버 액션 호출 자체가 실패(네트워크)해도 결과 형태로 받는다
-async function call<T>(action: () => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+async function call<R>(action: () => Promise<ActionResult<R>>, t: T): Promise<ActionResult<R>> {
   try {
     return await action();
   } catch (e) {
     console.error("[댓글]", e);
-    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }) };
+    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }, t) };
   }
 }
 
@@ -51,6 +52,8 @@ const byCreated = (a: CommentItem, b: CommentItem) => a.created_at.localeCompare
 // onActivityCount는 이 작업의 활동 전체 개수가 정해지거나 바뀔 때 부른다(드로어 활동 탭 이름)
 export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActivityCount?: (n: number) => void }) {
   const { members, meId } = useTasks();
+  const t = useT();
+  const f = useFormatter();
   const { patchLocal } = useTaskActions();
   const [thread, setThread] = useState<CommentThread | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
 
   useEffect(() => {
     let alive = true;
-    void call(() => loadComments(task.id)).then((r) => {
+    void call(() => loadComments(task.id), t).then((r) => {
       if (!alive) return;
       setNow(new Date());
       if (r.ok) {
@@ -75,7 +78,7 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
     return () => {
       alive = false;
     };
-  }, [task.id, reload]);
+  }, [task.id, reload, t]);
 
   const activityCount = thread?.activityCount;
   useEffect(() => {
@@ -83,7 +86,7 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
   }, [activityCount, onActivityCount]);
 
   const setComments = useCallback(
-    (update: (list: CommentItem[]) => CommentItem[]) => setThread((t) => (t ? { ...t, comments: update(t.comments) } : t)),
+    (update: (list: CommentItem[]) => CommentItem[]) => setThread((th) => (th ? { ...th, comments: update(th.comments) } : th)),
     [],
   );
   // 목록 카드의 댓글 수(삭제되지 않은 것만 센다). 실행 취소는 나중에 불리므로 그때의 개수를 ref로 읽는다
@@ -99,9 +102,9 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
   if (error) {
     return (
       <div role="alert" className="flex items-center gap-2 rounded-(--r) bg-(--red-soft) px-3 py-2 text-(length:--fs-sm) text-(--red)">
-        <span className="flex-1">댓글을 불러오지 못했습니다. {error}</span>
+        <span className="flex-1">{t("comments.loadFailed", { error })}</span>
         <Button variant="outline" size="xs" onClick={() => setReload((n) => n + 1)}>
-          다시 시도
+          {t("common.action.retry")}
         </Button>
       </div>
     );
@@ -109,7 +112,7 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
   if (!thread) {
     return (
       <p aria-busy="true" className="text-(length:--fs-sm) text-(--text-3)">
-        댓글을 불러오는 중…
+        {t("comments.loading")}
       </p>
     );
   }
@@ -117,24 +120,24 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
   const { comments, canComment, canManage } = thread;
 
   const submit = async (body: string, mentions: string[]) => {
-    const r = await call(() => addComment(task.id, body, mentions));
+    const r = await call(() => addComment(task.id, body, mentions), t);
     if (!r.ok) {
       toast.error(r.error);
       return false;
     }
     setNow(new Date());
     // 댓글 작성은 활동 "댓글을 남겼습니다"를 하나 만든다
-    setThread((t) =>
-      t
+    setThread((th) =>
+      th
         ? {
-            ...t,
-            activityCount: t.activityCount + 1,
-            comments: [...t.comments, { ...r.data, authorId: meId, authorName: me?.name ?? null, reactions: [] }],
+            ...th,
+            activityCount: th.activityCount + 1,
+            comments: [...th.comments, { ...r.data, authorId: meId, authorName: me?.name ?? null, reactions: [] }],
           }
-        : t,
+        : th,
     );
     bump(1);
-    announce("댓글을 남겼습니다");
+    announce(t("comments.posted"));
     return true;
   };
 
@@ -143,20 +146,20 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
       setEditing(null);
       return true;
     }
-    const r = await call(() => editComment(c.id, body));
+    const r = await call(() => editComment(c.id, body), t);
     if (!r.ok) {
       toast.error(r.error);
       return false;
     }
     setComments((list) => list.map((x) => (x.id === c.id ? { ...x, body: r.data.body, updated_at: r.data.updated_at } : x)));
     setEditing(null);
-    announce("댓글을 수정했습니다");
+    announce(t("comments.saved"));
     return true;
   };
 
   const remove = async (c: CommentItem) => {
     setComments((list) => list.filter((x) => x.id !== c.id));
-    const r = await call(() => deleteComment(c.id));
+    const r = await call(() => deleteComment(c.id), t);
     if (!r.ok) {
       setComments((list) => [...list, c].sort(byCreated));
       toast.error(r.error);
@@ -164,15 +167,15 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
     }
     bump(-1);
     // 지울 수 있었던 사람(작성자 본인 또는 관리 권한자)은 자기가 지운 댓글을 되살릴 수 있다(restore_comment)
-    toast("댓글을 삭제했습니다", {
+    toast(t("comments.deleted"), {
       action: {
-        label: "실행 취소",
+        label: t("comments.undo"),
         onClick: async () => {
-          const res = await call(() => restoreComment(c.id, r.data.token));
+          const res = await call(() => restoreComment(c.id, r.data.token), t);
           if (!res.ok) return void toast.error(res.error);
           setComments((list) => [...list.filter((x) => x.id !== c.id), { ...c, updated_at: res.data.updated_at }].sort(byCreated));
           bump(1);
-          toast.success("댓글을 되살렸습니다");
+          toast.success(t("comments.restored"));
         },
       },
     });
@@ -191,7 +194,7 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
         }),
       );
     apply(on);
-    const r = await call(() => setReaction(c.id, emoji, on));
+    const r = await call(() => setReaction(c.id, emoji, on), t);
     if (!r.ok) {
       apply(!on);
       toast.error(r.error);
@@ -203,13 +206,13 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
       {comments.length === 0 ? (
         <div className="flex flex-col items-center gap-1 py-6 text-center">
           <MessageSquare size={18} strokeWidth={1.8} aria-hidden className="text-(--text-4)" />
-          <p className="text-(length:--fs-sm) text-(--text-3)">아직 댓글이 없습니다</p>
+          <p className="text-(length:--fs-sm) text-(--text-3)">{t("comments.empty")}</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-4">
           {comments.map((c) => {
             const author = c.authorId ? byId.get(c.authorId) : undefined;
-            const name = author?.name ?? c.authorName ?? UNKNOWN_USER_LABEL;
+            const name = author?.name ?? c.authorName ?? t("common.unknownUser");
             const mine = c.authorId === meId;
             const canEdit = canComment && mine;
             const canDelete = canComment && (mine || canManage);
@@ -220,13 +223,13 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
                   <div className="flex items-center gap-1.5 text-(length:--fs-sm)">
                     <span className="truncate font-medium text-(--text)">{name}</span>
                     <time dateTime={c.created_at} className="shrink-0 text-(--text-3)">
-                      {formatRelative(c.created_at, now)}
+                      {f.relative(c.created_at, now)}
                     </time>
-                    {edited(c) && <span className="shrink-0 text-(--text-4)">· 수정됨</span>}
+                    {edited(c) && <span className="shrink-0 text-(--text-4)">{t("comments.edited")}</span>}
                     {(canEdit || canDelete) && editing !== c.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-xs" aria-label={`${name}님의 댓글 메뉴`} className="ml-auto text-(--text-3)">
+                          <Button variant="ghost" size="icon-xs" aria-label={t("comments.menu", { name })} className="ml-auto text-(--text-3)">
                             <MoreHorizontal size={14} strokeWidth={1.8} aria-hidden />
                           </Button>
                         </DropdownMenuTrigger>
@@ -234,13 +237,13 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
                           {canEdit && (
                             <DropdownMenuItem onSelect={() => setEditing(c.id)}>
                               <Pencil size={14} strokeWidth={1.8} aria-hidden />
-                              수정
+                              {t("comments.edit")}
                             </DropdownMenuItem>
                           )}
                           {canDelete && (
                             <DropdownMenuItem variant="destructive" onSelect={() => void remove(c)}>
                               <Trash2 size={14} strokeWidth={1.8} aria-hidden />
-                              삭제
+                              {t("comments.delete")}
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
@@ -250,8 +253,8 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
                   {editing === c.id ? (
                     <CommentComposer
                       members={members}
-                      label="댓글 수정"
-                      submitLabel="저장"
+                      label={t("comments.editLabel")}
+                      submitLabel={t("common.action.save")}
                       initialValue={c.body}
                       autoFocus
                       onSubmit={(body) => saveEdit(c, body)}
@@ -274,10 +277,10 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
         </ul>
       )}
       {canComment ? (
-        <CommentComposer members={members} label="댓글 입력" onSubmit={submit} autoFocus={compose} />
+        <CommentComposer members={members} label={t("comments.inputLabel")} onSubmit={submit} autoFocus={compose} />
       ) : (
         <p className="rounded-(--r) bg-(--surface-2) px-3 py-2 text-(length:--fs-sm) text-(--text-3)">
-          보기 권한만 있어 댓글을 남길 수 없습니다.
+          {t("comments.viewOnly")}
         </p>
       )}
     </div>

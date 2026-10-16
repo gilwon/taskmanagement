@@ -4,6 +4,7 @@
 import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MemberAvatar } from "@/components/shell/member-avatar";
+import { useT } from "@/lib/i18n/client";
 import { activeMention, filterMentionCandidates, insertMention, mentionIds } from "@/lib/comments/mentions";
 import { cn } from "@/lib/utils";
 
@@ -26,13 +27,14 @@ type Props = {
 export function CommentComposer({
   members,
   label,
-  placeholder = "댓글을 남기세요… @로 구성원을 멘션할 수 있습니다",
-  submitLabel = "보내기",
+  placeholder,
+  submitLabel,
   initialValue = "",
   autoFocus,
   onSubmit,
   onCancel,
 }: Props) {
+  const t = useT();
   const id = useId();
   const ref = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState(initialValue);
@@ -117,7 +119,7 @@ export function CommentComposer({
         <ul
           id={listId}
           role="listbox"
-          aria-label="멘션할 구성원"
+          aria-label={t("comments.mentionList")}
           className="absolute bottom-full left-0 z-10 mb-1 max-h-60 w-64 max-w-full overflow-y-auto rounded-(--r) border border-(--border) bg-(--surface) p-1 shadow-(--shadow-pop)"
         >
           {candidates.map((m) => (
@@ -153,7 +155,7 @@ export function CommentComposer({
         rows={2}
         maxLength={10_000}
         autoFocus={autoFocus}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("comments.placeholder")}
         disabled={busy}
         onChange={(e) => {
           setValue(e.target.value);
@@ -165,14 +167,14 @@ export function CommentComposer({
         className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-(--r) border border-(--border) bg-(--surface) px-3 py-2 text-(length:--fs-base) text-(--text) outline-none placeholder:text-(--text-4) focus-visible:border-(--accent) focus-visible:ring-2 focus-visible:ring-(--accent)/30 disabled:opacity-60"
       />
       <div className="flex items-center justify-end gap-2">
-        <span className="mr-auto text-(length:--fs-xs) text-(--text-4) max-[480px]:hidden">⌘/Ctrl+Enter로 보내기</span>
+        <span className="mr-auto text-(length:--fs-xs) text-(--text-4) max-[480px]:hidden">{t("comments.sendHint")}</span>
         {onCancel && (
           <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-            취소
+            {t("common.action.cancel")}
           </Button>
         )}
         <Button type="button" size="sm" onClick={() => void submit()} disabled={busy || !value.trim()} aria-busy={busy}>
-          {submitLabel}
+          {submitLabel ?? t("comments.send")}
         </Button>
       </div>
     </div>

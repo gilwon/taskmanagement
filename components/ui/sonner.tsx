@@ -3,11 +3,13 @@
 
 import { useEffect, useRef } from "react"
 import { usePrefs } from "@/lib/prefs/provider"
+import { useT } from "@/lib/i18n/client"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { prefs } = usePrefs()
+  const t = useT()
   const ref = useRef<HTMLElement>(null)
 
   // sonner는 컨테이너에 aria-live만 준다. 상태 알림 역할(role=status)을 명시한다
@@ -21,7 +23,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={prefs.theme}
       position="bottom-right"
       duration={4200}
-      containerAriaLabel="알림 메시지"
+      containerAriaLabel={t("common.toaster.label")}
       className="toaster group"
       icons={{
         success: (
@@ -52,7 +54,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast: "cn-toast",
         },
-        closeButtonAriaLabel: "알림 닫기",
+        closeButtonAriaLabel: t("common.toaster.close"),
       }}
       {...props}
     />

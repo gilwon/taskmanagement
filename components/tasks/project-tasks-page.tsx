@@ -7,6 +7,7 @@ import { TaskViews, type ViewMode } from "@/components/tasks/views/task-views";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { hasViewState, loadProject, type ProjectParams } from "@/lib/data/project";
 import type { Json } from "@/lib/database.types";
+import { getT } from "@/lib/i18n/server";
 import { canEditProject, getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 import type { ViewKey } from "@/lib/tasks/types";
 import { parseViewState } from "@/lib/tasks/view";
@@ -35,7 +36,7 @@ export async function ProjectTasksPage({
   ]);
   if (perm.error) {
     console.error("[프로젝트 권한]", perm.error.message);
-    throw new Error("프로젝트 권한을 불러오지 못했습니다.");
+    throw new Error((await getT())("tasks.errors.projectPermLoadFailed"));
   }
   // 저장 뷰를 처음 열면(사용자 설정 행 없음) 저장된 필터로 시작한다. 행이 있으면 사용자가 필터를 모두 지운 상태도 그대로 둔다
   const initialState = stored

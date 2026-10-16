@@ -101,13 +101,13 @@ function NavItem({
             <Badge variant="count" className="ml-auto">
               <span className="sr-only">, </span>
               {count}
-              <span className="sr-only">{t("shell.countSuffix")}</span>
+              <span className="sr-only">{t("shell.countSuffix", { count })}</span>
             </Badge>
           ) : (
             <span className="ml-auto shrink-0 text-(length:--fs-2xs) text-(--text-3) tabular-nums">
               <span className="sr-only">, </span>
               {count}
-              <span className="sr-only">{t("shell.countSuffix")}</span>
+              <span className="sr-only">{t("shell.countSuffix", { count })}</span>
             </span>
           ))}
       </Link>
@@ -212,7 +212,7 @@ function ProjectItem({
             <ContextMenuItem onSelect={() => onToggleFavorite(project)}>
               {project.favorite ? t("shell.project.removeFavorite") : t("shell.project.addFavorite")}
             </ContextMenuItem>
-            <ContextMenuItem onSelect={() => void copyText(`${window.location.origin}${overview}`, t("shell.project.linkNoun"))}>
+            <ContextMenuItem onSelect={() => void copyText(`${window.location.origin}${overview}`, t("shell.project.linkNoun"), t)}>
               {t("shell.project.copyLink")}
             </ContextMenuItem>
             <ContextMenuSeparator />

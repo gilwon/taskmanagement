@@ -49,7 +49,7 @@ import { keyLabel } from "@/components/shortcuts/shortcut-list";
 import { useIsMac } from "@/components/shortcuts/shortcuts-dialog";
 import { StatusIcon } from "@/components/tasks/parts";
 import type { ShellData } from "@/lib/data/workspace";
-import { FILE_TYPE_LABELS, NAV_LABELS, ROLE_LABELS, SEARCH_TAB_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import { getRecentSearches, saveRecentSearch, searchWorkspaceAction } from "@/lib/search/actions";
 import { canOpenOrgScreens, isAdminRole } from "@/lib/org/rules";
 import { normalizeQuery } from "@/lib/search/text";
@@ -152,6 +152,7 @@ export function CommandPalette({
   commands: PaletteCommands;
   onCloseAutoFocus: (e: Event) => void;
 }) {
+  const t = useT();
   const ws = data.workspace.slug;
   // 게스트는 프로젝트를 만들 수 없다
   const canCreateProject = data.me.role !== null && data.me.role !== "guest";
@@ -240,21 +241,21 @@ export function CommandPalette({
   const nav = useMemo(
     () =>
       [
-        { path: "home", label: NAV_LABELS.home, icon: House, keys: ["G", "H"] },
-        { path: "inbox", label: NAV_LABELS.inbox, icon: Inbox, keys: ["G", "I"] },
-        { path: "my-tasks", label: NAV_LABELS.myTasks, icon: CircleCheckBig, keys: ["G", "T"] },
-        { path: "projects", label: NAV_LABELS.projects, icon: FolderKanban, keys: ["G", "P"] },
-        { path: "calendar", label: NAV_LABELS.calendar, icon: Calendar, keys: ["G", "C"] },
-        { path: "timeline", label: NAV_LABELS.timeline, icon: ChartGantt },
-        { path: "members", label: NAV_LABELS.members, icon: Users, keys: ["G", "M"] },
-        { path: "tasks", label: NAV_LABELS.tasks, icon: ListChecks },
-        { path: "overview", label: NAV_LABELS.overview, icon: LayoutDashboard },
-        { path: "notifications", label: NAV_LABELS.notifications, icon: Bell, keys: ["G", "N"] },
-        { path: "activity", label: NAV_LABELS.activity, icon: Activity, keys: ["G", "A"] },
-        { path: "favorites", label: NAV_LABELS.favorites, icon: Star },
-        { path: "archive", label: NAV_LABELS.archive, icon: Archive },
+        { path: "home", label: t("common.nav.home"), icon: House, keys: ["G", "H"] },
+        { path: "inbox", label: t("common.nav.inbox"), icon: Inbox, keys: ["G", "I"] },
+        { path: "my-tasks", label: t("common.nav.myTasks"), icon: CircleCheckBig, keys: ["G", "T"] },
+        { path: "projects", label: t("common.nav.projects"), icon: FolderKanban, keys: ["G", "P"] },
+        { path: "calendar", label: t("common.nav.calendar"), icon: Calendar, keys: ["G", "C"] },
+        { path: "timeline", label: t("common.nav.timeline"), icon: ChartGantt },
+        { path: "members", label: t("common.nav.members"), icon: Users, keys: ["G", "M"] },
+        { path: "tasks", label: t("common.nav.tasks"), icon: ListChecks },
+        { path: "overview", label: t("common.nav.overview"), icon: LayoutDashboard },
+        { path: "notifications", label: t("common.nav.notifications"), icon: Bell, keys: ["G", "N"] },
+        { path: "activity", label: t("common.nav.activity"), icon: Activity, keys: ["G", "A"] },
+        { path: "favorites", label: t("common.nav.favorites"), icon: Star },
+        { path: "archive", label: t("common.nav.archive"), icon: Archive },
       ] satisfies { path: string; label: string; icon: LucideIcon; keys?: string[] }[],
-    [],
+    [t],
   );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -277,7 +278,13 @@ export function CommandPalette({
   const dark = open && commands.isDark();
   const hasResults = Object.values(shown).some((list) => list.length > 0);
   const placeholder =
-    page === "workspaces" ? "워크스페이스 이름…" : page === "overdue" ? "기한 지난 작업 거르기…" : mode === "search" ? "작업·프로젝트·사람·파일·댓글 검색…" : "명령을 입력하거나 검색…";
+    page === "workspaces"
+      ? t("command.placeholder.workspaces")
+      : page === "overdue"
+        ? t("command.placeholder.overdue")
+        : mode === "search"
+          ? t("command.placeholder.search")
+          : t("command.placeholder.command");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -287,12 +294,12 @@ export function CommandPalette({
         aria-describedby="command-palette-desc"
         className="top-[12vh] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[640px] max-[640px]:top-2 max-[640px]:max-w-[calc(100%-1rem)]"
       >
-        <DialogTitle className="sr-only">커맨드 팔레트</DialogTitle>
+        <DialogTitle className="sr-only">{t("command.title")}</DialogTitle>
         <DialogDescription id="command-palette-desc" className="sr-only">
-          위아래 화살표로 고르고 Enter로 실행합니다. Tab으로 명령 모드와 검색 모드를 바꿉니다. Esc로 닫습니다.
+          {t("command.description")}
         </DialogDescription>
         <CommandPrimitive
-          label="커맨드 팔레트"
+          label={t("command.title")}
           loop
           // 검색 모드와 작업 결과는 서버가 이미 걸렀다. 명령 모드의 고정 항목만 cmdk가 거른다
           shouldFilter={mode === "cmd" || page !== "root"}
@@ -305,7 +312,7 @@ export function CommandPalette({
               <button
                 type="button"
                 tabIndex={-1}
-                aria-label="명령 모드로 돌아가기"
+                aria-label={t("command.backToCommands")}
                 onClick={() => {
                   setPage("root");
                   setModeKeep("cmd");
@@ -330,7 +337,7 @@ export function CommandPalette({
           </div>
 
           {mode === "search" && page === "root" && (
-            <div role="group" aria-label="검색 범위" className="flex flex-wrap gap-1 border-b border-(--border) px-3 py-2">
+            <div role="group" aria-label={t("command.searchScope")} className="flex flex-wrap gap-1 border-b border-(--border) px-3 py-2">
               {SEARCH_SCOPES.map((s) => (
                 <button
                   key={s}
@@ -342,7 +349,7 @@ export function CommandPalette({
                   }}
                   className="h-(--h-sm) rounded-(--r-sm) border border-(--border) px-2 text-(length:--fs-xs) text-(--text-2) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) aria-pressed:border-(--accent-line) aria-pressed:bg-(--accent-soft) aria-pressed:text-(--text)"
                 >
-                  {SEARCH_TAB_LABELS[s]}
+                  {t(`common.searchTab.${s}`)}
                 </button>
               ))}
             </div>
@@ -356,12 +363,12 @@ export function CommandPalette({
                     {overdueError}
                   </p>
                 ) : overdue === null ? (
-                  <p className="px-4 py-6 text-center text-(length:--fs-sm) text-(--text-3)">찾는 중…</p>
+                  <p className="px-4 py-6 text-center text-(length:--fs-sm) text-(--text-3)">{t("command.searching")}</p>
                 ) : (
-                  <CommandEmpty className="py-6 text-(length:--fs-sm) text-(--text-3)">기한 지난 작업이 없습니다</CommandEmpty>
+                  <CommandEmpty className="py-6 text-(length:--fs-sm) text-(--text-3)">{t("command.noOverdue")}</CommandEmpty>
                 )}
                 {overdue && overdue.length > 0 && (
-                  <CommandGroup heading="기한 지난 작업" className={groupClass}>
+                  <CommandGroup heading={t("command.overdue")} className={groupClass}>
                     {overdue.map((t) => (
                       <CommandItem
                         key={t.key}
@@ -379,8 +386,8 @@ export function CommandPalette({
               </>
             ) : page === "workspaces" ? (
               <>
-                <CommandEmpty className="py-6 text-(length:--fs-sm) text-(--text-3)">일치하는 워크스페이스가 없습니다</CommandEmpty>
-                <CommandGroup heading="워크스페이스 전환" className={groupClass}>
+                <CommandEmpty className="py-6 text-(length:--fs-sm) text-(--text-3)">{t("command.noWorkspaces")}</CommandEmpty>
+                <CommandGroup heading={t("command.switchWorkspace")} className={groupClass}>
                   {data.workspaces.map((w) => (
                     <CommandItem
                       key={w.id}
@@ -390,7 +397,7 @@ export function CommandPalette({
                     >
                       <WorkspaceTile name={w.name} color={w.color} />
                       <span className="min-w-0 flex-1 truncate">{w.name}</span>
-                      {w.id === data.workspace.id && <span className="text-(length:--fs-2xs) text-(--text-3)">현재</span>}
+                      {w.id === data.workspace.id && <span className="text-(length:--fs-2xs) text-(--text-3)">{t("command.current")}</span>}
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -398,43 +405,43 @@ export function CommandPalette({
             ) : mode === "cmd" ? (
               <>
                 <CommandEmpty className="py-6 text-(length:--fs-sm) text-(--text-3)">
-                  {busy ? "찾는 중…" : "일치하는 명령이 없습니다. Tab으로 검색 모드를 써 보세요."}
+                  {busy ? t("command.searching") : t("command.noCommands")}
                 </CommandEmpty>
-                <CommandGroup heading="제안" className={groupClass}>
-                  <Item value="새 작업 만들기" icon={Plus} keys={["N"]} onSelect={commands.newTask}>
-                    새 작업 만들기
+                <CommandGroup heading={t("command.group.suggestions")} className={groupClass}>
+                  <Item value={t("command.newTask")} icon={Plus} keys={["N"]} onSelect={commands.newTask}>
+                    {t("command.newTask")}
                   </Item>
                   {canCreateProject && (
-                    <Item value="새 프로젝트 만들기" icon={FolderPlus} keys={["P"]} onSelect={commands.newProject}>
-                      새 프로젝트 만들기
+                    <Item value={t("command.newProject")} icon={FolderPlus} keys={["P"]} onSelect={commands.newProject}>
+                      {t("command.newProject")}
                     </Item>
                   )}
-                  <Item value="워크스페이스 검색" icon={Search} keys={["/"]} onSelect={() => setModeKeep("search")}>
-                    워크스페이스 검색
+                  <Item value={t("command.searchWorkspace")} icon={Search} keys={["/"]} onSelect={() => setModeKeep("search")}>
+                    {t("command.searchWorkspace")}
                   </Item>
                   <Item
-                    value="워크스페이스 전환"
+                    value={t("command.switchWorkspace")}
                     icon={FolderKanban}
                     onSelect={() => {
                       setQuery("");
                       setPage("workspaces");
                     }}
                   >
-                    워크스페이스 전환…
+                    {t("command.switchWorkspaceMore")}
                   </Item>
                   <Item
-                    value={dark ? "밝은 모드로 전환" : "다크 모드로 전환"}
-                    keywords={["테마", "다크", "라이트"]}
+                    value={dark ? t("command.toLight") : t("command.toDark")}
+                    keywords={t("command.themeKeywords").split(" ")}
                     icon={dark ? Sun : Moon}
                     keys={["Mod", "Shift", "L"]}
                     onSelect={commands.toggleTheme}
                   >
-                    {dark ? "밝은 모드로 전환" : "다크 모드로 전환"}
+                    {dark ? t("command.toLight") : t("command.toDark")}
                   </Item>
                 </CommandGroup>
 
                 {q === "" && recentTasks.length > 0 && (
-                  <CommandGroup heading="최근 작업" className={groupClass}>
+                  <CommandGroup heading={t("command.group.recentTasks")} className={groupClass}>
                     {recentTasks.map((t) => (
                       <CommandItem
                         key={t.key}
@@ -451,7 +458,7 @@ export function CommandPalette({
                 )}
 
                 {shown.tasks.length > 0 && (
-                  <CommandGroup heading="작업" className={groupClass}>
+                  <CommandGroup heading={t("command.group.tasks")} className={groupClass}>
                     {shown.tasks.map((t) => (
                       <CommandItem
                         key={t.id}
@@ -471,27 +478,27 @@ export function CommandPalette({
                   </CommandGroup>
                 )}
 
-                <CommandGroup heading="이동" className={groupClass}>
+                <CommandGroup heading={t("command.group.navigate")} className={groupClass}>
                   {nav.filter((n) => showOrgLinks || n.path !== "members").map((n) => (
                     <Item
                       key={n.path}
-                      value={`${n.label}(으)로 이동`}
+                      value={t("command.goTo", { name: n.label })}
                       keywords={[n.path]}
                       icon={n.icon}
                       keys={"keys" in n ? n.keys : undefined}
                       onSelect={() => go(`/${ws}/${n.path}`)}
                     >
-                      {n.label}(으)로 이동
+                      {t("command.goTo", { name: n.label })}
                     </Item>
                   ))}
                 </CommandGroup>
 
                 {q !== "" && data.projects.length > 0 && (
-                  <CommandGroup heading={NAV_LABELS.projects} className={groupClass}>
+                  <CommandGroup heading={t("common.nav.projects")} className={groupClass}>
                     {data.projects.map((p) => (
                       <CommandItem
                         key={p.id}
-                        value={`프로젝트 ${p.name} ${p.key}`}
+                        value={`${t("command.projectPrefix")} ${p.name} ${p.key}`}
                         onSelect={() => go(`/${ws}/projects/${p.key}/overview`)}
                         className={itemClass}
                       >
@@ -503,41 +510,46 @@ export function CommandPalette({
                   </CommandGroup>
                 )}
 
-                <CommandGroup heading="명령" className={groupClass}>
-                  <Item value="설정 열기" icon={Settings} keys={["G", "S"]} onSelect={() => go(`/${ws}/settings/general`)}>
-                    설정 열기
+                <CommandGroup heading={t("command.group.commands")} className={groupClass}>
+                  <Item value={t("command.openSettings")} icon={Settings} keys={["G", "S"]} onSelect={() => go(`/${ws}/settings/general`)}>
+                    {t("command.openSettings")}
                   </Item>
-                  <Item value="화면 설정" keywords={["테마", "강조색", "밀도"]} icon={Palette} onSelect={() => go(`/${ws}/settings/appearance`)}>
-                    화면 설정
+                  <Item
+                    value={t("command.appearance")}
+                    keywords={t("command.appearanceKeywords").split(" ")}
+                    icon={Palette}
+                    onSelect={() => go(`/${ws}/settings/appearance`)}
+                  >
+                    {t("command.appearance")}
                   </Item>
                   {isAdminRole(data.me.role) && (
-                    <Item value={NAV_LABELS.inviteMember} icon={UserPlus} onSelect={commands.invite}>
-                      {NAV_LABELS.inviteMember}
+                    <Item value={t("common.nav.inviteMember")} icon={UserPlus} onSelect={commands.invite}>
+                      {t("common.nav.inviteMember")}
                     </Item>
                   )}
                   <Item
-                    value={commands.sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
+                    value={commands.sidebarCollapsed ? t("command.expandSidebar") : t("command.collapseSidebar")}
                     icon={PanelLeft}
                     keys={["["]}
                     onSelect={commands.toggleSidebar}
                   >
-                    {commands.sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
+                    {commands.sidebarCollapsed ? t("command.expandSidebar") : t("command.collapseSidebar")}
                   </Item>
-                  <Item value="도움말" icon={LifeBuoy} onSelect={() => go(`/${ws}/help`)}>
-                    도움말
+                  <Item value={t("command.help")} icon={LifeBuoy} onSelect={() => go(`/${ws}/help`)}>
+                    {t("command.help")}
                   </Item>
-                  <Item value="키보드 단축키" icon={Keyboard} keys={["?"]} onSelect={commands.shortcuts}>
-                    키보드 단축키
+                  <Item value={t("command.shortcuts")} icon={Keyboard} keys={["?"]} onSelect={commands.shortcuts}>
+                    {t("command.shortcuts")}
                   </Item>
-                  <Item value={NAV_LABELS.signOut} icon={LogOut} onSelect={commands.signOut}>
-                    {NAV_LABELS.signOut}
+                  <Item value={t("common.nav.signOut")} icon={LogOut} onSelect={commands.signOut}>
+                    {t("common.nav.signOut")}
                   </Item>
                 </CommandGroup>
               </>
             ) : q === "" ? (
               <>
                 {recentSearches.length > 0 && (
-                  <CommandGroup heading="최근 검색" className={groupClass}>
+                  <CommandGroup heading={t("command.group.recentSearches")} className={groupClass}>
                     {recentSearches.map((s) => (
                       <CommandItem key={s} value={`recent:${s}`} onSelect={() => setQuery(s)} className={itemClass}>
                         <Clock {...icon} className="text-(--text-3)" />
@@ -546,9 +558,9 @@ export function CommandPalette({
                     ))}
                   </CommandGroup>
                 )}
-                <CommandGroup heading="추천" className={groupClass}>
+                <CommandGroup heading={t("command.group.recommended")} className={groupClass}>
                   <Item
-                    value="기한 지난 작업"
+                    value={t("command.overdue")}
                     icon={CalendarClock}
                     onSelect={() => {
                       setOverdue(null);
@@ -559,16 +571,16 @@ export function CommandPalette({
                       );
                     }}
                   >
-                    기한 지난 작업
+                    {t("command.overdue")}
                   </Item>
-                  <Item value="나에게 배정된 작업" icon={CircleCheckBig} onSelect={() => go(`/${ws}/my-tasks`)}>
-                    나에게 배정된 작업
+                  <Item value={t("command.assignedToMe")} icon={CircleCheckBig} onSelect={() => go(`/${ws}/my-tasks`)}>
+                    {t("command.assignedToMe")}
                   </Item>
-                  <Item value="마감 일정 보기" icon={Calendar} onSelect={() => go(`/${ws}/calendar`)}>
-                    마감 일정 보기
+                  <Item value={t("command.upcomingDeadlines")} icon={Calendar} onSelect={() => go(`/${ws}/calendar`)}>
+                    {t("command.upcomingDeadlines")}
                   </Item>
-                  <Item value="최근 활동" icon={Activity} onSelect={() => go(`/${ws}/activity`)}>
-                    최근 활동
+                  <Item value={t("command.recentActivity")} icon={Activity} onSelect={() => go(`/${ws}/activity`)}>
+                    {t("command.recentActivity")}
                   </Item>
                 </CommandGroup>
               </>
@@ -581,12 +593,12 @@ export function CommandPalette({
                 ) : (
                   !hasResults && (
                     <p className="px-4 py-6 text-center text-(length:--fs-sm) text-(--text-3)">
-                      {busy ? "찾는 중…" : `“${q}”와 일치하는 항목이 없습니다`}
+                      {busy ? t("command.searching") : t("command.noMatch", { q })}
                     </p>
                   )
                 )}
                 {shown.tasks.length > 0 && (
-                  <CommandGroup heading={SEARCH_TAB_LABELS.tasks} className={groupClass}>
+                  <CommandGroup heading={t("common.searchTab.tasks")} className={groupClass}>
                     {shown.tasks.map((t) => (
                       <CommandItem key={t.id} value={`task:${t.id}`} onSelect={() => goFromSearch(`/${ws}/task/${t.key}`)} className={itemClass}>
                         <StatusIcon status={t.status} size={14} />
@@ -601,7 +613,7 @@ export function CommandPalette({
                   </CommandGroup>
                 )}
                 {shown.projects.length > 0 && (
-                  <CommandGroup heading={SEARCH_TAB_LABELS.projects} className={groupClass}>
+                  <CommandGroup heading={t("common.searchTab.projects")} className={groupClass}>
                     {shown.projects.map((p) => (
                       <CommandItem
                         key={p.id}
@@ -619,7 +631,7 @@ export function CommandPalette({
                   </CommandGroup>
                 )}
                 {shown.people.length > 0 && (
-                  <CommandGroup heading={SEARCH_TAB_LABELS.people} className={groupClass}>
+                  <CommandGroup heading={t("common.searchTab.people")} className={groupClass}>
                     {shown.people.map((m) => (
                       <CommandItem key={m.id} value={`person:${m.id}`} onSelect={() => goFromSearch(`/${ws}/members/${m.id}`)} className={itemClass}>
                         <MemberAvatar name={m.name} color={m.color} size={20} />
@@ -629,13 +641,13 @@ export function CommandPalette({
                             <Highlight text={m.email} q={q} />
                           </span>
                         </span>
-                        <span className="shrink-0 text-(length:--fs-2xs) text-(--text-3)">{ROLE_LABELS[m.role]}</span>
+                        <span className="shrink-0 text-(length:--fs-2xs) text-(--text-3)">{t(`common.role.${m.role}`)}</span>
                       </CommandItem>
                     ))}
                   </CommandGroup>
                 )}
                 {shown.files.length > 0 && (
-                  <CommandGroup heading={SEARCH_TAB_LABELS.files} className={groupClass}>
+                  <CommandGroup heading={t("common.searchTab.files")} className={groupClass}>
                     {shown.files.map((f) => (
                       <CommandItem
                         key={f.id}
@@ -650,14 +662,14 @@ export function CommandPalette({
                           <Highlight text={f.name} q={q} />
                         </span>
                         <span className="shrink-0 truncate text-(length:--fs-2xs) text-(--text-3)">
-                          {FILE_TYPE_LABELS[f.type]} · {f.project.name}
+                          {t(`common.fileType.${f.type}`)} · {f.project.name}
                         </span>
                       </CommandItem>
                     ))}
                   </CommandGroup>
                 )}
                 {shown.comments.length > 0 && (
-                  <CommandGroup heading={SEARCH_TAB_LABELS.comments} className={groupClass}>
+                  <CommandGroup heading={t("common.searchTab.comments")} className={groupClass}>
                     {shown.comments.map((c) => (
                       <CommandItem key={c.id} value={`comment:${c.id}`} onSelect={() => goFromSearch(`/${ws}/task/${c.taskKey}`)} className={itemClass}>
                         <MessageSquare {...icon} className="text-(--text-3)" />
@@ -673,7 +685,7 @@ export function CommandPalette({
                 <CommandGroup className={groupClass}>
                   <CommandItem value="view-all" onSelect={() => goFromSearch(searchHref(ws, q, scope))} className={itemClass}>
                     <Search {...icon} className="text-(--text-3)" />
-                    <span className="min-w-0 flex-1 truncate">“{q}”의 모든 결과 보기</span>
+                    <span className="min-w-0 flex-1 truncate">{t("command.viewAll", { q })}</span>
                   </CommandItem>
                 </CommandGroup>
               </>
@@ -681,9 +693,9 @@ export function CommandPalette({
           </CommandList>
 
           <div aria-hidden className="flex items-center gap-3 border-t border-(--border) px-3 py-2 text-(length:--fs-2xs) text-(--text-3)">
-            <span>↑↓ 이동</span>
-            <span>↵ 선택</span>
-            <span>Tab {mode === "cmd" ? "검색 모드" : "명령 모드"}</span>
+            <span>{t("command.footer.move")}</span>
+            <span>{t("command.footer.select")}</span>
+            <span>Tab {mode === "cmd" ? t("command.footer.searchMode") : t("command.footer.commandMode")}</span>
           </div>
         </CommandPrimitive>
       </DialogContent>

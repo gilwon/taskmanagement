@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { announce } from "@/components/tasks/views/shared";
-import { formatRelative } from "@/lib/format/date";
-import { DELETED_TASK_LABEL, NOTIFICATION_TYPE_LABELS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import { markAllNotificationsRead, markNotifications } from "@/lib/notifications/actions";
 import type { NotificationItem } from "@/lib/notifications/queries";
 import { taskErrorMessage } from "@/lib/tasks/errors";
@@ -22,6 +21,7 @@ export function notificationHref(ws: string, n: NotificationItem) {
 // 서버 목록에 화면의 읽음 상태를 덧씌운다. 서버가 새 목록을 주면(refresh) 덧씌운 값을 버린다
 export function useNotificationState(initial: NotificationItem[], workspaceId: string) {
   const router = useRouter();
+  const t = useT();
   const [prev, setPrev] = useState(initial);
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
   if (prev !== initial) {
@@ -35,7 +35,7 @@ export function useNotificationState(initial: NotificationItem[], workspaceId: s
     setOverrides((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, read])) }));
     const r = await markNotifications(ids, read).catch((e: unknown) => ({
       ok: false as const,
-      error: taskErrorMessage({ message: String(e) }),
+      error: taskErrorMessage({ message: String(e) }, t),
     }));
     if (!r.ok) {
       setOverrides((o) => Object.fromEntries(Object.entries(o).filter(([id]) => !ids.includes(id))));
@@ -51,14 +51,14 @@ export function useNotificationState(initial: NotificationItem[], workspaceId: s
     setOverrides((o) => ({ ...o, ...Object.fromEntries(unread.map((id) => [id, true])) }));
     const r = await markAllNotificationsRead(workspaceId).catch((e: unknown) => ({
       ok: false as const,
-      error: taskErrorMessage({ message: String(e) }),
+      error: taskErrorMessage({ message: String(e) }, t),
     }));
     if (!r.ok) {
       setOverrides({});
       toast.error(r.error);
       return;
     }
-    announce("알림을 모두 읽음으로 표시했습니다");
+    announce(t("notifications.markedAllRead"));
   };
 
   // 읽음으로 표시한 뒤 대상으로 이동한다. refresh가 끝난 뒤 이동해야 탑바 개수가 맞는다
@@ -71,6 +71,9 @@ export function useNotificationState(initial: NotificationItem[], workspaceId: s
   return { items, set, markAll, openItem };
 }
 
+// 굵은 이름 자리를 가르는 표시. 사용자 값에는 나오지 않는 제어 문자다
+const SEP = "\u001f";
+
 export function NotificationLine({
   n,
   now,
@@ -82,17 +85,23 @@ export function NotificationLine({
   color: string | undefined;
   compact?: boolean;
 }) {
-  const actor = n.actorName ?? UNKNOWN_USER_LABEL;
+  const t = useT();
+  const f = useFormatter();
+  const actor = n.actorName ?? t("common.unknownUser");
+  // 문장 틀을 [이름 앞][굵은 이름][이름 뒤]로 나눈다
+  const [before, after = ""] = t(`notifications.line.${n.type}`, { actor: SEP, text: n.text }).split(SEP);
   return (
     <div className="flex min-w-0 flex-1 gap-2.5">
       <MemberAvatar name={actor} color={color} size={28} className="mt-0.5" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className={cn("text-(length:--fs-sm) leading-snug text-(--text-2)", !n.read && "text-(--text)")}>
-          <span className="font-semibold text-(--text)">{actor}</span>님이 {n.text}
+          {before}
+          <span className="font-semibold text-(--text)">{actor}</span>
+          {after}
         </p>
         {(n.task || n.project) && (
           <p className="truncate text-(length:--fs-sm) font-medium text-(--text)">
-            {n.task ? (n.task.deleted ? DELETED_TASK_LABEL : n.task.title) : n.project?.name}
+            {n.task ? (n.task.deleted ? t("common.deletedTask") : n.task.title) : n.project?.name}
             {n.task && <span className="ml-1.5 font-mono text-(length:--fs-xs) font-normal text-(--text-3)">{n.task.key}</span>}
           </p>
         )}
@@ -100,7 +109,7 @@ export function NotificationLine({
           <p className={cn("text-(length:--fs-sm) text-(--text-3)", compact ? "truncate" : "line-clamp-2")}>{n.snippet}</p>
         )}
         <p className="text-(length:--fs-xs) text-(--text-3)">
-          {NOTIFICATION_TYPE_LABELS[n.type]} · <time dateTime={n.created_at}>{formatRelative(n.created_at, now)}</time>
+          {t(`common.notificationType.${n.type}`)} · <time dateTime={n.created_at}>{f.relative(n.created_at, now)}</time>
         </p>
       </div>
     </div>
@@ -109,9 +118,10 @@ export function NotificationLine({
 
 // 읽지 않은 알림 점
 export function UnreadDot({ read }: { read: boolean }) {
+  const t = useT();
   return read ? (
     <span aria-hidden className="mt-2 size-2 shrink-0" />
   ) : (
-    <span role="img" aria-label="읽지 않음" className="mt-2 size-2 shrink-0 rounded-full bg-(--accent)" />
+    <span role="img" aria-label={t("notifications.unread")} className="mt-2 size-2 shrink-0 rounded-full bg-(--accent)" />
   );
 }

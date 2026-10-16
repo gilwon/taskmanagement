@@ -16,8 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusIcon, TaskKey } from "@/components/tasks/parts";
 import { announce } from "@/components/tasks/views/shared";
 import { formatSize } from "@/lib/files/mime";
-import { formatRelative } from "@/lib/format/date";
-import { ARCHIVE_STATE_LABELS, ARCHIVE_TAB_LABELS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import { ARCHIVE_TAB_LABELS } from "@/lib/i18n/labels";
 import { purgeTrashItem, restoreTrashItem, unarchiveItem } from "@/lib/projects/actions";
 import type { TrashData } from "@/lib/projects/queries";
 import { canPurge, canRestore, restoreMode } from "@/lib/projects/trash";
@@ -45,13 +45,6 @@ type Row = {
   restorable: boolean;
 };
 
-const EMPTY: Record<Tab, string> = {
-  projects: "보관하거나 삭제한 프로젝트가 없습니다",
-  tasks: "보관된 작업이 없습니다",
-  comments: "삭제한 댓글이 없습니다",
-  files: "삭제한 파일이 없습니다",
-};
-
 export function ArchiveView({
   data,
   members,
@@ -65,6 +58,8 @@ export function ArchiveView({
   wsSlug: string;
   nowIso: string;
 }) {
+  const t = useT();
+  const f = useFormatter();
   const router = useRouter();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const [tab, setTab] = useState<Tab>("projects");
@@ -72,8 +67,8 @@ export function ArchiveView({
   const [busy, setBusy] = useState<string | null>(null);
   const nameOf = useMemo(() => {
     const map = new Map(members.map((m) => [m.id, m.name]));
-    return (id: string | null) => (id ? (map.get(id) ?? UNKNOWN_USER_LABEL) : null);
-  }, [members]);
+    return (id: string | null) => (id ? (map.get(id) ?? t("common.unknownUser")) : null);
+  }, [members, t]);
 
   const rows = useMemo<Record<Tab, Row[]>>(() => {
     const perm = (projectId: string) => data.perms[projectId];
@@ -93,20 +88,20 @@ export function ArchiveView({
         purgeable: canPurge("project", p, perm(p.id)),
         restorable: canRestore("project", p, perm(p.id), meId),
       })),
-      tasks: data.tasks.map((t) => ({
+      tasks: data.tasks.map((task) => ({
         kind: "task",
-        id: t.id,
-        title: t.title,
-        icon: <StatusIcon status={t.status} />,
-        href: t.deletedAt ? null : `/${wsSlug}/task/${t.key}`,
-        project: t.project,
-        context: t.key,
-        deletedAt: t.deletedAt,
-        archivedAt: t.archivedAt,
+        id: task.id,
+        title: task.title,
+        icon: <StatusIcon status={task.status} />,
+        href: task.deletedAt ? null : `/${wsSlug}/task/${task.key}`,
+        project: task.project,
+        context: task.key,
+        deletedAt: task.deletedAt,
+        archivedAt: task.archivedAt,
         by: null,
-        token: t.token,
-        purgeable: canPurge("task", t, perm(t.project.id)),
-        restorable: canRestore("task", t, perm(t.project.id), meId),
+        token: task.token,
+        purgeable: canPurge("task", task, perm(task.project.id)),
+        restorable: canRestore("task", task, perm(task.project.id), meId),
       })),
       comments: data.comments.map((c) => ({
         kind: "comment",
@@ -115,7 +110,7 @@ export function ArchiveView({
         icon: <MessageSquare {...ICON} className="text-(--text-3)" />,
         href: null,
         project: c.project,
-        context: `${c.task.key} ${c.task.title} · 작성 ${nameOf(c.authorId) ?? UNKNOWN_USER_LABEL}`,
+        context: `${c.task.key} ${c.task.title} · ${t("projects.archive.writtenBy", { name: nameOf(c.authorId) ?? t("common.unknownUser") })}`,
         deletedAt: c.deletedAt,
         archivedAt: null,
         by: nameOf(c.deletedBy),
@@ -123,23 +118,23 @@ export function ArchiveView({
         purgeable: canPurge("comment", c, perm(c.project.id)),
         restorable: canRestore("comment", c, perm(c.project.id), meId),
       })),
-      files: data.files.map((f) => ({
+      files: data.files.map((file) => ({
         kind: "file",
-        id: f.id,
-        title: f.name,
-        icon: <FileTypeIcon type={f.type} size={16} />,
+        id: file.id,
+        title: file.name,
+        icon: <FileTypeIcon type={file.type} size={16} />,
         href: null,
-        project: f.project,
-        context: `${formatSize(f.sizeBytes)} · 올린 사람 ${nameOf(f.uploadedBy) ?? UNKNOWN_USER_LABEL}`,
-        deletedAt: f.deletedAt,
+        project: file.project,
+        context: `${formatSize(file.sizeBytes)} · ${t("projects.archive.uploadedBy", { name: nameOf(file.uploadedBy) ?? t("common.unknownUser") })}`,
+        deletedAt: file.deletedAt,
         archivedAt: null,
         by: null,
-        token: f.token,
-        purgeable: canPurge("file", f, perm(f.project.id)),
-        restorable: canRestore("file", f, perm(f.project.id), meId),
+        token: file.token,
+        purgeable: canPurge("file", file, perm(file.project.id)),
+        restorable: canRestore("file", file, perm(file.project.id), meId),
       })),
     };
-  }, [data, wsSlug, nameOf, meId]);
+  }, [data, wsSlug, nameOf, meId, t]);
 
   const restore = async (row: Row) => {
     setBusy(row.id);
@@ -154,8 +149,8 @@ export function ArchiveView({
       router.refresh();
       return;
     }
-    announce(`${row.title}을(를) 되돌렸습니다`);
-    toast.success(restoreMode(row) === "restore" ? "복원했습니다" : "보관을 해제했습니다");
+    announce(t("projects.archive.restoredItem", { name: row.title }));
+    toast.success(restoreMode(row) === "restore" ? t("projects.archive.restored") : t("projects.archive.unarchived"));
   };
 
   const purge = async (row: Row) => {
@@ -168,30 +163,33 @@ export function ArchiveView({
       router.refresh();
       return;
     }
-    announce(`${row.title}을(를) 영구 삭제했습니다`);
-    toast.success("영구 삭제했습니다");
+    announce(t("projects.archive.purgedItem", { name: row.title }));
+    toast.success(t("projects.archive.purged"));
   };
+
+  // 이름만 굵게 보이려고 문장 틀을 {name} 자리에서 나눈다
+  const [confirmBefore, confirmAfter = ""] = t("projects.archive.confirmBody", { name: "{name}" }).split("{name}");
 
   return (
     <div className="px-(--gutter) pb-(--s-8)">
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="gap-(--s-3)">
-        <TabsList variant="line" aria-label="보관함 구분" className="h-10 max-w-full justify-start overflow-x-auto">
-          {(Object.keys(ARCHIVE_TAB_LABELS) as Tab[]).map((t) => (
-            <TabsTrigger key={t} value={t} className="flex-none px-2 text-(length:--fs-sm)">
-              {ARCHIVE_TAB_LABELS[t]}
+        <TabsList variant="line" aria-label={t("projects.archive.tabs")} className="h-10 max-w-full justify-start overflow-x-auto">
+          {(Object.keys(ARCHIVE_TAB_LABELS) as Tab[]).map((k) => (
+            <TabsTrigger key={k} value={k} className="flex-none px-2 text-(length:--fs-sm)">
+              {t(`common.archiveTab.${k}`)}
               <span className="rounded-(--r-full) bg-(--surface-3) px-1.5 text-(length:--fs-2xs) text-(--text-3) tabular-nums">
-                {rows[t].length}
+                {rows[k].length}
               </span>
             </TabsTrigger>
           ))}
         </TabsList>
-        {(Object.keys(ARCHIVE_TAB_LABELS) as Tab[]).map((t) => (
-          <TabsContent key={t} value={t}>
-            {rows[t].length === 0 ? (
-              <EmptyState icon={ArchiveRestore} title={EMPTY[t]} description="삭제한 항목은 영구 삭제하기 전까지 여기에서 되돌릴 수 있습니다." />
+        {(Object.keys(ARCHIVE_TAB_LABELS) as Tab[]).map((k) => (
+          <TabsContent key={k} value={k}>
+            {rows[k].length === 0 ? (
+              <EmptyState icon={ArchiveRestore} title={t(`projects.archive.empty.${k}`)} description={t("projects.archive.emptyDescription")} />
             ) : (
               <ul className="overflow-hidden rounded-(--r-lg) bg-(--surface) shadow-(--shadow-card)">
-                {rows[t].map((row) => (
+                {rows[k].map((row) => (
                   <li
                     key={row.id}
                     className="flex min-h-12 items-center gap-2.5 border-b border-(--divider) px-(--s-4) py-2 last:border-b-0 max-[640px]:flex-wrap"
@@ -213,7 +211,7 @@ export function ArchiveView({
                             row.deletedAt ? "bg-(--red-soft) text-(--red)" : "bg-(--surface-3) text-(--text-3)",
                           )}
                         >
-                          {row.deletedAt ? ARCHIVE_STATE_LABELS.deleted : ARCHIVE_STATE_LABELS.archived}
+                          {row.deletedAt ? t("common.archiveState.deleted") : t("common.archiveState.archived")}
                         </span>
                       </span>
                       <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 text-(length:--fs-xs) text-(--text-3)">
@@ -225,10 +223,15 @@ export function ArchiveView({
                         )}
                         {row.kind !== "task" && row.context && <span className="truncate">{row.project ? `· ${row.context}` : row.context}</span>}
                         <span>
-                          · {row.deletedAt ? "삭제" : "보관"}
-                          {row.by ? ` ${row.by}` : ""} ·{" "}
+                          ·{" "}
+                          {row.deletedAt
+                            ? row.by
+                              ? t("projects.archive.deletedBy", { name: row.by })
+                              : t("projects.archive.deleted")
+                            : t("projects.archive.archived")}{" "}
+                          ·{" "}
                           <time dateTime={row.deletedAt ?? row.archivedAt ?? undefined}>
-                            {formatRelative((row.deletedAt ?? row.archivedAt)!, now)}
+                            {f.relative((row.deletedAt ?? row.archivedAt)!, now)}
                           </time>
                         </span>
                       </span>
@@ -237,7 +240,7 @@ export function ArchiveView({
                       {row.restorable && (
                         <Button size="xs" variant="outline" disabled={busy === row.id} onClick={() => void restore(row)}>
                           <RotateCcw {...ICON} />
-                          {restoreMode(row) === "restore" ? "복원" : "보관 해제"}
+                          {restoreMode(row) === "restore" ? t("projects.archive.restore") : t("projects.archive.unarchive")}
                         </Button>
                       )}
                       {row.purgeable && (
@@ -249,7 +252,7 @@ export function ArchiveView({
                           onClick={() => setConfirm(row)}
                         >
                           <Trash2 {...ICON} />
-                          영구 삭제
+                          {t("projects.archive.purge")}
                         </Button>
                       )}
                     </span>
@@ -263,19 +266,21 @@ export function ArchiveView({
 
       <Dialog open={confirm !== null} onOpenChange={(o) => !o && busy === null && setConfirm(null)}>
         <DialogContent className="gap-0 p-0 sm:max-w-[440px] data-open:animate-[modalIn_.2s_var(--ease)] max-[640px]:max-w-[calc(100%-1rem)]">
-          <DialogTitle className="px-4 pt-4 text-(length:--fs-md) font-semibold text-(--text)">영구 삭제할까요?</DialogTitle>
+          <DialogTitle className="px-4 pt-4 text-(length:--fs-md) font-semibold text-(--text)">{t("projects.archive.confirmTitle")}</DialogTitle>
           <DialogDescription className="px-4 pt-2 pb-4 text-(length:--fs-base) text-(--text-2)">
-            <span className="font-medium text-(--text)">{confirm?.title}</span>을(를) 영구 삭제합니다. 되돌릴 수 없습니다.
-            {confirm?.kind === "project" && " 프로젝트의 작업·댓글·파일과 저장된 첨부 파일이 모두 함께 지워집니다."}
-            {confirm?.kind === "task" && " 작업의 하위 작업·댓글도 함께 지워집니다. 첨부 파일은 프로젝트에 남습니다."}
-            {confirm?.kind === "file" && " 저장된 파일 내용도 함께 지워집니다."}
+            {confirmBefore}
+            <span className="font-medium text-(--text)">{confirm?.title}</span>
+            {confirmAfter}
+            {confirm?.kind === "project" && ` ${t("projects.archive.confirmProject")}`}
+            {confirm?.kind === "task" && ` ${t("projects.archive.confirmTask")}`}
+            {confirm?.kind === "file" && ` ${t("projects.archive.confirmFile")}`}
           </DialogDescription>
           <DialogFooter className="mx-0 mb-0 rounded-b-(--r-lg) border-t border-(--divider) bg-(--surface-2) px-4 py-3">
             <Button variant="outline" disabled={busy !== null} onClick={() => setConfirm(null)}>
-              취소
+              {t("common.action.cancel")}
             </Button>
             <Button variant="destructive" disabled={busy !== null} onClick={() => confirm && void purge(confirm)}>
-              {busy !== null ? "삭제하는 중…" : "영구 삭제"}
+              {busy !== null ? t("projects.archive.purging") : t("projects.archive.purge")}
             </Button>
           </DialogFooter>
         </DialogContent>

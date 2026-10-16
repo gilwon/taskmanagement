@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/lib/i18n/client";
 
 export function ConfirmDialog({
   open,
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   // 실패하면 오류 문구를 돌려준다. 성공하면 null
   onConfirm: (typed: string) => Promise<string | null>;
 }) {
+  const t = useT();
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,7 +68,8 @@ export function ConfirmDialog({
           {requireText !== undefined && (
             <div className="grid gap-1.5">
               <Label htmlFor="confirm-text">
-                확인을 위해 <span className="font-mono text-(--text)">{requireText}</span> 입력
+                {t("org.confirm.typeBefore")} <span className="font-mono text-(--text)">{requireText}</span>{" "}
+                {t("org.confirm.typeAfter")}
               </Label>
               <Input
                 id="confirm-text"
@@ -88,7 +91,7 @@ export function ConfirmDialog({
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              취소
+              {t("common.action.cancel")}
             </Button>
             <Button type="submit" variant="destructive" disabled={busy || blocked} aria-busy={busy}>
               {confirmLabel}

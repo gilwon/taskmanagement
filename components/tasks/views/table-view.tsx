@@ -24,14 +24,8 @@ import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
 import { TaskContextMenu } from "@/components/tasks/views/task-context-menu";
 import { cellBtn } from "@/components/tasks/views/list-view";
 import { EditCell, TaskMenu, TitleEditor, isInnerControl, type ViewCtl } from "@/components/tasks/views/shared";
-import { formatDue } from "@/lib/format/date";
-import {
-  COLUMN_LABELS,
-  ESTIMATE_LABELS,
-  TASK_PRIORITY_LABELS,
-  TASK_STATUS_LABELS,
-  UNASSIGNED_LABEL,
-} from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import { ESTIMATE_LABELS } from "@/lib/i18n/labels";
 import { COLUMN_KEYS, type ColumnKey, type SortField, type TaskItem } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +58,8 @@ const CHECK_W = 40;
 const MENU_W = 40;
 
 export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem[]; empty: boolean }) {
+  // t는 작업 행 변수로 쓰여 번역 함수는 tr로 둔다
+  const tr = useT();
   const { state, setState } = ctl;
   const { items: all } = useTasks();
   const [editing, setEditing] = useState<string | null>(null);
@@ -79,7 +75,7 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
 
   if (items.length === 0) {
     return empty ? (
-      <EmptyState icon={ListChecks} title="작업이 없습니다" description="작업을 추가해 일을 시작하세요." />
+      <EmptyState icon={ListChecks} title={tr("tasks.cell.emptyTitle")} description={tr("tasks.cell.emptyDescription")} />
     ) : null;
   }
 
@@ -117,7 +113,7 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
           <thead className="bg-(--surface-2)">
             <tr className="h-9 border-b border-(--border) text-left text-(length:--fs-xs) text-(--text-3)">
               <th scope="col">
-                <span className="sr-only">선택</span>
+                <span className="sr-only">{tr("tasks.table.select")}</span>
               </th>
               {cols.map((c) => {
                 const f = SORT_OF[c];
@@ -135,7 +131,7 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
                         onClick={() => sortBy(f)}
                         className="inline-flex min-h-6 max-w-[calc(100%-10px)] min-w-6 items-center gap-1 truncate rounded-(--r-xs) outline-none hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
                       >
-                        {COLUMN_LABELS[c]}
+                        {tr(`common.column.${c}`)}
                         {active &&
                           (state.sort.dir === 1 ? (
                             <ArrowUp aria-hidden size={12} strokeWidth={1.8} />
@@ -144,10 +140,10 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
                           ))}
                       </button>
                     ) : (
-                      <span className="truncate">{COLUMN_LABELS[c]}</span>
+                      <span className="truncate">{tr(`common.column.${c}`)}</span>
                     )}
                     <ResizeHandle
-                      label={COLUMN_LABELS[c]}
+                      label={tr(`common.column.${c}`)}
                       width={width(c)}
                       onLive={(w) => setLive({ col: c, w })}
                       onCommit={(w) => {
@@ -159,7 +155,7 @@ export function TableView({ ctl, items, empty }: { ctl: ViewCtl; items: TaskItem
                 );
               })}
               <th scope="col">
-                <span className="sr-only">메뉴</span>
+                <span className="sr-only">{tr("tasks.table.menu")}</span>
               </th>
             </tr>
           </thead>
@@ -183,6 +179,7 @@ function ResizeHandle({
   onLive: (w: number) => void;
   onCommit: (w: number) => void;
 }) {
+  const t = useT();
   const start = useRef<{ x: number; w: number } | null>(null);
   const clamp = (w: number) => Math.min(COL_MAX, Math.max(COL_MIN, w));
   // 보이는 막대는 6px이고 누르는 영역은 ::after로 경계 -18px~+6px(24px)까지 넓힌다
@@ -191,7 +188,7 @@ function ResizeHandle({
     <span
       role="separator"
       aria-orientation="vertical"
-      aria-label={`${label} 열 폭`}
+      aria-label={t("tasks.table.colWidth", { label })}
       aria-valuenow={width}
       aria-valuemin={COL_MIN}
       aria-valuemax={COL_MAX}
@@ -242,6 +239,8 @@ function Row({
   onEdit: () => void;
   onEditDone: () => void;
 }) {
+  const tr = useT();
+  const f = useFormatter();
   const { open } = useTaskDrawer();
   const { move, update } = useTaskActions();
   const { members } = useTasks();
@@ -286,7 +285,7 @@ function Row({
             )}
           >
             <StatusIcon status={t.status} size={14} />
-            <span className="truncate">{TASK_STATUS_LABELS[t.status]}</span>
+            <span className="truncate">{tr(`common.taskStatus.${t.status}`)}</span>
           </EditCell>
         );
       case "priority":
@@ -301,7 +300,7 @@ function Row({
             )}
           >
             <PriorityIcon priority={t.priority} size={14} />
-            <span className="truncate">{TASK_PRIORITY_LABELS[t.priority]}</span>
+            <span className="truncate">{tr(`common.taskPriority.${t.priority}`)}</span>
           </EditCell>
         );
       case "assignee":
@@ -321,7 +320,7 @@ function Row({
           >
             <AssigneeAvatar assignee={t.assignee} size={20} />
             <span className={cn("truncate", !t.assignee && "text-(--text-4)")}>
-              {t.assignee?.name ?? UNASSIGNED_LABEL}
+              {t.assignee?.name ?? tr("common.unassigned")}
             </span>
           </EditCell>
         );
@@ -329,10 +328,10 @@ function Row({
         return (
           <EditCell
             canEdit={t.canEdit}
-            label={`기한 ${t.due_date ? formatDue(t.due_date, ctl.now) : "없음"}, 바꾸기`}
+            label={t.due_date ? tr("tasks.cell.dueChange", { date: f.due(t.due_date, ctl.now) }) : tr("tasks.cell.dueNoneChange")}
             className={cn(cellBtn, "max-w-full")}
             wrap={(b) => (
-              <DatePicker label="기한" value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
+              <DatePicker label={tr("tasks.cell.due")} value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
                 {b}
               </DatePicker>
             )}
@@ -340,7 +339,7 @@ function Row({
             {t.due_date ? (
               <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />
             ) : (
-              <span className="text-(--text-4)">{t.canEdit ? "날짜 지정" : "—"}</span>
+              <span className="text-(--text-4)">{t.canEdit ? tr("tasks.cell.setDate") : "—"}</span>
             )}
           </EditCell>
         );
@@ -351,7 +350,7 @@ function Row({
             className={cn(cellBtn, "max-w-full")}
             wrap={(b) => (
               <DatePicker
-                label="시작일"
+                label={tr("tasks.table.start")}
                 value={t.start_date}
                 onChange={(d) => d !== t.start_date && void update(t.id, { start: d })}
               >
@@ -360,9 +359,9 @@ function Row({
             )}
           >
             {t.start_date ? (
-              formatDue(t.start_date, ctl.now)
+              f.due(t.start_date, ctl.now)
             ) : (
-              <span className="text-(--text-4)">{t.canEdit ? "날짜 지정" : "—"}</span>
+              <span className="text-(--text-4)">{t.canEdit ? tr("tasks.cell.setDate") : "—"}</span>
             )}
           </EditCell>
         );
@@ -370,7 +369,7 @@ function Row({
         return (
           <EditCell
             canEdit={t.canEdit}
-            label={`${t.key} 라벨 바꾸기`}
+            label={tr("tasks.table.labelsChange", { key: t.key })}
             className={cn(cellBtn, "max-w-full justify-start")}
             wrap={(b) => (
               <LabelPicker value={t.labels} onChange={(l) => void update(t.id, { labels: l })}>
@@ -391,7 +390,7 @@ function Row({
         return (
           <EditCell
             canEdit={t.canEdit}
-            label={`${t.key} 예상 시간 바꾸기`}
+            label={tr("tasks.table.estimateChange", { key: t.key })}
             className={cn(cellBtn, "max-w-full")}
             wrap={(b) => (
               <EstimateInput value={t.estimate} onChange={(v) => v !== t.estimate && void update(t.id, { estimate: v })}>
@@ -400,14 +399,18 @@ function Row({
             )}
           >
             {t.estimate ? (
-              (ESTIMATE_LABELS[t.estimate as keyof typeof ESTIMATE_LABELS] ?? t.estimate)
+              Object.hasOwn(ESTIMATE_LABELS, t.estimate) ? (
+                tr(`common.estimate.${t.estimate as keyof typeof ESTIMATE_LABELS}`)
+              ) : (
+                t.estimate
+              )
             ) : (
               <span className="text-(--text-4)">—</span>
             )}
           </EditCell>
         );
       case "created":
-        return <span className="text-(length:--fs-sm) text-(--text-3)">{formatDue(t.created_at, ctl.now)}</span>;
+        return <span className="text-(length:--fs-sm) text-(--text-3)">{f.due(t.created_at, ctl.now)}</span>;
       case "project":
         return (
           <span className="flex min-w-0 items-center gap-1.5 text-(length:--fs-sm) text-(--text-2)">
@@ -421,7 +424,7 @@ function Row({
   const checkbox = (
     <Checkbox
       checked={checked}
-      aria-label={`${t.key} 선택`}
+      aria-label={tr("tasks.cell.select", { key: t.key })}
       onClick={(e) => {
         e.stopPropagation();
         ctl.select(t.id, { range: e.shiftKey });
@@ -466,7 +469,7 @@ function Row({
             <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
               {rest.map((c) => (
                 <Fragment key={c}>
-                  <dt className="text-(length:--fs-xs) text-(--text-3)">{COLUMN_LABELS[c]}</dt>
+                  <dt className="text-(length:--fs-xs) text-(--text-3)">{tr(`common.column.${c}`)}</dt>
                   <dd className="min-w-0 overflow-hidden">{cell(c)}</dd>
                 </Fragment>
               ))}

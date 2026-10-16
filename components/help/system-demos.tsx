@@ -29,159 +29,162 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { NAV_LABELS, TASK_STATUS_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { TASK_STATUS_LABELS } from "@/lib/i18n/labels";
+import type { TaskStatus } from "@/lib/tasks/types";
 
 const row = "flex flex-wrap items-center gap-(--s-4)";
 const field = "grid w-full max-w-xs gap-1.5";
 const VIEWS = ["board", "list", "table"] as const;
 
 export function SystemDemos() {
+  const t = useT();
   const [view, setView] = useState<string>("board");
   return (
     <>
-      <ShowcaseSection id="sys-input" title="입력">
+      <ShowcaseSection id="sys-input" title={t("help.system.input")}>
         <div className="flex flex-wrap gap-(--s-4)">
           <div className={field}>
-            <Label htmlFor="sys-input-default">이름</Label>
-            <Input id="sys-input-default" placeholder="예: 홈페이지 개편" />
+            <Label htmlFor="sys-input-default">{t("help.system.name")}</Label>
+            <Input id="sys-input-default" placeholder={t("help.system.namePlaceholder")} />
           </div>
           <div className={field}>
-            <Label htmlFor="sys-input-disabled">비활성</Label>
-            <Input id="sys-input-disabled" disabled defaultValue="수정할 수 없음" />
+            <Label htmlFor="sys-input-disabled">{t("help.system.disabled")}</Label>
+            <Input id="sys-input-disabled" disabled defaultValue={t("help.system.readonlyValue")} />
           </div>
           <div className={field}>
-            <Label htmlFor="sys-input-error">오류</Label>
-            <Input id="sys-input-error" aria-invalid aria-describedby="sys-input-error-msg" defaultValue="" placeholder="이메일 주소" />
+            <Label htmlFor="sys-input-error">{t("help.system.error")}</Label>
+            <Input id="sys-input-error" aria-invalid aria-describedby="sys-input-error-msg" defaultValue="" placeholder={t("help.system.emailPlaceholder")} />
             <p id="sys-input-error-msg" className="text-(length:--fs-sm) text-(--red)">
-              이메일 주소를 입력해 주세요.
+              {t("help.states.emailRequired")}
             </p>
           </div>
         </div>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-choice" title="선택">
-        <ShowcaseGroup title="체크박스·스위치">
+      <ShowcaseSection id="sys-choice" title={t("help.system.choice")}>
+        <ShowcaseGroup title={t("help.system.checkSwitch")}>
           <div className={row}>
             <div className="flex items-center gap-2">
               <Checkbox id="sys-check-on" defaultChecked />
-              <Label htmlFor="sys-check-on">완료한 작업 보기</Label>
+              <Label htmlFor="sys-check-on">{t("help.system.showDone")}</Label>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox id="sys-check-off" />
-              <Label htmlFor="sys-check-off">하위 작업 포함</Label>
+              <Label htmlFor="sys-check-off">{t("help.system.includeSubtasks")}</Label>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox id="sys-check-disabled" disabled />
-              <Label htmlFor="sys-check-disabled">비활성</Label>
+              <Label htmlFor="sys-check-disabled">{t("help.system.disabled")}</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch id="sys-switch" defaultChecked />
-              <Label htmlFor="sys-switch">이메일 알림</Label>
+              <Label htmlFor="sys-switch">{t("help.system.emailNotifications")}</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch id="sys-switch-sm" size="sm" />
-              <Label htmlFor="sys-switch-sm">작은 스위치</Label>
+              <Label htmlFor="sys-switch-sm">{t("help.system.smallSwitch")}</Label>
             </div>
           </div>
         </ShowcaseGroup>
-        <ShowcaseGroup title="셀렉트">
+        <ShowcaseGroup title={t("help.system.select")}>
           <Select defaultValue="todo">
-            <SelectTrigger aria-label="상태" className="w-44">
+            <SelectTrigger aria-label={t("help.system.status")} className="w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(TASK_STATUS_LABELS).map(([v, label]) => (
+              {(Object.keys(TASK_STATUS_LABELS) as TaskStatus[]).map((v) => (
                 <SelectItem key={v} value={v}>
-                  {label}
+                  {t(`common.taskStatus.${v}`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </ShowcaseGroup>
-        <ShowcaseGroup title="토글 그룹">
+        <ShowcaseGroup title={t("help.system.toggleGroup")}>
           <ToggleGroup
             type="single"
             variant="outline"
             size="sm"
             spacing={0}
             value={view}
-            aria-label="보기 방식"
+            aria-label={t("help.system.viewMode")}
             onValueChange={(v) => v && setView(v)}
           >
             {VIEWS.map((v) => (
               <ToggleGroupItem key={v} value={v} className="px-3">
-                {NAV_LABELS[v]}
+                {t(`common.nav.${v}`)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
         </ShowcaseGroup>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-tabs" title="탭">
+      <ShowcaseSection id="sys-tabs" title={t("help.system.tabs")}>
         <Tabs defaultValue="comments" className="max-w-md">
           <TabsList>
-            <TabsTrigger value="comments">댓글</TabsTrigger>
-            <TabsTrigger value="activity">활동</TabsTrigger>
-            <TabsTrigger value="files">파일</TabsTrigger>
+            <TabsTrigger value="comments">{t("common.detailTab.comments")}</TabsTrigger>
+            <TabsTrigger value="activity">{t("common.detailTab.activity")}</TabsTrigger>
+            <TabsTrigger value="files">{t("common.detailTab.files")}</TabsTrigger>
           </TabsList>
           <TabsContent value="comments" className="text-(length:--fs-base) text-(--text-2)">
-            댓글 탭 내용입니다.
+            {t("help.system.tabContent.comments")}
           </TabsContent>
           <TabsContent value="activity" className="text-(length:--fs-base) text-(--text-2)">
-            활동 탭 내용입니다.
+            {t("help.system.tabContent.activity")}
           </TabsContent>
           <TabsContent value="files" className="text-(length:--fs-base) text-(--text-2)">
-            파일 탭 내용입니다.
+            {t("help.system.tabContent.files")}
           </TabsContent>
         </Tabs>
       </ShowcaseSection>
 
-      <ShowcaseSection id="sys-overlay" title="툴팁·메뉴·대화상자">
+      <ShowcaseSection id="sys-overlay" title={t("help.system.overlays")}>
         <div className={row}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="도움말">
+              <Button variant="outline" size="icon" aria-label={t("help.system.help")}>
                 <Info aria-hidden strokeWidth={1.8} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>마우스를 올리거나 포커스하면 보입니다</TooltipContent>
+            <TooltipContent>{t("help.system.tooltip")}</TooltipContent>
           </Tooltip>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="작업 메뉴">
+              <Button variant="outline" size="icon" aria-label={t("help.system.taskMenu")}>
                 <MoreHorizontal aria-hidden strokeWidth={1.8} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem>
-                <Pencil aria-hidden strokeWidth={1.8} /> 편집
+                <Pencil aria-hidden strokeWidth={1.8} /> {t("help.system.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Copy aria-hidden strokeWidth={1.8} /> 복제
+                <Copy aria-hidden strokeWidth={1.8} /> {t("help.system.duplicate")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive">
-                <Trash2 aria-hidden strokeWidth={1.8} /> 삭제
+                <Trash2 aria-hidden strokeWidth={1.8} /> {t("help.system.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline">대화상자 열기</Button>
+              <Button variant="outline">{t("help.system.openDialog")}</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>변경 사항을 저장할까요?</DialogTitle>
-                <DialogDescription>저장하지 않고 닫으면 입력한 내용이 사라집니다.</DialogDescription>
+                <DialogTitle>{t("help.system.dialogTitle")}</DialogTitle>
+                <DialogDescription>{t("help.system.dialogDescription")}</DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button variant="outline">취소</Button>
+                  <Button variant="outline">{t("common.action.cancel")}</Button>
                 </DialogClose>
                 <DialogClose asChild>
-                  <Button>저장</Button>
+                  <Button>{t("common.action.save")}</Button>
                 </DialogClose>
               </DialogFooter>
             </DialogContent>

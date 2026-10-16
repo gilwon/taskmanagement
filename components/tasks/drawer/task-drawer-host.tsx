@@ -11,6 +11,7 @@ import { TaskDetailPanel } from "@/components/tasks/drawer/task-detail-panel";
 import { useNewTaskTarget } from "@/components/tasks/new-task/launcher";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
+import { useT } from "@/lib/i18n/client";
 
 const SMALL = "(max-width: 640px)";
 
@@ -45,6 +46,7 @@ export function TaskDrawerHost() {
 type Fetched = { key: string; status: "loading" | "missing" | "error"; error?: string };
 
 function Host() {
+  const t = useT();
   const router = useRouter();
   const { openKey, open, close } = useTaskDrawer();
   const { items, workspace } = useTasks();
@@ -121,9 +123,9 @@ function Host() {
     if (announced.current === item.key) return;
     announced.current = item.key;
     const live = document.getElementById("sr-live");
-    if (live) live.textContent = `${item.key} ${item.title} 열림`;
+    if (live) live.textContent = t("tasks.drawer.opened", { key: item.key, title: item.title });
     titleRef.current?.focus();
-  }, [item, openKey]);
+  }, [item, openKey, t]);
 
   const expand = useCallback(() => {
     if (!item) return;
@@ -163,7 +165,7 @@ function Host() {
           }}
         >
         <aside ref={asideRef} className="fixed inset-y-0 right-0 z-50 flex h-full w-[620px] max-w-full flex-col border-l border-(--border) bg-(--surface) shadow-(--shadow-pop) outline-none duration-300 ease-(--ease-drawer) data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right max-[640px]:w-full max-[640px]:border-l-0">
-          <SheetTitle className="sr-only">{item ? `${item.key} ${item.title}` : (openKey ?? "작업")}</SheetTitle>
+          <SheetTitle className="sr-only">{item ? `${item.key} ${item.title}` : (openKey ?? t("tasks.drawer.fallbackTitle"))}</SheetTitle>
           {item ? (
             <TaskDetailPanel
               task={item}
@@ -179,22 +181,22 @@ function Host() {
               {state?.status === "missing" || state?.status === "error" ? (
                 <>
                   <p role="alert" className="text-(length:--fs-base) text-(--text-2)">
-                    {state.status === "missing" ? "작업을 찾을 수 없습니다. 삭제되었거나 볼 권한이 없습니다." : state.error}
+                    {state.status === "missing" ? t("tasks.errors.notFound") : state.error}
                   </p>
                   <div className="flex gap-2">
                     {state.status === "error" && (
                       <Button size="sm" variant="outline" onClick={() => setRetry((n) => n + 1)}>
-                        다시 시도
+                        {t("tasks.drawer.retry")}
                       </Button>
                     )}
                     <Button size="sm" variant="ghost" onClick={close}>
-                      닫기
+                      {t("tasks.drawer.close")}
                     </Button>
                   </div>
                 </>
               ) : (
                 <p aria-busy="true" className="text-(length:--fs-sm) text-(--text-3)">
-                  작업을 불러오는 중…
+                  {t("tasks.drawer.loading")}
                 </p>
               )}
             </div>

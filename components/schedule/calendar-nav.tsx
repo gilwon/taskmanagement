@@ -4,13 +4,12 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { formatMonthTitle, seoulDay } from "@/lib/format/date";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import { colorHex } from "@/lib/i18n/labels";
 import { addDays, addMonths, firstOfMonth, monthOf, startOfWeek, weekTitle } from "@/lib/schedule/dates";
 import type { CalendarMode } from "@/lib/schedule/types";
 import { cn } from "@/lib/utils";
 
-const rangeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", month: "long", day: "numeric" });
 const ICON = { size: 15, strokeWidth: 1.8, "aria-hidden": true } as const;
 const BTN =
   "inline-flex h-(--h-md) items-center justify-center rounded-(--r-sm) border border-(--border) bg-(--surface) text-(length:--fs-sm) text-(--text-2) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)";
@@ -26,6 +25,8 @@ export function CalendarNav({
   todayIso: string;
   legend?: { id: string; name: string; color: string }[];
 }) {
+  const t = useT();
+  const f = useFormatter();
   const pathname = usePathname();
   const params = useSearchParams();
   // 드로어(?task=) 등 다른 값은 지우고 보는 범위만 바꾼다
@@ -45,19 +46,19 @@ export function CalendarNav({
   // 주 보기로 바꾸면 이번 달이면 오늘이 든 주, 아니면 그 달 첫 주
   const weekHref = href({ w: startOfWeek(monthOf(anchor) === monthOf(todayIso) ? todayIso : firstOfMonth(anchor)) });
   const monthHref = href({ m: monthOf(anchor) });
-  const title = week ? weekTitle(anchor) : formatMonthTitle(anchor);
-  const weekRange = `${rangeFmt.format(new Date(seoulDay(anchor)))} – ${rangeFmt.format(new Date(seoulDay(addDays(anchor, 6))))}`;
+  const title = week ? weekTitle(anchor, t, f.locale) : f.monthTitle(anchor);
+  const weekRange = `${f.date(anchor)} – ${f.date(addDays(anchor, 6))}`;
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-(--gutter) pb-(--s-3)">
       <div className="flex items-center gap-1">
         <Link href={todayHref} scroll={false} className={cn(BTN, "px-2.5")}>
-          오늘
+          {t("schedule.nav.today")}
         </Link>
-        <Link href={prev} scroll={false} aria-label={week ? "이전 주" : "이전 달"} className={cn(BTN, "w-(--h-md)")}>
+        <Link href={prev} scroll={false} aria-label={week ? t("schedule.nav.prevWeek") : t("schedule.nav.prevMonth")} className={cn(BTN, "w-(--h-md)")}>
           <ChevronLeft {...ICON} />
         </Link>
-        <Link href={next} scroll={false} aria-label={week ? "다음 주" : "다음 달"} className={cn(BTN, "w-(--h-md)")}>
+        <Link href={next} scroll={false} aria-label={week ? t("schedule.nav.nextWeek") : t("schedule.nav.nextMonth")} className={cn(BTN, "w-(--h-md)")}>
           <ChevronRight {...ICON} />
         </Link>
       </div>
@@ -66,7 +67,7 @@ export function CalendarNav({
         {week && <span className="ml-2 text-(length:--fs-sm) font-normal text-(--text-3)">{weekRange}</span>}
       </h2>
       {legend && legend.length > 0 && (
-        <ul aria-label="프로젝트 범례" className="hide-m flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        <ul aria-label={t("schedule.nav.legend")} className="hide-m flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           {legend.map((p) => (
             <li key={p.id} className="inline-flex items-center gap-1.5 text-(length:--fs-xs) text-(--text-3)">
               <span aria-hidden className="size-2 rounded-full" style={{ background: colorHex(p.color) }} />
@@ -75,11 +76,11 @@ export function CalendarNav({
           ))}
         </ul>
       )}
-      <nav aria-label="보기 단위" className="ml-auto flex rounded-(--r-sm) border border-(--border) bg-(--surface) p-0.5">
+      <nav aria-label={t("schedule.nav.unit")} className="ml-auto flex rounded-(--r-sm) border border-(--border) bg-(--surface) p-0.5">
         {(
           [
-            ["month", "월", monthHref],
-            ["week", "주", weekHref],
+            ["month", t("schedule.nav.month"), monthHref],
+            ["week", t("schedule.nav.week"), weekHref],
           ] as const
         ).map(([m, label, to]) => (
           <Link

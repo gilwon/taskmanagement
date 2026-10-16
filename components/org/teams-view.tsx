@@ -10,7 +10,7 @@ import { MemberAvatar } from "@/components/shell/member-avatar";
 import { PageHeader } from "@/components/shell/page-header";
 import { ProjectIcon } from "@/components/shell/project-icon";
 import { Button } from "@/components/ui/button";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import type { OrgMember, OrgTeam, TeamProject } from "@/lib/org/queries";
 
 const MAX_AVATARS = 5;
@@ -30,6 +30,7 @@ export function TeamsView({
   admin: boolean;
   openNew: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(openNew && admin);
   const [dialogKey, setDialogKey] = useState(0);
   const openDialog = () => {
@@ -40,13 +41,13 @@ export function TeamsView({
   return (
     <>
       <PageHeader
-        title={NAV_LABELS.teams}
-        subtitle="구성원과 프로젝트를 팀으로 묶어 봅니다."
+        title={t("common.nav.teams")}
+        subtitle={t("org.teams.subtitle")}
         actions={
           admin && (
             <Button size="sm" onClick={openDialog}>
               <Plus aria-hidden strokeWidth={1.8} />
-              {NAV_LABELS.newTeam}
+              {t("common.nav.newTeam")}
             </Button>
           )
         }
@@ -57,26 +58,26 @@ export function TeamsView({
       {teams.length === 0 ? (
         <EmptyState
           icon={UsersRound}
-          title="아직 팀이 없습니다"
-          description={admin ? "팀을 만들어 구성원과 프로젝트를 묶어 보세요." : "관리자가 팀을 만들면 여기에 보입니다."}
+          title={t("org.teams.emptyTitle")}
+          description={admin ? t("org.teams.emptyAdmin") : t("org.teams.emptyMember")}
         />
       ) : (
         <ul className="grid grid-cols-1 gap-3 px-(--gutter) pb-(--s-8) sm:grid-cols-2 xl:grid-cols-3">
-          {teams.map((t) => {
-            const people = members.filter((m) => m.teamId === t.id && m.status !== "deactivated");
-            const count = projects.filter((p) => p.teamId === t.id).length;
+          {teams.map((team) => {
+            const people = members.filter((m) => m.teamId === team.id && m.status !== "deactivated");
+            const count = projects.filter((p) => p.teamId === team.id).length;
             return (
-              <li key={t.id}>
+              <li key={team.id}>
                 <Link
-                  href={`/${workspace.slug}/teams/${t.id}`}
+                  href={`/${workspace.slug}/teams/${team.id}`}
                   className="flex h-full flex-col gap-3 rounded-(--r-lg) bg-(--surface) p-(--s-4) shadow-(--shadow-card) outline-none transition-colors duration-(--dur) hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)"
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <ProjectIcon icon={t.icon} color={t.color} size={28} />
-                    <span className="truncate text-(length:--fs-md) font-semibold text-(--text)">{t.name}</span>
+                    <ProjectIcon icon={team.icon} color={team.color} size={28} />
+                    <span className="truncate text-(length:--fs-md) font-semibold text-(--text)">{team.name}</span>
                   </span>
-                  {t.description && (
-                    <span className="line-clamp-2 text-(length:--fs-sm) text-(--text-3)">{t.description}</span>
+                  {team.description && (
+                    <span className="line-clamp-2 text-(length:--fs-sm) text-(--text-3)">{team.description}</span>
                   )}
                   <span className="mt-auto flex items-center justify-between gap-2 text-(length:--fs-sm) text-(--text-3)">
                     <span className="flex items-center gap-2">
@@ -85,9 +86,9 @@ export function TeamsView({
                           <MemberAvatar key={m.id} name={m.name} color={m.color} size={22} className="ring-2 ring-(--surface)" />
                         ))}
                       </span>
-                      <span>구성원 {people.length}명</span>
+                      <span>{t("org.teams.memberCount", { count: people.length })}</span>
                     </span>
-                    <span>프로젝트 {count}개</span>
+                    <span>{t("org.teams.projectCount", { count })}</span>
                   </span>
                 </Link>
               </li>

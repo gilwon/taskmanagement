@@ -16,6 +16,7 @@ import {
   useNotificationState,
 } from "@/components/notifications/notification-parts";
 import type { Enums } from "@/lib/database.types";
+import { useT } from "@/lib/i18n/client";
 import { INBOX_TAB_LABELS } from "@/lib/i18n/labels";
 import type { NotificationItem } from "@/lib/notifications/queries";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ type Props = {
 };
 
 export function InboxView({ initial, workspace, colors, nowIso }: Props) {
+  const t = useT();
   const { items, set, markAll } = useNotificationState(initial, workspace.id);
   const [tab, setTab] = useState<Tab>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -52,12 +54,12 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
 
   return (
     <div className="grid min-h-0 grid-cols-[420px_minmax(0,1fr)] gap-(--s-4) px-(--gutter) pb-(--s-8) max-[901px]:grid-cols-1">
-      <section aria-label="수신함 목록" className={cn("flex min-w-0 flex-col gap-(--s-3)", selected && "max-[901px]:hidden")}>
+      <section aria-label={t("notifications.inboxList")} className={cn("flex min-w-0 flex-col gap-(--s-3)", selected && "max-[901px]:hidden")}>
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList className="max-w-full overflow-x-auto overflow-y-hidden">
-            {TABS.map((t) => (
-              <TabsTrigger key={t} value={t}>
-                {INBOX_TAB_LABELS[t]}
+            {TABS.map((k) => (
+              <TabsTrigger key={k} value={k}>
+                {t(`common.inboxTab.${k}`)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -66,16 +68,16 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
           <div className="flex items-center gap-2">
             <Switch id="inbox-unread" checked={unreadOnly} onCheckedChange={setUnreadOnly} />
             <Label htmlFor="inbox-unread" className="text-(length:--fs-sm) text-(--text-2)">
-              읽지 않음만
+              {t("notifications.unreadOnly")}
             </Label>
           </div>
           <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void markAll()} disabled={unread === 0}>
             <CheckCheck size={14} strokeWidth={1.8} aria-hidden />
-            모두 읽음으로 표시
+            {t("notifications.markAllRead")}
           </Button>
         </div>
         {shown.length === 0 ? (
-          <EmptyState icon={Inbox} title="모두 확인했습니다" description="새로 처리할 알림이 없습니다." />
+          <EmptyState icon={Inbox} title={t("notifications.allCaughtUp")} description={t("notifications.inboxEmpty")} />
         ) : (
           <ul className="flex flex-col rounded-(--r-lg) border border-(--border) bg-(--surface)">
             {shown.map((n) => (
@@ -99,7 +101,7 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
       </section>
 
       <section
-        aria-label="미리보기"
+        aria-label={t("notifications.preview")}
         className={cn(
           "min-w-0 self-start rounded-(--r-lg) border border-(--border) bg-(--surface) p-(--s-5)",
           !selected && "max-[901px]:hidden",
@@ -109,7 +111,7 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
           <div className="flex flex-col gap-(--s-4)">
             <Button variant="ghost" size="sm" className="self-start min-[901px]:hidden" onClick={() => setSelectedId(null)}>
               <ArrowLeft size={14} strokeWidth={1.8} aria-hidden />
-              목록으로
+              {t("notifications.backToList")}
             </Button>
             <NotificationLine n={selected} now={now} color={selected.actorId ? colors[selected.actorId] : undefined} />
             <div className="flex flex-wrap gap-2">
@@ -117,7 +119,7 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
                 <Button asChild size="sm">
                   <Link href={href}>
                     <SquareArrowOutUpRight size={14} strokeWidth={1.8} aria-hidden />
-                    {selected.task ? "작업 열기" : "프로젝트 열기"}
+                    {selected.task ? t("notifications.openTask") : t("notifications.openProject")}
                   </Link>
                 </Button>
               )}
@@ -126,23 +128,23 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
                 <Button asChild size="sm" variant="outline">
                   <Link href={`${href}?compose=1`}>
                     <MessageSquareReply size={14} strokeWidth={1.8} aria-hidden />
-                    답글
+                    {t("notifications.reply")}
                   </Link>
                 </Button>
               )}
               {selected.read && (
                 <Button size="sm" variant="ghost" onClick={() => void set([selected.id], false)}>
                   <MailOpen size={14} strokeWidth={1.8} aria-hidden />
-                  읽지 않음으로 표시
+                  {t("notifications.markUnread")}
                 </Button>
               )}
             </div>
             {!href && (
-              <p className="text-(length:--fs-sm) text-(--text-3)">대상이 삭제되었거나 볼 권한이 없습니다.</p>
+              <p className="text-(length:--fs-sm) text-(--text-3)">{t("notifications.targetGone")}</p>
             )}
           </div>
         ) : (
-          <p className="py-(--s-8) text-center text-(length:--fs-sm) text-(--text-3)">왼쪽에서 알림을 고르면 여기에 보입니다.</p>
+          <p className="py-(--s-8) text-center text-(length:--fs-sm) text-(--text-3)">{t("notifications.pickHint")}</p>
         )}
       </section>
     </div>

@@ -7,11 +7,13 @@ import { EmptyState } from "@/components/shell/empty-state";
 import { cameFromDrawer } from "@/components/tasks/drawer/task-drawer-host";
 import { TaskDetailPanel } from "@/components/tasks/drawer/task-detail-panel";
 import { useTasks } from "@/components/tasks/task-store";
+import { useT } from "@/lib/i18n/client";
 
 export function TaskPageView({ taskId, taskKey }: { taskId: string; taskKey: string }) {
+  const t = useT();
   const router = useRouter();
   const { items, workspace } = useTasks();
-  const task = items.find((t) => t.id === taskId);
+  const task = items.find((item) => item.id === taskId);
   const ws = workspace.slug;
 
   if (!task) {
@@ -20,11 +22,11 @@ export function TaskPageView({ taskId, taskKey }: { taskId: string; taskKey: str
         <h1 className="sr-only">{taskKey}</h1>
         <EmptyState
           icon={Trash2}
-          title="삭제한 작업입니다"
-          description="알림의 실행 취소로 되돌릴 수 있습니다."
+          title={t("tasks.drawer.deletedTitle")}
+          description={t("tasks.drawer.deletedDescription")}
           action={
             <Link href={`/${ws}/tasks`} className="text-(length:--fs-sm) text-(--accent) underline">
-              작업 목록으로 가기
+              {t("tasks.drawer.backToList")}
             </Link>
           }
         />

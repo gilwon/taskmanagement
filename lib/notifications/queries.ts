@@ -1,13 +1,14 @@
 // 알림·수신함 서버 조회. RLS가 본인 알림만 보이고, 보낸 사람·작업·프로젝트는 한 번의 임베드 조회로 읽는다
 import "server-only";
 import type { Enums } from "@/lib/database.types";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 
 export type NotificationItem = {
   id: string;
   type: Enums<"notification_type">;
-  // 서버가 고정 템플릿으로 만든 한국어 문구와 평문 발췌
+  // 서버가 고정 템플릿으로 만든 한국어 문구와 평문 발췌. 화면은 update 종류에만 text를 쓴다
   text: string;
   snippet: string | null;
   read: boolean;
@@ -39,7 +40,8 @@ export async function getNotifications(workspaceId: string, userId: string): Pro
   // 오류는 빈 결과로 바꾸지 않고 오류 경계로 올린다(spec R22)
   if (error) {
     console.error("[알림]", error.code, error.message);
-    throw new Error(`알림을 불러오지 못했습니다. ${taskErrorMessage(error)}`);
+    const t = await getT();
+    throw new Error(t("notifications.loadFailed", { error: taskErrorMessage(error, t) }));
   }
   return data.map((n) => ({
     id: n.id,

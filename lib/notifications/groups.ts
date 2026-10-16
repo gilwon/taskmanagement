@@ -1,5 +1,6 @@
 // 알림·활동 목록의 날짜 묶음 순수 함수. 서울 달력 날짜 기준이고 now를 인자로 받아 테스트할 수 있다
 import { seoulDay } from "@/lib/format/date";
+import type { Locale } from "@/lib/i18n/locales";
 
 const DAY_MS = 86_400_000;
 
@@ -17,21 +18,36 @@ export function notificationGroup(ts: string, now: Date): NotificationGroup {
   return diff <= sinceSunday ? "week" : "earlier";
 }
 
-// 연도 유무에 따라 Intl의 요일 괄호 표기가 달라져 요일은 따로 붙인다
-const dayFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", month: "long", day: "numeric" });
-const yearDayFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", year: "numeric", month: "long", day: "numeric" });
-const weekdayFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "UTC", weekday: "short" });
+// 연도 유무에 따라 Intl의 요일 괄호 표기가 달라져 요일은 따로 붙인다. 로캘마다 한 번만 만든다
+const formats = new Map<Locale, ReturnType<typeof makeFormats>>();
+function makeFormats(locale: Locale) {
+  return {
+    day: new Intl.DateTimeFormat(locale, { timeZone: "UTC", month: "long", day: "numeric" }),
+    yearDay: new Intl.DateTimeFormat(locale, { timeZone: "UTC", year: "numeric", month: "long", day: "numeric" }),
+    weekday: new Intl.DateTimeFormat(locale, { timeZone: "UTC", weekday: "short" }),
+    // 오늘·어제 낱말. ko "오늘"·"어제", en "today"·"yesterday"
+    word: new Intl.RelativeTimeFormat(locale, { numeric: "auto" }),
+  };
+}
+function formatsFor(locale: Locale) {
+  let f = formats.get(locale);
+  if (!f) formats.set(locale, (f = makeFormats(locale)));
+  return f;
+}
 
 // 활동 날짜 묶음 이름과 키. 오늘·어제, 그 밖은 "10월 13일 (월)"(다른 해면 연도 포함)
-export function dayGroup(ts: string, now: Date): { key: number; label: string } {
+export function dayGroup(ts: string, now: Date, locale: Locale = "ko"): { key: number; label: string } {
   const day = seoulDay(ts);
   const today = seoulDay(now);
   const diff = Math.round((today - day) / DAY_MS);
-  if (diff <= 0) return { key: day, label: "오늘" };
-  if (diff === 1) return { key: day, label: "어제" };
+  const f = formatsFor(locale);
+  if (diff <= 1) {
+    const word = f.word.format(-Math.max(diff, 0), "day");
+    return { key: day, label: word.charAt(0).toLocaleUpperCase(locale) + word.slice(1) };
+  }
   const d = new Date(day);
-  const fmt = d.getUTCFullYear() === new Date(today).getUTCFullYear() ? dayFmt : yearDayFmt;
-  return { key: day, label: `${fmt.format(d)} (${weekdayFmt.format(d)})` };
+  const fmt = d.getUTCFullYear() === new Date(today).getUTCFullYear() ? f.day : f.yearDay;
+  return { key: day, label: `${fmt.format(d)} (${f.weekday.format(d)})` };
 }
 
 // 시간 내림차순 목록을 차례를 지키며 묶는다

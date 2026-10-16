@@ -1,5 +1,11 @@
 // 파일 업로드 규칙 순수 함수. 확장자로 MIME·file_type을 정하고, 표시명·Storage 객체 이름을 다듬고, 크기를 표기한다
 import type { Enums } from "@/lib/database.types";
+import koFiles from "@/lib/i18n/messages/ko/files";
+import type { Messages } from "@/lib/i18n/messages/types";
+import { createT, type T } from "@/lib/i18n/t";
+
+// 검사 오류 문구의 한국어 기본값. files 영역만 담는다
+const koT = createT({ files: koFiles } as unknown as Messages, "ko");
 
 export type FileType = Enums<"file_type">;
 
@@ -72,15 +78,15 @@ export type UploadCheck =
   | { ok: false; error: string };
 
 // 업로드 전 검사. 브라우저와 서버 액션이 같은 함수를 쓴다(브라우저가 알려 주는 MIME은 믿지 않는다)
-export function checkUpload(rawName: string, size: number): UploadCheck {
+export function checkUpload(rawName: string, size: number, t: T = koT): UploadCheck {
   const name = normalizeName(rawName);
-  if (!name) return { ok: false, error: "파일 이름을 확인해 주세요. 1~255자여야 합니다." };
-  if (!Number.isSafeInteger(size) || size < 1) return { ok: false, error: `빈 파일은 올릴 수 없습니다. (${name})` };
+  if (!name) return { ok: false, error: t("files.errors.badName") };
+  if (!Number.isSafeInteger(size) || size < 1) return { ok: false, error: t("files.errors.emptyFile", { name }) };
   if (size > MAX_FILE_BYTES) {
-    return { ok: false, error: `파일당 최대 ${MAX_FILE_LABEL}까지 올릴 수 있습니다. (${name})` };
+    return { ok: false, error: t("files.errors.tooLargeNamed", { max: MAX_FILE_LABEL, name }) };
   }
   const rule = ruleFor(name);
-  if (!rule) return { ok: false, error: `지원하지 않는 형식입니다. (${name})` };
+  if (!rule) return { ok: false, error: t("files.errors.unsupportedNamed", { name }) };
   return { ok: true, name, mime: rule.mime, type: rule.type, objectName: toObjectName(name) };
 }
 

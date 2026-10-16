@@ -6,12 +6,14 @@ import { PageHeader } from "@/components/shell/page-header";
 import { TaskStoreProvider } from "@/components/tasks/task-store";
 import { getWorkspaceProjects } from "@/lib/data/project";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { calendarRange, parseCalendarParams, todayIso } from "@/lib/schedule/dates";
 import { getEvents } from "@/lib/schedule/queries";
 import { getTaskItems, getViewState, getWorkspaceLabels, getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.calendar };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.calendar") };
+}
 
 type Props = {
   params: Promise<{ ws: string }>;
@@ -19,6 +21,7 @@ type Props = {
 };
 
 export default async function CalendarPage({ params, searchParams }: Props) {
+  const t = await getT();
   const [{ ws }, query] = await Promise.all([params, searchParams]);
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
@@ -36,7 +39,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
 
   return (
     <>
-      <PageHeader title={NAV_LABELS.calendar} subtitle="모든 프로젝트의 마감과 일정" />
+      <PageHeader title={t("common.nav.calendar")} subtitle={t("schedule.calendarSubtitle")} />
       <TaskStoreProvider
         initialItems={items}
         workspace={{ id: workspace.id, slug: workspace.slug, name: workspace.name }}

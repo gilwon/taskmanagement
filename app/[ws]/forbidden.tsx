@@ -2,15 +2,17 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/shell/error-state";
+import { getT } from "@/lib/i18n/server";
 
-export default function WorkspaceForbidden() {
+export default async function WorkspaceForbidden() {
+  const t = await getT();
   return (
     <div className="pt-(--s-12)">
       <ErrorState
         kind="forbidden"
         action={
           <Button asChild variant="outline" size="sm">
-            <Link href="/">홈으로</Link>
+            <Link href="/">{t("common.action.home")}</Link>
           </Button>
         }
       />

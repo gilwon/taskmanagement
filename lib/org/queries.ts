@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { getMember, requireUserId } from "@/lib/data/workspace";
 import type { Enums } from "@/lib/database.types";
-import { NAMELESS_MEMBER_LABEL } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { orgErrorMessage } from "@/lib/org/errors";
 import { NOTIF_KEYS, canOpenOrgScreens } from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
@@ -55,7 +55,7 @@ export type TeamProject = {
 
 // 상태와 무관하게 모든 구성원 행(초대됨·비활성 포함). 이름순
 export const getOrgMembers = cache(async (workspaceId: string): Promise<OrgMember[]> => {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const { data, error } = await supabase
     .from("workspace_members")
     .select("user_id, role, status, title, color, team_id, tz, last_active_at, created_at, profiles(name, email, color)")
@@ -64,7 +64,7 @@ export const getOrgMembers = cache(async (workspaceId: string): Promise<OrgMembe
   return data
     .map((m) => ({
       id: m.user_id,
-      name: m.profiles?.name || m.profiles?.email || NAMELESS_MEMBER_LABEL,
+      name: m.profiles?.name || m.profiles?.email || t("common.namelessMember"),
       email: m.profiles?.email ?? "",
       color: m.color ?? m.profiles?.color ?? "indigo",
       role: m.role,

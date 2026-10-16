@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
+import { useT } from "@/lib/i18n/client";
 import { createProject, loadLeadOptions } from "@/lib/projects/actions";
 import type { WorkspaceMember } from "@/lib/tasks/types";
 
@@ -14,7 +15,7 @@ const LauncherContext = createContext<Ctx | null>(null);
 
 export function useNewProject(): Ctx {
   const ctx = useContext(LauncherContext);
-  if (!ctx) throw new Error("useNewProject는 NewProjectLauncher 안에서만 쓸 수 있습니다");
+  if (!ctx) throw new Error("useNewProject must be used inside NewProjectLauncher");
   return ctx;
 }
 
@@ -34,6 +35,7 @@ type Props = {
 };
 
 export function NewProjectLauncher({ workspace, meId, children }: Props) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<WorkspaceMember[] | null>(null);
@@ -75,7 +77,7 @@ export function NewProjectLauncher({ workspace, meId, children }: Props) {
           if (!r.ok) return r.error;
           // 이동하면 포커스를 돌려줄 버튼이 사라질 수 있다. 새 화면의 본문 건너뛰기 흐름을 따른다
           opener.current = null;
-          toast.success(`${r.data.key} 프로젝트를 만들었습니다`);
+          toast.success(t("projects.created", { key: r.data.key }));
           router.push(`/${workspace.slug}/projects/${encodeURIComponent(r.data.key)}/overview`);
           return null;
         }}

@@ -65,6 +65,7 @@ export default {
     saving: "저장 중…",
     close: "닫기",
     retry: "다시 시도",
+    home: "홈으로",
   },
   taskStatus: TASK_STATUS_LABELS,
   taskPriority: TASK_PRIORITY_LABELS,
@@ -146,4 +147,11 @@ export default {
   pref: PREF_LABELS,
   notifPrefDescription: NOTIF_PREF_DESCRIPTIONS,
   favoriteSort: FAVORITE_SORT_LABELS,
+  // 1분 미만 상대 시간(lib/i18n/format.ts relative)
+  justNow: "방금",
+  // ui/command 기본 이름
+  commandDialog: { title: "명령 팔레트", description: "실행할 명령을 검색하세요" },
+  commandList: "검색 결과",
+  // ui/sonner 알림 영역 이름과 닫기 버튼
+  toaster: { label: "알림 메시지", close: "알림 닫기" },
 } as const;

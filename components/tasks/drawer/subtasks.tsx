@@ -10,8 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AssigneeAvatar, AssigneePicker, DatePicker, DueLabel } from "@/components/tasks/parts";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { convertSubtask, createSubtask, deleteSubtask, updateSubtask } from "@/lib/tasks/actions";
-import { formatDue } from "@/lib/format/date";
-import { UNASSIGNED_LABEL, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import type { Subtask, SubtaskPatch, TaskItem } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +38,7 @@ type Props = {
 };
 
 export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask }: Props) {
+  const t = useT();
   const { members } = useTasks();
   const actions = useTaskActions();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -123,7 +123,7 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
     if (!r.ok) return void toast.error(r.error);
     setSubtasks((list) => list.filter((x) => x.id !== s.id));
     setOpenId(null);
-    toast("하위 작업을 삭제했습니다");
+    toast(t("tasks.subtasks.deleted"));
   };
 
   const convert = async (s: Subtask) => {
@@ -133,14 +133,16 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
     setOpenId(null);
     actions.upsertLocal(r.data);
     const key = r.data.key;
-    toast.success(`${key} 작업으로 전환했습니다`, { action: { label: "열기", onClick: () => onOpenTask(key) } });
+    toast.success(t("tasks.subtasks.converted", { key }), {
+      action: { label: t("tasks.subtasks.open"), onClick: () => onOpenTask(key) },
+    });
   };
 
   return (
     <section aria-labelledby={`subtasks-${task.id}`} className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
         <h3 id={`subtasks-${task.id}`} className="text-(length:--fs-sm) font-semibold text-(--text)">
-          하위 작업
+          {t("tasks.subtasks.heading")}
         </h3>
         {total > 0 && (
           <>
@@ -149,7 +151,7 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
             </span>
             <div
               role="progressbar"
-              aria-label="하위 작업 진행률"
+              aria-label={t("tasks.subtasks.progress")}
               aria-valuemin={0}
               aria-valuemax={total}
               aria-valuenow={done}
@@ -167,7 +169,7 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
             <li key={s.id} className="group flex h-8 items-center gap-2 rounded-(--r-sm) px-1.5 hover:bg-(--surface-2)">
               <Checkbox
                 checked={s.done}
-                aria-label={`${s.title} 완료`}
+                aria-label={t("tasks.subtasks.toggleDone", { title: s.title })}
                 onCheckedChange={(v) => void patch(s, { done: v === true })}
               />
               <button
@@ -190,7 +192,7 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
                 <AssigneeAvatar
                   assignee={(() => {
                     const m = members.find((x) => x.id === s.assignee_id);
-                    return { id: s.assignee_id, name: m?.name ?? UNKNOWN_USER_LABEL, color: m?.color ?? "slate" };
+                    return { id: s.assignee_id, name: m?.name ?? t("common.unknownUser"), color: m?.color ?? "slate" };
                   })()}
                   size={18}
                 />
@@ -208,7 +210,7 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
           }}
         >
           <label htmlFor={`subtask-new-${task.id}`} className="sr-only">
-            하위 작업 이름
+            {t("tasks.subtasks.name")}
           </label>
           <Input
             id={`subtask-new-${task.id}`}
@@ -216,7 +218,7 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
             value={draft}
             maxLength={500}
             readOnly={saving}
-            placeholder="하위 작업 이름. Enter로 추가, Esc로 취소"
+            placeholder={t("tasks.subtasks.namePlaceholder")}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               // 전체 페이지에서는 드로어 Esc 처리가 없어 여기서 닫는다
@@ -239,7 +241,7 @@ export function SubtaskSection({ task, subtasks, setSubtasks, escRef, onOpenTask
           className="inline-flex h-(--h-sm) w-fit items-center gap-1.5 rounded-(--r-sm) px-1.5 text-(length:--fs-sm) text-(--text-3) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
         >
           <Plus size={14} strokeWidth={1.8} aria-hidden />
-          하위 작업 추가
+          {t("tasks.subtasks.add")}
         </button>
       )}
 
@@ -274,6 +276,8 @@ type DetailProps = {
 };
 
 function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, onDelete, onConvert }: DetailProps) {
+  const t = useT();
+  const f = useFormatter();
   const { members } = useTasks();
   const [title, setTitle] = useState(sub.title);
   const [note, setNote] = useState(sub.note ?? "");
@@ -281,14 +285,14 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
   const assignee = members.find((m) => m.id === sub.assignee_id);
 
   const commitTitle = () => {
-    const t = title.trim();
-    if (t === sub.title) return;
-    if (!t) {
+    const text = title.trim();
+    if (text === sub.title) return;
+    if (!text) {
       setTitle(sub.title);
-      toast.error("하위 작업 이름을 입력해 주세요.");
+      toast.error(t("tasks.subtasks.nameRequired"));
       return;
     }
-    onPatch({ title: t });
+    onPatch({ title: text });
   };
 
   const prop = "grid grid-cols-[96px_minmax(0,1fr)] items-center gap-2 min-h-8";
@@ -298,7 +302,7 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
   return (
     <section
       role="region"
-      aria-label="하위 작업 상세"
+      aria-label={t("tasks.subtasks.detail")}
       className="absolute inset-0 z-10 flex animate-[fadeOnly_.14s_var(--ease)] flex-col bg-(--surface)"
       onKeyDown={(e) => {
         if (e.key === "Escape" && !e.defaultPrevented) {
@@ -308,20 +312,20 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
       }}
     >
       <header className="flex h-12 shrink-0 items-center gap-1 border-b border-(--divider) px-3">
-        <Button variant="ghost" size="icon-sm" aria-label="작업으로 돌아가기" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" aria-label={t("tasks.subtasks.back")} onClick={onClose}>
           <ChevronLeft size={16} strokeWidth={1.8} aria-hidden />
         </Button>
         <span className="min-w-0 truncate text-(length:--fs-sm) text-(--text-3)">
-          <span className="font-mono">{parent.key}</span> / 하위 작업 {index + 1}/{total}
+          <span className="font-mono">{parent.key}</span> {t("tasks.subtasks.position", { index: index + 1, total })}
         </span>
         <div className="ml-auto flex items-center gap-0.5">
-          <Button variant="ghost" size="icon-sm" aria-label="이전 하위 작업" disabled={index === 0} onClick={() => onMove(-1)}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("tasks.subtasks.prev")} disabled={index === 0} onClick={() => onMove(-1)}>
             <ChevronUp size={16} strokeWidth={1.8} aria-hidden />
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="다음 하위 작업"
+            aria-label={t("tasks.subtasks.next")}
             disabled={index >= total - 1}
             onClick={() => onMove(1)}
           >
@@ -335,11 +339,11 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
           <Checkbox
             className="mt-2"
             checked={sub.done}
-            aria-label={`${sub.title} 완료`}
+            aria-label={t("tasks.subtasks.toggleDone", { title: sub.title })}
             onCheckedChange={(v) => onPatch({ done: v === true })}
           />
           <label htmlFor={`sub-title-${sub.id}`} className="sr-only">
-            하위 작업 이름
+            {t("tasks.subtasks.name")}
           </label>
           <Input
             id={`sub-title-${sub.id}`}
@@ -363,7 +367,7 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
 
         <dl className="flex flex-col gap-0.5">
           <div className={prop}>
-            <dt className="text-(length:--fs-sm) text-(--text-3)">담당자</dt>
+            <dt className="text-(length:--fs-sm) text-(--text-3)">{t("tasks.subtasks.assignee")}</dt>
             <dd>
               <AssigneePicker value={sub.assignee_id} members={members} onChange={(v) => onPatch({ assigneeId: v ?? null })}>
                 <button type="button" className={value}>
@@ -371,23 +375,23 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
                     assignee={assignee ? { id: assignee.id, name: assignee.name, color: assignee.color } : null}
                     size={18}
                   />
-                  {assignee?.name ?? UNASSIGNED_LABEL}
+                  {assignee?.name ?? t("common.unassigned")}
                 </button>
               </AssigneePicker>
             </dd>
           </div>
           <div className={prop}>
-            <dt className="text-(length:--fs-sm) text-(--text-3)">기한</dt>
+            <dt className="text-(length:--fs-sm) text-(--text-3)">{t("tasks.subtasks.due")}</dt>
             <dd>
-              <DatePicker label="기한" value={sub.due_date} onChange={(v) => onPatch({ due: v })}>
+              <DatePicker label={t("tasks.subtasks.due")} value={sub.due_date} onChange={(v) => onPatch({ due: v })}>
                 <button type="button" className={value}>
-                  {sub.due_date ? formatDue(sub.due_date, now) : <span className="text-(--text-4)">기한 없음</span>}
+                  {sub.due_date ? f.due(sub.due_date, now) : <span className="text-(--text-4)">{t("tasks.subtasks.noDue")}</span>}
                 </button>
               </DatePicker>
             </dd>
           </div>
           <div className={prop}>
-            <dt className="text-(length:--fs-sm) text-(--text-3)">상위 작업</dt>
+            <dt className="text-(length:--fs-sm) text-(--text-3)">{t("tasks.subtasks.parent")}</dt>
             <dd>
               <button type="button" className={value} onClick={onClose}>
                 <span className="font-mono text-(--text-3)">{parent.key}</span>
@@ -399,13 +403,13 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
 
         <div className="flex flex-col gap-1">
           <label htmlFor={`sub-note-${sub.id}`} className="text-(length:--fs-sm) font-semibold text-(--text)">
-            메모
+            {t("tasks.subtasks.note")}
           </label>
           <Textarea
             id={`sub-note-${sub.id}`}
             value={note}
             maxLength={10000}
-            placeholder="메모 추가…"
+            placeholder={t("tasks.subtasks.notePlaceholder")}
             onChange={(e) => setNote(e.target.value)}
             onBlur={() => {
               if (note !== (sub.note ?? "")) onPatch({ note: note.trim() ? note : null });
@@ -418,11 +422,11 @@ function SubtaskDetail({ sub, index, total, parent, onClose, onMove, onPatch, on
       <footer className="flex shrink-0 items-center gap-2 border-t border-(--divider) px-5 py-2.5">
         <Button variant="outline" size="sm" onClick={onConvert}>
           <ArrowUpRight size={14} strokeWidth={1.8} aria-hidden />
-          작업으로 전환
+          {t("tasks.subtasks.convert")}
         </Button>
         <Button variant="ghost" size="sm" className="ml-auto text-(--red) hover:text-(--red)" onClick={onDelete}>
           <Trash2 size={14} strokeWidth={1.8} aria-hidden />
-          삭제
+          {t("tasks.subtasks.delete")}
         </Button>
       </footer>
     </section>

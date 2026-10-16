@@ -1,8 +1,9 @@
 // 날짜·상대 시간 표시 포맷터. ko-KR, Asia/Seoul 기준이고 now를 인자로 받아 테스트할 수 있다.
 // 구현은 lib/i18n/format.ts의 ko 포매터이고, 기존 호출부를 위해 이름을 그대로 내보낸다
 import { createFormatter, seoulDay } from "@/lib/i18n/format";
+import koCommon from "@/lib/i18n/messages/ko/common";
 
-const ko = createFormatter("ko");
+const ko = createFormatter("ko", { justNow: koCommon.justNow });
 
 export { seoulDay };
 

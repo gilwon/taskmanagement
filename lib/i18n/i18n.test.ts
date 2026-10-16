@@ -61,7 +61,7 @@ describe("createT", () => {
 });
 
 describe("createFormatter(en)", () => {
-  const f = createFormatter("en");
+  const f = createFormatter("en", { justNow: en.common.justNow });
   // 2026-10-15(목) 12:00 KST
   const NOON = new Date("2026-10-15T03:00:00Z");
 

@@ -17,16 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker, DueLabel, StatusIcon, TaskKey } from "@/components/tasks/parts";
 import { announce } from "@/components/tasks/views/shared";
-import { formatDue } from "@/lib/format/date";
 import type { HomeActivity } from "@/lib/home/queries";
-import {
-  GENERAL_ACCESS_LABELS,
-  NO_LEAD_LABEL,
-  PROJECT_STATUS_LABELS,
-  ROLE_LABELS,
-  SHARE_PERM_LABELS,
-  TASK_STATUS_LABELS,
-} from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import { PROJECT_STATUS_LABELS } from "@/lib/i18n/labels";
 import {
   addProjectMember,
   createMilestone,
@@ -69,6 +62,7 @@ type Props = {
 };
 
 export function ProjectOverview({ detail, members, meId, wsAdmin, workspace, activities, nowIso }: Props) {
+  const t = useT();
   const router = useRouter();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const stats = useMemo(() => taskStats(detail.tasks, now), [detail.tasks, now]);
@@ -84,15 +78,15 @@ export function ProjectOverview({ detail, members, meId, wsAdmin, workspace, act
           role="status"
           className="mb-(--s-4) flex flex-wrap items-center gap-2 rounded-(--r) bg-(--amber-soft) px-3 py-2 text-(length:--fs-sm) text-(--amber)"
         >
-          <span className="flex-1">보관된 프로젝트입니다. 사이드바와 작업 목록에는 보이지 않습니다.</span>
+          <span className="flex-1">{t("projects.detail.archivedNotice")}</span>
           {canManage && (
             <Button
               size="xs"
               variant="outline"
-              onClick={() => void run(() => setProjectArchived(detail.id, false), "보관을 해제했습니다")}
+              onClick={() => void run(() => setProjectArchived(detail.id, false), t("projects.archive.unarchived"))}
             >
               <ArchiveRestore {...ICON} />
-              보관 해제
+              {t("projects.menu.unarchive")}
             </Button>
           )}
         </div>
@@ -100,20 +94,20 @@ export function ProjectOverview({ detail, members, meId, wsAdmin, workspace, act
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,340px)] items-start gap-(--s-4) max-[1100px]:grid-cols-1">
         <div className="grid min-w-0 gap-(--s-4)">
           <AboutPanel detail={detail} canEdit={canEdit} />
-          <Panel title="진행률" titleId="po-progress" delay={40}>
+          <Panel title={t("projects.detail.progress")} titleId="po-progress" delay={40}>
             <div className="flex flex-col gap-(--s-3) px-(--s-4) py-(--s-3)">
-              <ProgressBar pct={stats.pct} label={`${detail.name} 진행률`} />
+              <ProgressBar pct={stats.pct} label={t("projects.progressOf", { name: detail.name })} />
               <p className="text-(length:--fs-sm) text-(--text-3)">
-                작업 {stats.total}개 중 {stats.done}개 완료 · 열린 작업 {stats.open}개
-                {stats.overdue > 0 && <span className="text-(--red)"> · 기한 지남 {stats.overdue}개</span>}
+                {t("projects.detail.progressSummary", { count: stats.total, done: stats.done, open: stats.open })}
+                {stats.overdue > 0 && <span className="text-(--red)"> · {t("projects.detail.overdueCount", { count: stats.overdue })}</span>}
               </p>
-              <ul aria-label="상태별 작업 수" className="grid grid-cols-5 gap-2 max-[640px]:grid-cols-3">
+              <ul aria-label={t("projects.detail.statusCounts")} className="grid grid-cols-5 gap-2 max-[640px]:grid-cols-3">
                 {TASK_STATUSES.map((s) => (
                   <li key={s} className="flex min-w-0 flex-col gap-1 rounded-(--r) bg-(--surface-2) px-2.5 py-2">
                     <span className="flex items-center gap-1.5 text-(length:--fs-xs) text-(--text-3)">
                       <StatusIcon status={s} size={12} />
                       <span className="truncate" aria-hidden>
-                        {TASK_STATUS_LABELS[s]}
+                        {t(`common.taskStatus.${s}`)}
                       </span>
                     </span>
                     <span className="text-(length:--fs-lg) font-semibold text-(--text) tabular-nums">{stats.byStatus[s]}</span>
@@ -122,25 +116,25 @@ export function ProjectOverview({ detail, members, meId, wsAdmin, workspace, act
               </ul>
             </div>
           </Panel>
-          <Panel title="다가오는 작업" titleId="po-upcoming" delay={80}>
+          <Panel title={t("projects.detail.upcoming")} titleId="po-upcoming" delay={80}>
             {detail.upcoming.length === 0 ? (
-              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">예정된 작업이 없습니다</p>
+              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.detail.noUpcoming")}</p>
             ) : (
               <ul>
-                {detail.upcoming.map((t) => {
-                  const a = t.assignee_id ? byId.get(t.assignee_id) : undefined;
+                {detail.upcoming.map((task) => {
+                  const a = task.assignee_id ? byId.get(task.assignee_id) : undefined;
                   return (
                     <li
-                      key={t.id}
+                      key={task.id}
                       className="flex h-(--row-h) items-center gap-2 border-b border-(--divider) px-(--s-4) last:border-b-0 hover:bg-(--surface-2)"
                     >
-                      <StatusIcon status={t.status} />
-                      <TaskKey value={t.key} />
-                      <Link href={`/${workspace.slug}/task/${t.key}`} className={`${LINK_CLS} min-w-0 flex-1 truncate text-(--text)`}>
-                        {t.title}
+                      <StatusIcon status={task.status} />
+                      <TaskKey value={task.key} />
+                      <Link href={`/${workspace.slug}/task/${task.key}`} className={`${LINK_CLS} min-w-0 flex-1 truncate text-(--text)`}>
+                        {task.title}
                       </Link>
                       {a && <MemberAvatar name={a.name} color={a.color} size={20} />}
-                      <DueLabel due={t.due_date} now={now} className="w-16 shrink-0 text-right text-(length:--fs-sm)" />
+                      <DueLabel due={task.due_date} now={now} className="w-16 shrink-0 text-right text-(length:--fs-sm)" />
                     </li>
                   );
                 })}
@@ -149,17 +143,17 @@ export function ProjectOverview({ detail, members, meId, wsAdmin, workspace, act
           </Panel>
           <MilestonesPanel detail={detail} canEdit={canEdit} now={now} />
           <Panel
-            title="최근 활동"
+            title={t("projects.detail.recentActivity")}
             titleId="po-activity"
             delay={160}
             action={
               <Link href={`${base}/activity`} className={`${LINK_CLS} text-(length:--fs-sm) text-(--text-3)`}>
-                모든 활동 보기
+                {t("projects.detail.allActivity")}
               </Link>
             }
           >
             {activities.length === 0 ? (
-              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">아직 활동이 없습니다</p>
+              <p className="px-(--s-4) py-(--s-5) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.detail.noActivity")}</p>
             ) : (
               <ul className="flex flex-col gap-(--s-3) px-(--s-4) py-(--s-3)">
                 {activities.map((a) => (
@@ -192,6 +186,7 @@ export function ProjectOverview({ detail, members, meId, wsAdmin, workspace, act
 // ─────────────────────────────────────────────
 
 function AboutPanel({ detail, canEdit }: { detail: ProjectDetail; canEdit: boolean }) {
+  const t = useT();
   const uid = useId();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(detail.description ?? "");
@@ -199,14 +194,14 @@ function AboutPanel({ detail, canEdit }: { detail: ProjectDetail; canEdit: boole
 
   const save = async () => {
     setPending(true);
-    const ok = await run(() => updateProject(detail.id, { description: draft.trim() || null }), "설명을 저장했습니다");
+    const ok = await run(() => updateProject(detail.id, { description: draft.trim() || null }), t("projects.detail.descriptionSaved"));
     setPending(false);
     if (ok) setEditing(false);
   };
 
   return (
     <Panel
-      title="소개"
+      title={t("projects.detail.about")}
       titleId="po-about"
       action={
         canEdit &&
@@ -220,7 +215,7 @@ function AboutPanel({ detail, canEdit }: { detail: ProjectDetail; canEdit: boole
             }}
           >
             <Pencil {...ICON} />
-            편집
+            {t("projects.detail.edit")}
           </Button>
         )
       }
@@ -246,22 +241,22 @@ function AboutPanel({ detail, canEdit }: { detail: ProjectDetail; canEdit: boole
             aria-busy={pending}
           >
             <label htmlFor={`${uid}-desc`} className="sr-only">
-              프로젝트 설명
+              {t("projects.detail.descriptionLabel")}
             </label>
             <Textarea id={`${uid}-desc`} autoFocus rows={4} maxLength={5000} value={draft} onChange={(e) => setDraft(e.target.value)} />
             <div className="flex justify-end gap-2">
               <Button type="button" size="sm" variant="outline" onClick={() => setEditing(false)}>
-                취소
+                {t("common.action.cancel")}
               </Button>
               <Button type="submit" size="sm" disabled={pending}>
-                저장
+                {t("common.action.save")}
               </Button>
             </div>
           </form>
         ) : detail.description ? (
           <p className="text-(length:--fs-base) whitespace-pre-wrap text-(--text-2)">{detail.description}</p>
         ) : (
-          <p className="text-(length:--fs-sm) text-(--text-4)">아직 설명이 없습니다.</p>
+          <p className="text-(length:--fs-sm) text-(--text-4)">{t("projects.detail.noDescription")}</p>
         )}
       </div>
     </Panel>
@@ -301,6 +296,8 @@ function DetailsPanel({
   workspaceName: string;
   now: Date;
 }) {
+  const t = useT();
+  const f = useFormatter();
   const uid = useId();
   const save = (patch: ProjectPatch, done: string) => void run(() => updateProject(detail.id, patch), done);
   const lead = detail.leadId ? members.find((m) => m.id === detail.leadId) : undefined;
@@ -315,28 +312,28 @@ function DetailsPanel({
         onChange={(v) => {
           const start = field === "startDate" ? v : detail.startDate;
           const due = field === "dueDate" ? v : detail.dueDate;
-          if (start && due && start > due) return void toast.error("시작일은 기한보다 늦을 수 없습니다.");
-          save({ [field]: v }, `${label}을 저장했습니다`);
+          if (start && due && start > due) return void toast.error(t("projects.errors.startAfterDue"));
+          save({ [field]: v }, field === "startDate" ? t("projects.details.startDateSaved") : t("projects.details.dueDateSaved"));
         }}
       >
         <button type="button" className={chip} aria-labelledby={`${uid}-${field} ${uid}-${field}-v`}>
-          <span id={`${uid}-${field}-v`}>{value ? formatDue(value, now) : "정하지 않음"}</span>
+          <span id={`${uid}-${field}-v`}>{value ? f.due(value, now) : t("projects.details.unset")}</span>
         </button>
       </DatePicker>
     );
   };
 
   return (
-    <Panel title="세부 정보" titleId="po-details" delay={40}>
+    <Panel title={t("projects.details.title")} titleId="po-details" delay={40}>
       <dl>
-        <DetailRow label="키" id={`${uid}-key`}>
+        <DetailRow label={t("projects.details.key")} id={`${uid}-key`}>
           <span className="font-mono text-(length:--fs-sm) text-(--text-2)">{detail.key}</span>
         </DetailRow>
-        <DetailRow label="상태" id={`${uid}-status`}>
+        <DetailRow label={t("projects.details.status")} id={`${uid}-status`}>
           <Select
             value={detail.status}
             disabled={!canEdit}
-            onValueChange={(v) => save({ status: v as ProjectStatus }, "상태를 바꿨습니다")}
+            onValueChange={(v) => save({ status: v as ProjectStatus }, t("projects.details.statusChanged"))}
           >
             <SelectTrigger size="sm" aria-labelledby={`${uid}-status`} className={`${chip} w-auto`}>
               <SelectValue />
@@ -345,23 +342,23 @@ function DetailsPanel({
               {(Object.keys(PROJECT_STATUS_LABELS) as ProjectStatus[]).map((s) => (
                 <SelectItem key={s} value={s}>
                   <ProjectStatusDot status={s} />
-                  {PROJECT_STATUS_LABELS[s]}
+                  {t(`common.projectStatus.${s}`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </DetailRow>
-        <DetailRow label="리드" id={`${uid}-lead`}>
+        <DetailRow label={t("projects.details.lead")} id={`${uid}-lead`}>
           <Select
             value={detail.leadId ?? NO_LEAD}
             disabled={!canManage}
-            onValueChange={(v) => save({ leadId: v === NO_LEAD ? null : v }, "리드를 바꿨습니다")}
+            onValueChange={(v) => save({ leadId: v === NO_LEAD ? null : v }, t("projects.details.leadChanged"))}
           >
             <SelectTrigger
               size="sm"
               aria-labelledby={`${uid}-lead`}
               className={`${chip} w-auto`}
-              title={canManage ? undefined : "전체 권한이 있어야 바꿀 수 있습니다"}
+              title={canManage ? undefined : t("projects.details.needFull")}
             >
               <SelectValue>
                 {lead ? (
@@ -370,12 +367,12 @@ function DetailsPanel({
                     {lead.name}
                   </>
                 ) : (
-                  NO_LEAD_LABEL
+                  t("common.noLead")
                 )}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_LEAD}>{NO_LEAD_LABEL}</SelectItem>
+              <SelectItem value={NO_LEAD}>{t("common.noLead")}</SelectItem>
               {leadOptions.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   <MemberAvatar name={m.name} color={m.color} size={18} />
@@ -385,17 +382,17 @@ function DetailsPanel({
             </SelectContent>
           </Select>
         </DetailRow>
-        <DetailRow label="시작일" id={`${uid}-startDate`}>
-          {datePick("startDate", "시작일")}
+        <DetailRow label={t("projects.details.startDate")} id={`${uid}-startDate`}>
+          {datePick("startDate", t("projects.details.startDate"))}
         </DetailRow>
-        <DetailRow label="기한" id={`${uid}-dueDate`}>
-          {datePick("dueDate", "기한")}
+        <DetailRow label={t("projects.details.dueDate")} id={`${uid}-dueDate`}>
+          {datePick("dueDate", t("projects.details.dueDate"))}
         </DetailRow>
-        <DetailRow label="공개 범위" id={`${uid}-access`}>
+        <DetailRow label={t("projects.details.access")} id={`${uid}-access`}>
           <Select
             value={detail.access}
             disabled={!canManage}
-            onValueChange={(v) => save({ access: v as ProjectAccess }, "공개 범위를 바꿨습니다")}
+            onValueChange={(v) => save({ access: v as ProjectAccess }, t("projects.details.accessChanged"))}
           >
             <SelectTrigger size="sm" aria-labelledby={`${uid}-access`} className={`${chip} w-auto max-w-full`}>
               <SelectValue />
@@ -403,7 +400,7 @@ function DetailsPanel({
             <SelectContent>
               {(["workspace", "private"] as const).map((a) => (
                 <SelectItem key={a} value={a}>
-                  {GENERAL_ACCESS_LABELS[a](workspaceName)}
+                  {t(`common.generalAccess.${a}`, { ws: workspaceName })}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -429,6 +426,8 @@ function MilestoneForm({
   onSubmit: (name: string, date: string) => Promise<boolean>;
   onCancel?: () => void;
 }) {
+  const t = useT();
+  const f = useFormatter();
   const uid = useId();
   const [name, setName] = useState(initial.name);
   const [date, setDate] = useState<string | null>(initial.date);
@@ -440,8 +439,8 @@ function MilestoneForm({
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        if (!name.trim()) return setError("마일스톤 이름을 입력해 주세요.");
-        if (!date) return setError("날짜를 골라 주세요.");
+        if (!name.trim()) return setError(t("projects.milestones.nameRequired"));
+        if (!date) return setError(t("projects.milestones.dateRequired"));
         setError(null);
         setPending(true);
         const ok = await onSubmit(name.trim(), date);
@@ -462,27 +461,27 @@ function MilestoneForm({
     >
       <div className="flex flex-wrap items-center gap-1.5">
         <label htmlFor={`${uid}-name`} className="sr-only">
-          마일스톤 이름
+          {t("projects.milestones.name")}
         </label>
         <Input
           id={`${uid}-name`}
           value={name}
           maxLength={120}
           autoFocus={!!onCancel}
-          placeholder="마일스톤 이름"
+          placeholder={t("projects.milestones.name")}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${uid}-err` : undefined}
           onChange={(e) => setName(e.target.value)}
           className="h-(--h-sm) min-w-0 flex-1 basis-40 text-(length:--fs-sm)"
         />
-        <DatePicker label="마일스톤 날짜" value={date} onChange={setDate}>
+        <DatePicker label={t("projects.milestones.date")} value={date} onChange={setDate}>
           <button type="button" className={chip}>
-            {date ? formatDue(date, now) : "날짜"}
+            {date ? f.due(date, now) : t("projects.milestones.datePlaceholder")}
           </button>
         </DatePicker>
         {onCancel && (
           <Button type="button" size="xs" variant="ghost" onClick={onCancel}>
-            취소
+            {t("common.action.cancel")}
           </Button>
         )}
         <Button type="submit" size="xs" disabled={pending}>
@@ -499,11 +498,12 @@ function MilestoneForm({
 }
 
 function MilestonesPanel({ detail, canEdit, now }: { detail: ProjectDetail; canEdit: boolean; now: Date }) {
+  const t = useT();
   const [editing, setEditing] = useState<string | null>(null);
   return (
-    <Panel title="마일스톤" titleId="po-milestones" delay={120}>
+    <Panel title={t("projects.milestones.title")} titleId="po-milestones" delay={120}>
       {detail.milestones.length === 0 && (
-        <p className="px-(--s-4) pt-(--s-4) pb-(--s-2) text-center text-(length:--fs-sm) text-(--text-3)">아직 마일스톤이 없습니다</p>
+        <p className="px-(--s-4) pt-(--s-4) pb-(--s-2) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.milestones.empty")}</p>
       )}
       <ul>
         {detail.milestones.map((m) => (
@@ -512,10 +512,10 @@ function MilestonesPanel({ detail, canEdit, now }: { detail: ProjectDetail; canE
               <div className="flex-1">
                 <MilestoneForm
                   initial={{ name: m.name, date: m.date }}
-                  submitLabel="저장"
+                  submitLabel={t("common.action.save")}
                   onCancel={() => setEditing(null)}
                   onSubmit={async (name, date) => {
-                    const ok = await run(() => updateMilestone(m.id, name, date), "마일스톤을 저장했습니다");
+                    const ok = await run(() => updateMilestone(m.id, name, date), t("projects.milestones.saved"));
                     if (ok) setEditing(null);
                     return ok;
                   }}
@@ -528,14 +528,14 @@ function MilestonesPanel({ detail, canEdit, now }: { detail: ProjectDetail; canE
                 <DueLabel due={m.date} now={now} className="shrink-0 text-(length:--fs-xs)" />
                 {canEdit && (
                   <>
-                    <Button variant="ghost" size="icon-xs" aria-label={`${m.name} 편집`} onClick={() => setEditing(m.id)}>
+                    <Button variant="ghost" size="icon-xs" aria-label={t("projects.milestones.editItem", { name: m.name })} onClick={() => setEditing(m.id)}>
                       <Pencil {...ICON} />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      aria-label={`${m.name} 삭제`}
-                      onClick={() => void run(() => deleteMilestone(m.id), `${m.name} 마일스톤을 삭제했습니다`)}
+                      aria-label={t("projects.milestones.deleteItem", { name: m.name })}
+                      onClick={() => void run(() => deleteMilestone(m.id), t("projects.milestones.deleted", { name: m.name }))}
                     >
                       <Trash {...ICON} />
                     </Button>
@@ -550,8 +550,8 @@ function MilestonesPanel({ detail, canEdit, now }: { detail: ProjectDetail; canE
         <div className="px-(--s-4) py-(--s-3)">
           <MilestoneForm
             initial={{ name: "", date: null }}
-            submitLabel="추가"
-            onSubmit={(name, date) => run(() => createMilestone(detail.id, name, date), "마일스톤을 추가했습니다")}
+            submitLabel={t("projects.add")}
+            onSubmit={(name, date) => run(() => createMilestone(detail.id, name, date), t("projects.milestones.added"))}
           />
         </div>
       )}
@@ -576,6 +576,7 @@ function MembersPanel({
   wsAdmin: boolean;
   canManage: boolean;
 }) {
+  const t = useT();
   const uid = useId();
   const byId = new Map(members.map((m) => [m.id, m]));
   const inProject = new Set(detail.members.map((m) => m.userId));
@@ -590,45 +591,43 @@ function MembersPanel({
     (target?.id === meId && !wsAdmin && current !== null && PERMS.indexOf(p) > PERMS.indexOf(current));
 
   return (
-    <Panel title="구성원과 권한" titleId="po-members" delay={80}>
+    <Panel title={t("projects.members.title")} titleId="po-members" delay={80}>
       <p className="px-(--s-4) pt-(--s-3) text-(length:--fs-xs) text-(--text-3)">
-        소유자·관리자는 모든 프로젝트에 전체 권한이 있습니다.
-        {detail.access === "workspace"
-          ? " 공개 프로젝트라 워크스페이스 구성원은 추가하지 않아도 편집할 수 있습니다."
-          : " 비공개 프로젝트라 아래 구성원만 볼 수 있습니다."}
+        {t("projects.members.adminNote")}{" "}
+        {detail.access === "workspace" ? t("projects.members.publicNote") : t("projects.members.privateNote")}
       </p>
       {detail.members.length === 0 ? (
-        <p className="px-(--s-4) py-(--s-4) text-center text-(length:--fs-sm) text-(--text-3)">추가된 구성원이 없습니다</p>
+        <p className="px-(--s-4) py-(--s-4) text-center text-(length:--fs-sm) text-(--text-3)">{t("projects.members.empty")}</p>
       ) : (
         <ul className="py-(--s-1)">
           {detail.members.map((pm) => {
             const m = byId.get(pm.userId);
-            const name = m?.name ?? "알 수 없는 사용자";
+            const name = m?.name ?? t("common.unknownUser");
             return (
               <li key={pm.userId} className="flex min-h-(--row-h) items-center gap-2 px-(--s-4)">
                 <MemberAvatar name={name} color={m?.color} size={22} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-(length:--fs-sm) text-(--text)">
                     {name}
-                    {pm.userId === meId && <span className="text-(--text-3)"> (나)</span>}
+                    {pm.userId === meId && <span className="text-(--text-3)">{t("projects.members.meSuffix")}</span>}
                   </span>
-                  {m && <span className="block text-(length:--fs-2xs) text-(--text-3)">{ROLE_LABELS[m.role]}</span>}
+                  {m && <span className="block text-(length:--fs-2xs) text-(--text-3)">{t(`common.role.${m.role}`)}</span>}
                 </span>
                 {canManage ? (
                   <>
                     <Select
                       value={pm.perm}
                       onValueChange={(v) =>
-                        void run(() => setProjectMemberPerm(detail.id, pm.userId, v as SharePerm), `${name}의 권한을 바꿨습니다`)
+                        void run(() => setProjectMemberPerm(detail.id, pm.userId, v as SharePerm), t("projects.members.permChanged", { name }))
                       }
                     >
-                      <SelectTrigger size="sm" aria-label={`${name}의 프로젝트 권한`} className={`${chip} w-auto`}>
+                      <SelectTrigger size="sm" aria-label={t("projects.members.permOf", { name })} className={`${chip} w-auto`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent align="end">
                         {PERMS.map((p) => (
                           <SelectItem key={p} value={p} disabled={disabledPerm(m, pm.perm, p)}>
-                            {SHARE_PERM_LABELS[p]}
+                            {t(`common.sharePerm.${p}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -636,14 +635,14 @@ function MembersPanel({
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      aria-label={`${name}을(를) 프로젝트에서 빼기`}
-                      onClick={() => void run(() => removeProjectMember(detail.id, pm.userId), `${name}을(를) 프로젝트에서 뺐습니다`)}
+                      aria-label={t("projects.members.remove", { name })}
+                      onClick={() => void run(() => removeProjectMember(detail.id, pm.userId), t("projects.members.removed", { name }))}
                     >
                       <UserMinus {...ICON} />
                     </Button>
                   </>
                 ) : (
-                  <span className="text-(length:--fs-xs) text-(--text-3)">{SHARE_PERM_LABELS[pm.perm]}</span>
+                  <span className="text-(length:--fs-xs) text-(--text-3)">{t(`common.sharePerm.${pm.perm}`)}</span>
                 )}
               </li>
             );
@@ -657,13 +656,13 @@ function MembersPanel({
             e.preventDefault();
             if (!picked) return;
             const p = disabledPerm(picked, null, perm) ? "comment" : perm;
-            const ok = await run(() => addProjectMember(detail.id, picked.id, p), `${picked.name}을(를) 추가했습니다`);
+            const ok = await run(() => addProjectMember(detail.id, picked.id, p), t("projects.members.added", { name: picked.name }));
             if (ok) setPick("");
           }}
         >
           <Select value={pick} onValueChange={setPick}>
-            <SelectTrigger size="sm" aria-label="추가할 구성원" className={`${chip} min-w-0 flex-1 basis-32`}>
-              <SelectValue placeholder="구성원 선택" />
+            <SelectTrigger size="sm" aria-label={t("projects.members.addWho")} className={`${chip} min-w-0 flex-1 basis-32`}>
+              <SelectValue placeholder={t("projects.members.pick")} />
             </SelectTrigger>
             <SelectContent>
               {candidates.map((m) => (
@@ -675,20 +674,20 @@ function MembersPanel({
             </SelectContent>
           </Select>
           <Select value={perm} onValueChange={(v) => setPerm(v as SharePerm)}>
-            <SelectTrigger size="sm" aria-label="추가할 구성원의 권한" id={`${uid}-perm`} className={`${chip} w-auto`}>
+            <SelectTrigger size="sm" aria-label={t("projects.members.addPerm")} id={`${uid}-perm`} className={`${chip} w-auto`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">
               {PERMS.map((p) => (
                 <SelectItem key={p} value={p} disabled={disabledPerm(picked, null, p)}>
-                  {SHARE_PERM_LABELS[p]}
+                  {t(`common.sharePerm.${p}`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Button type="submit" size="xs" disabled={!picked}>
             <Plus {...ICON} />
-            추가
+            {t("projects.add")}
           </Button>
         </form>
       )}

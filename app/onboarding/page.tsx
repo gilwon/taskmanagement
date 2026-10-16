@@ -5,13 +5,17 @@ import { redirect } from "next/navigation";
 import { linkClass } from "@/components/auth/auth-card";
 import { signOut } from "@/lib/auth/actions";
 import { isGoneSession } from "@/lib/auth/rules";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingWizard } from "./wizard";
 
-export const metadata: Metadata = { title: "시작하기 · 작업 공간" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: `${t("org.onboarding.title")} · ${t("common.appName")}` };
+}
 
 export default async function OnboardingPage() {
+  const t = await getT();
   const supabase = await createClient();
   // getClaims는 JWT 서명만 봐서 지워진 계정도 만료 전까지 통과한다. 여기서 막지 않으면 /login이 /로, /가 여기로 돌려 빠져나갈 수 없다
   const { data, error } = await supabase.auth.getUser();
@@ -29,9 +33,9 @@ export default async function OnboardingPage() {
     >
       {invited && (
         <p className="w-full max-w-[400px] rounded-[var(--r)] bg-[var(--accent-soft)] px-[var(--s-4)] py-[var(--s-3)] text-[length:var(--fs-sm)] text-[var(--text)]">
-          받은 워크스페이스 초대가 있습니다.{" "}
+          {t("org.onboarding.invited")}{" "}
           <Link href="/invites" className={linkClass}>
-            초대 확인하기
+            {t("org.onboarding.checkInvites")}
           </Link>
         </p>
       )}
@@ -39,7 +43,7 @@ export default async function OnboardingPage() {
       {/* 유일한 워크스페이스를 지운 사람도 다른 계정으로 갈 수 있게 둔다 */}
       <form action={signOut}>
         <button type="submit" className={`${linkClass} text-[length:var(--fs-sm)]`}>
-          {NAV_LABELS.signOut}
+          {t("common.nav.signOut")}
         </button>
       </form>
     </main>

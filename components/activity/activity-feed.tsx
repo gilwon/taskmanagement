@@ -16,7 +16,8 @@ import { useTasks } from "@/components/tasks/task-store";
 import { announce } from "@/components/tasks/views/shared";
 import { loadMoreActivities } from "@/lib/activity/actions";
 import type { ActivityFilter, ActivityKind, ActivityPage } from "@/lib/activity/queries";
-import { ACTIVITY_KIND_LABELS, EVERYONE_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import { ACTIVITY_KIND_LABELS } from "@/lib/i18n/labels";
 import { dayGroup, groupInOrder } from "@/lib/notifications/groups";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,8 @@ function Feed({ initial, projectId, filter, nowIso }: Props) {
   const pathname = usePathname();
   const params = useSearchParams();
   const { workspace, members } = useTasks();
+  const t = useT();
+  const f = useFormatter();
   const { open } = useTaskDrawer();
   const [items, setItems] = useState(initial.items);
   const [next, setNext] = useState(initial.next);
@@ -69,22 +72,22 @@ function Feed({ initial, projectId, filter, nowIso }: Props) {
     setBusy(true);
     const r = await loadMoreActivities(workspace.id, projectId, filter, next).catch((e: unknown) => ({
       ok: false as const,
-      error: taskErrorMessage({ message: String(e) }),
+      error: taskErrorMessage({ message: String(e) }, t),
     }));
     setBusy(false);
     if (!r.ok) return void toast.error(r.error);
     setItems((list) => [...list, ...r.data.items]);
     setNext(r.data.next);
-    announce(`활동 ${r.data.items.length}건을 더 불러왔습니다`);
+    announce(t("activity.loadedMore", { count: r.data.items.length }));
   };
 
-  const groups = groupInOrder(items, (a) => dayGroup(a.created_at, now).key);
+  const groups = groupInOrder(items, (a) => dayGroup(a.created_at, now, f.locale).key);
   const filtered = !!filter.kind || !!filter.actorId;
 
   return (
     <div className="flex flex-col gap-(--s-4) px-(--gutter) pb-(--s-8)">
       <div className="flex flex-wrap items-center gap-2">
-        <nav aria-label="활동 종류" className="flex flex-wrap gap-1">
+        <nav aria-label={t("activity.kindNav")} className="flex flex-wrap gap-1">
           {KINDS.map((k) => {
             const current = (filter.kind ?? "all") === k;
             return (
@@ -98,7 +101,7 @@ function Feed({ initial, projectId, filter, nowIso }: Props) {
                   current ? "bg-(--surface-3) font-medium text-(--text)" : "text-(--text-3) hover:bg-(--surface-2) hover:text-(--text)",
                 )}
               >
-                {ACTIVITY_KIND_LABELS[k]}
+                {t(`common.activityKind.${k}`)}
               </Link>
             );
           })}
@@ -107,11 +110,11 @@ function Feed({ initial, projectId, filter, nowIso }: Props) {
           value={filter.actorId ?? ALL_PEOPLE}
           onValueChange={(v) => router.push(hrefWith("by", v === ALL_PEOPLE ? null : v), { scroll: false })}
         >
-          <SelectTrigger size="sm" aria-label="사람" className="ml-auto w-44 max-[480px]:ml-0">
+          <SelectTrigger size="sm" aria-label={t("activity.people")} className="ml-auto w-44 max-[480px]:ml-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent align="end">
-            <SelectItem value={ALL_PEOPLE}>{EVERYONE_LABEL}</SelectItem>
+            <SelectItem value={ALL_PEOPLE}>{t("common.everyone")}</SelectItem>
             {members.map((m) => (
               <SelectItem key={m.id} value={m.id}>
                 {m.name}
@@ -124,13 +127,13 @@ function Feed({ initial, projectId, filter, nowIso }: Props) {
       {items.length === 0 ? (
         <EmptyState
           icon={History}
-          title={filtered ? "조건에 맞는 활동이 없습니다" : "아직 활동이 없습니다"}
-          description={filtered ? "다른 종류나 사람을 골라 보세요." : "작업을 만들거나 옮기면 여기에 기록됩니다."}
+          title={filtered ? t("activity.emptyFilteredTitle") : t("activity.emptyTitle")}
+          description={filtered ? t("activity.emptyFilteredDescription") : t("activity.emptyDescription")}
         />
       ) : (
         <div className="flex flex-col gap-(--s-5)">
           {groups.map((g) => {
-            const label = dayGroup(g.items[0].created_at, now).label;
+            const label = dayGroup(g.items[0].created_at, now, f.locale).label;
             return (
               <section key={g.key} aria-label={label} className="flex flex-col gap-1">
                 <h2 className="text-(length:--fs-xs) font-semibold text-(--text-3)">{label}</h2>
@@ -157,7 +160,7 @@ function Feed({ initial, projectId, filter, nowIso }: Props) {
           })}
           {next && (
             <Button variant="outline" size="sm" className="self-center" onClick={() => void more()} disabled={busy} aria-busy={busy}>
-              {busy ? "불러오는 중…" : "더 보기"}
+              {busy ? t("activity.loadingMore") : t("activity.more")}
             </Button>
           )}
         </div>

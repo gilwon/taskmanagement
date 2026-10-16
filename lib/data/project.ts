@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { getProject, getWorkspace } from "@/lib/data/workspace";
 import { createClient } from "@/lib/supabase/server";
-import { NAMELESS_MEMBER_LABEL, PROJECT_TAB_LABELS, type ProjectTab } from "@/lib/i18n/labels";
+import type { ProjectTab } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 
 export type ProjectParams = Promise<{ ws: string; key: string }>;
 
@@ -24,12 +25,13 @@ export async function projectMetadata(params: ProjectParams, tab: ProjectTab | "
   const workspace = await getWorkspace(ws);
   const project = workspace && (await getProject(workspace.id, decodeURIComponent(key)));
   if (!project) return {};
-  return { title: `${project.name} ${tab === "view" ? "저장 뷰" : PROJECT_TAB_LABELS[tab]}` };
+  const t = await getT();
+  return { title: `${project.name} ${tab === "view" ? t("org.data.savedView") : t(`common.projectTab.${tab}`)}` };
 }
 
 // 프로젝트 헤더용. 구성원 아바타, 즐겨찾기 여부, 저장 뷰 탭 목록
 export const getProjectHeader = cache(async (projectId: string, userId: string) => {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const [members, favorite, views] = await Promise.all([
     supabase.from("project_members").select("user_id, profiles(name, email, color)").eq("project_id", projectId),
     supabase.from("favorites").select("id").eq("user_id", userId).eq("project_id", projectId).maybeSingle(),
@@ -43,7 +45,7 @@ export const getProjectHeader = cache(async (projectId: string, userId: string) 
   return {
     members: members.data.map((m) => ({
       id: m.user_id,
-      name: m.profiles?.name || m.profiles?.email || NAMELESS_MEMBER_LABEL,
+      name: m.profiles?.name || m.profiles?.email || t("common.namelessMember"),
       color: m.profiles?.color ?? "indigo",
     })),
     favorite: !!favorite.data,

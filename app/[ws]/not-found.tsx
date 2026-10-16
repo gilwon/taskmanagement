@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { useWorkspaceName } from "@/components/shell/app-shell";
 import { EmptyState } from "@/components/shell/empty-state";
 import { useDocumentTitle } from "@/components/shell/use-document-title";
+import { useT } from "@/lib/i18n/client";
 
 export default function WorkspaceNotFound() {
+  const t = useT();
   const workspaceName = useWorkspaceName();
-  const title = workspaceName ? `페이지를 찾을 수 없습니다 · ${workspaceName}` : "페이지를 찾을 수 없습니다";
+  const title = workspaceName ? t("errors.notFound.titleIn", { workspace: workspaceName }) : t("errors.notFound.title");
   // 클라이언트 이동에서는 레이아웃 metadata의 title이 이 효과 뒤에 앞자리로 들어와 head가 바뀔 때마다 다시 맞춘다
   // Next 16 문서상 metadata는 global-not-found만 지원하고(이 404는 notFound()로 오는 세그먼트 404라 해당 없음) 대안은 React title뿐이라 관찰자가 필요하다
   useDocumentTitle(title);
@@ -20,11 +22,11 @@ export default function WorkspaceNotFound() {
       <EmptyState
         icon={SearchX}
         titleAs="h1"
-        title="페이지를 찾을 수 없습니다"
-        description="주소가 바뀌었거나 삭제되었거나, 볼 권한이 없는 항목입니다."
+        title={t("errors.notFound.title")}
+        description={t("errors.notFound.item")}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link href="/">홈으로</Link>
+            <Link href="/">{t("common.action.home")}</Link>
           </Button>
         }
       />

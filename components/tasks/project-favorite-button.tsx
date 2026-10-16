@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/client";
 import { setProjectFavorite } from "@/lib/projects/actions";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ export function ProjectFavoriteButton({
   projectId: string;
   favorite: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   // 낙관 값은 그때의 서버 값(from)과 함께 둔다. 서버 값이 바뀌면(저장 반영, 사이드바에서 변경) 서버 값을 따른다
   const [optimistic, setOptimistic] = useState<{ on: boolean; from: boolean } | null>(null);
@@ -35,7 +37,7 @@ export function ProjectFavoriteButton({
       toast.error(r.error);
       return;
     }
-    toast.success(next ? "즐겨찾기에 추가했습니다" : "즐겨찾기에서 뺐습니다");
+    toast.success(next ? t("tasks.project.favoriteAdded") : t("tasks.project.favoriteRemoved"));
     // 사이드바 즐겨찾기 목록도 새 값을 받게 한다
     router.refresh();
   };
@@ -45,7 +47,7 @@ export function ProjectFavoriteButton({
       type="button"
       // 상태는 aria-pressed로만 알린다. 이름까지 바꾸면 상태를 두 번 읽는다
       aria-pressed={on}
-      aria-label="즐겨찾기"
+      aria-label={t("tasks.project.favorite")}
       aria-busy={busy || undefined}
       onClick={toggle}
       // 별표는 16px로 보이고 누르는 영역은 음수 margin으로 레이아웃을 그대로 둔 채 24px로 넓힌다

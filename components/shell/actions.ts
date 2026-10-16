@@ -10,6 +10,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const MAX_PROJECTS = 500;
 
 export async function saveProjectOrder(workspaceId: string, ids: string[]): Promise<ActionResult<null>> {
+  const t = await getT();
   if (
     typeof workspaceId !== "string" ||
     !UUID_RE.test(workspaceId) ||
@@ -18,13 +19,13 @@ export async function saveProjectOrder(workspaceId: string, ids: string[]): Prom
     !ids.every((id) => typeof id === "string" && UUID_RE.test(id)) ||
     new Set(ids).size !== ids.length
   ) {
-    return { ok: false, error: (await getT())("errors.rpc.invalidInput") };
+    return { ok: false, error: t("errors.rpc.invalidInput") };
   }
   try {
     const supabase = await createClient();
     const { data: claims } = await supabase.auth.getClaims();
     const sub = claims?.claims?.sub;
-    if (!sub) return { ok: false, error: (await getT())("errors.msg.sessionExpired") };
+    if (!sub) return { ok: false, error: t("errors.msg.sessionExpired") };
     // 순서 값은 id 목록일 뿐이라 볼 수 없는 프로젝트 id가 섞여도 노출되는 것은 없다. 행은 RLS(user_prefs_owner)가 본인 것만 허용한다.
     // upsert는 넘긴 컬럼만 바꾸므로 같은 행의 최근 검색 등 다른 설정은 그대로다
     const { error } = await supabase
@@ -32,11 +33,11 @@ export async function saveProjectOrder(workspaceId: string, ids: string[]): Prom
       .upsert({ user_id: sub, workspace_id: workspaceId, proj_order: ids }, { onConflict: "user_id,workspace_id" });
     if (error) {
       console.error("[프로젝트 순서]", error.code, error.message);
-      return { ok: false, error: taskErrorMessage(error) };
+      return { ok: false, error: taskErrorMessage(error, t) };
     }
     return { ok: true, data: null };
   } catch (e) {
     console.error("[프로젝트 순서]", e);
-    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }) };
+    return { ok: false, error: taskErrorMessage({ message: e instanceof Error ? e.message : String(e) }, t) };
   }
 }

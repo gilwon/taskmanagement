@@ -24,8 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDue, formatRelative } from "@/lib/format/date";
-import { MEMBER_STATUS_LABELS, NAV_LABELS, ROLE_LABELS } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import { revokeInvite, setMemberRole, setMemberStatus } from "@/lib/org/actions";
 import type { OrgMember, OrgTeam, PendingInvite } from "@/lib/org/queries";
 import { assignableRoles, isAdminRole, type Role } from "@/lib/org/rules";
@@ -52,6 +51,8 @@ const STATUS_TONE: Record<OrgMember["status"], string> = {
 };
 
 export function MembersView({ workspace, meId, members, stats, teams, invites, openInvite, now }: Props) {
+  const t = useT();
+  const f = useFormatter();
   const at = useMemo(() => new Date(now), [now]);
   const myRole = members.find((m) => m.id === meId)?.role ?? null;
   const admin = isAdminRole(myRole);
@@ -59,7 +60,7 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
   const [q, setQ] = useState("");
   const [role, setRole] = useState<(typeof ROLE_FILTERS)[number]>("all");
   const [confirm, setConfirm] = useState<OrgMember | null>(null);
-  const teamName = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
+  const teamName = useMemo(() => new Map(teams.map((team) => [team.id, team.name])), [teams]);
 
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -74,7 +75,7 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
     if (next === m.role) return;
     const r = await setMemberRole(workspace.id, m.id, next);
     if (!r.ok) return void toast.error(r.error);
-    const msg = `${m.name}의 역할을 ${ROLE_LABELS[next]}(으)로 바꿨습니다.`;
+    const msg = t("org.members.roleChanged", { name: m.name, role: t(`common.role.${next}`) });
     toast.success(msg);
     announce(msg);
   };
@@ -82,7 +83,7 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
   const reactivate = async (m: OrgMember) => {
     const r = await setMemberStatus(workspace.id, m.id, "active");
     if (!r.ok) return void toast.error(r.error);
-    const msg = `${m.name}을(를) 다시 활성화했습니다.`;
+    const msg = t("org.members.reactivated", { name: m.name });
     toast.success(msg);
     announce(msg);
   };
@@ -99,11 +100,11 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
   }[] => {
     const canStatus = admin && m.id !== meId && m.status !== "invited" && (m.role !== "owner" || myRole === "owner");
     return [
-      { label: "프로필 보기", href: `/${workspace.slug}/members/${m.id}` },
+      { label: t("org.members.viewProfile"), href: `/${workspace.slug}/members/${m.id}` },
       ...(canStatus && m.status === "active"
-        ? [{ label: "비활성화", destructive: true, run: () => setConfirm(m) }]
+        ? [{ label: t("org.members.deactivate"), destructive: true, run: () => setConfirm(m) }]
         : []),
-      ...(canStatus && m.status === "deactivated" ? [{ label: "다시 활성화", run: () => void reactivate(m) }] : []),
+      ...(canStatus && m.status === "deactivated" ? [{ label: t("org.members.reactivate"), run: () => void reactivate(m) }] : []),
     ];
   };
 
@@ -131,7 +132,7 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
   const cancelInvite = async (i: PendingInvite) => {
     const r = await revokeInvite(i.id);
     if (!r.ok) return void toast.error(r.error);
-    const msg = `${i.email} 초대를 취소했습니다.`;
+    const msg = t("org.members.inviteRevoked", { email: i.email });
     toast.success(msg);
     announce(msg);
   };
@@ -139,13 +140,16 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
   return (
     <>
       <PageHeader
-        title={NAV_LABELS.members}
-        subtitle={`${workspace.name}의 구성원 ${members.filter((m) => m.status === "active").length}명`}
+        title={t("common.nav.members")}
+        subtitle={t("org.members.subtitle", {
+          ws: workspace.name,
+          count: members.filter((m) => m.status === "active").length,
+        })}
         actions={
           admin && (
             <Button size="sm" onClick={() => invite.setOpen(true)}>
               <UserPlus aria-hidden strokeWidth={1.8} />
-              {NAV_LABELS.inviteMember}
+              {t("common.nav.inviteMember")}
             </Button>
           )
         }
@@ -163,21 +167,21 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
           />
           <Input
             type="search"
-            aria-label="구성원 검색"
-            placeholder="이름 또는 이메일 검색"
+            aria-label={t("org.members.search")}
+            placeholder={t("org.members.searchPlaceholder")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="h-(--h-md) pl-8"
           />
         </div>
         <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
-          <SelectTrigger aria-label="역할 필터" className="h-(--h-md) w-36">
+          <SelectTrigger aria-label={t("org.members.roleFilter")} className="h-(--h-md) w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {ROLE_FILTERS.map((r) => (
               <SelectItem key={r} value={r}>
-                {r === "all" ? "모든 역할" : ROLE_LABELS[r]}
+                {r === "all" ? t("org.members.allRoles") : t(`common.role.${r}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -185,22 +189,26 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState icon={Search} title="결과가 없습니다" description="검색어나 역할 필터에 맞는 구성원이 없습니다." />
+        <EmptyState
+          icon={Search}
+          title={t("org.members.emptyTitle")}
+          description={t("org.members.emptyDescription")}
+        />
       ) : (
         <div className="px-(--gutter)">
           <Table className="text-(length:--fs-base)">
             <TableHeader>
               <TableRow>
-                <TableHead>구성원</TableHead>
-                <TableHead className="hidden xl:table-cell">이메일</TableHead>
-                <TableHead>역할</TableHead>
-                <TableHead className="hidden md:table-cell">팀</TableHead>
-                <TableHead className="hidden text-right lg:table-cell">참여 프로젝트</TableHead>
-                <TableHead className="hidden text-right lg:table-cell">열린 작업</TableHead>
-                <TableHead className="hidden xl:table-cell">마지막 활동</TableHead>
-                <TableHead className="hidden sm:table-cell">상태</TableHead>
+                <TableHead>{t("org.members.column.member")}</TableHead>
+                <TableHead className="hidden xl:table-cell">{t("org.members.column.email")}</TableHead>
+                <TableHead>{t("org.members.column.role")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("org.members.column.team")}</TableHead>
+                <TableHead className="hidden text-right lg:table-cell">{t("org.members.column.projects")}</TableHead>
+                <TableHead className="hidden text-right lg:table-cell">{t("org.members.column.openTasks")}</TableHead>
+                <TableHead className="hidden xl:table-cell">{t("org.members.column.lastActive")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("org.members.column.status")}</TableHead>
                 <TableHead className="w-10">
-                  <span className="sr-only">메뉴</span>
+                  <span className="sr-only">{t("org.members.column.menu")}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -223,7 +231,7 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
                             <span className="min-w-0">
                               <span className="block truncate font-medium text-(--text)">
                                 {m.name}
-                                {self && <span className="ml-1 text-(--text-3)">(나)</span>}
+                                {self && <span className="ml-1 text-(--text-3)">{t("org.members.me")}</span>}
                               </span>
                               <span className="block truncate text-(length:--fs-xs) text-(--text-3) xl:hidden">
                                 {m.email}
@@ -242,20 +250,20 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
                         <TableCell>
                           {options.length > 0 ? (
                             <Select value={m.role} onValueChange={(v) => changeRole(m, v as Role)}>
-                              <SelectTrigger size="sm" aria-label={`${m.name} 역할`} className="h-(--h-sm) w-28">
+                              <SelectTrigger size="sm" aria-label={t("org.members.roleOf", { name: m.name })} className="h-(--h-sm) w-28">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 {/* 현재 값이 선택지 밖이어도 보이도록 넣는다 */}
                                 {[...new Set([m.role, ...options])].map((r) => (
                                   <SelectItem key={r} value={r} disabled={!options.includes(r)}>
-                                    {ROLE_LABELS[r]}
+                                    {t(`common.role.${r}`)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           ) : (
-                            <span className="text-(--text-2)">{ROLE_LABELS[m.role]}</span>
+                            <span className="text-(--text-2)">{t(`common.role.${m.role}`)}</span>
                           )}
                         </TableCell>
                         <TableCell className="hidden text-(--text-2) md:table-cell">
@@ -269,18 +277,18 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
                         </TableCell>
                         <TableCell className="hidden text-(--text-3) xl:table-cell">
                           {m.lastActiveAt ? (
-                            <time dateTime={m.lastActiveAt}>{formatRelative(m.lastActiveAt, at)}</time>
+                            <time dateTime={m.lastActiveAt}>{f.relative(m.lastActiveAt, at)}</time>
                           ) : (
-                            <span aria-label="기록 없음">—</span>
+                            <span aria-label={t("org.members.noRecord")}>—</span>
                           )}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          <Badge className={STATUS_TONE[m.status]}>{MEMBER_STATUS_LABELS[m.status]}</Badge>
+                          <Badge className={STATUS_TONE[m.status]}>{t(`common.memberStatus.${m.status}`)}</Badge>
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon-sm" aria-label={`${m.name} 메뉴`}>
+                              <Button variant="ghost" size="icon-sm" aria-label={t("org.members.menuOf", { name: m.name })}>
                                 <MoreHorizontal aria-hidden strokeWidth={1.8} />
                               </Button>
                             </DropdownMenuTrigger>
@@ -307,7 +315,7 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
                     </ContextMenuTrigger>
                     <ContextMenuContent
                       className="w-44"
-                      aria-label={`${m.name} 메뉴`}
+                      aria-label={t("org.members.menuOf", { name: m.name })}
                       onCloseAutoFocus={(e) => {
                         const el = keyboardOpener.current;
                         keyboardOpener.current = null;
@@ -343,26 +351,28 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
       {admin && (
         <section aria-labelledby="invites-title" className="px-(--gutter) pt-(--s-8) pb-(--s-8)">
           <h2 id="invites-title" className="text-(length:--fs-md) font-semibold text-(--text)">
-            대기 중인 초대 <span className="text-(--text-3) tabular-nums">{invites.length}</span>
+            {t("org.members.invites.title")} <span className="text-(--text-3) tabular-nums">{invites.length}</span>
           </h2>
-          <p className="mt-1 text-(length:--fs-sm) text-(--text-3)">
-            초대 메일은 발송되지 않아 다시 보내기를 제공하지 않습니다. 초대받은 사람이 그 이메일로 로그인하면 받은
-            초대에서 수락합니다.
-          </p>
+          <p className="mt-1 text-(length:--fs-sm) text-(--text-3)">{t("org.members.invites.note")}</p>
           {invites.length === 0 ? (
-            <p className="mt-(--s-3) text-(length:--fs-sm) text-(--text-3)">대기 중인 초대가 없습니다.</p>
+            <p className="mt-(--s-3) text-(length:--fs-sm) text-(--text-3)">{t("org.members.invites.empty")}</p>
           ) : (
             <ul className="mt-(--s-3) divide-y divide-(--divider) rounded-(--r) border border-(--border)">
               {invites.map((i) => (
                 <li key={i.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-(--s-3) py-2">
                   <span className="min-w-0 flex-1 truncate text-(--text)">{i.email}</span>
-                  <span className="text-(length:--fs-sm) text-(--text-2)">{ROLE_LABELS[i.role]}</span>
+                  <span className="text-(length:--fs-sm) text-(--text-2)">{t(`common.role.${i.role}`)}</span>
                   <span className="text-(length:--fs-xs) text-(--text-3)">
                     {i.invitedBy ? `${i.invitedBy} · ` : ""}
-                    <time dateTime={i.createdAt}>{formatDue(i.createdAt, at)}</time>
+                    <time dateTime={i.createdAt}>{f.due(i.createdAt, at)}</time>
                   </span>
-                  <Button variant="ghost" size="sm" onClick={() => cancelInvite(i)} aria-label={`${i.email} 초대 취소`}>
-                    초대 취소
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => cancelInvite(i)}
+                    aria-label={t("org.members.invites.revokeOf", { email: i.email })}
+                  >
+                    {t("org.members.invites.revoke")}
                   </Button>
                 </li>
               ))}
@@ -374,14 +384,14 @@ export function MembersView({ workspace, meId, members, stats, teams, invites, o
       <ConfirmDialog
         open={confirm !== null}
         onOpenChange={(v) => !v && setConfirm(null)}
-        title="구성원 비활성화"
-        description={`${confirm?.name ?? ""}은(는) 이 워크스페이스에 들어올 수 없게 됩니다. 담당 작업은 그대로 남고, 나중에 다시 활성화할 수 있습니다.`}
-        confirmLabel="비활성화"
+        title={t("org.members.confirmDeactivate.title")}
+        description={t("org.members.confirmDeactivate.description", { name: confirm?.name ?? "" })}
+        confirmLabel={t("org.members.deactivate")}
         onConfirm={async () => {
           if (!confirm) return null;
           const r = await setMemberStatus(workspace.id, confirm.id, "deactivated");
           if (!r.ok) return r.error;
-          const msg = `${confirm.name}을(를) 비활성화했습니다.`;
+          const msg = t("org.members.deactivated", { name: confirm.name });
           toast.success(msg);
           announce(msg);
           return null;

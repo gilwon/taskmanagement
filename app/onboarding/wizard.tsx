@@ -6,7 +6,6 @@ import { AuthCard, buttonClass, primaryHover } from "@/components/auth/auth-card
 import { Field, FormAlert, SubmitButton } from "@/components/auth/form-parts";
 import { Button } from "@/components/ui/button";
 import { completeOnboarding } from "@/lib/auth/actions";
-import { GENERIC_ERROR, MSG } from "@/lib/auth/errors";
 import {
   EMAIL_RE,
   SLUG_RE,
@@ -16,18 +15,14 @@ import {
   suggestSlug,
   type OnboardingInput,
 } from "@/lib/auth/rules";
+import { useT } from "@/lib/i18n/client";
+import type { T } from "@/lib/i18n/t";
 import { cn } from "@/lib/utils";
 
 const TOTAL = 6;
 
-const STEPS: Record<number, { title: string; description: string }> = {
-  1: { title: "어떤 용도로 쓰시나요?", description: "용도에 맞게 시작 화면을 준비합니다." },
-  2: { title: "워크스페이스 만들기", description: "팀이 함께 쓸 공간의 이름과 주소를 정해 주세요." },
-  3: { title: "몇 명이 함께 일하나요?", description: "혼자 쓰는지, 팀으로 쓰는지 알려 주세요." },
-  4: { title: "첫 프로젝트", description: "프로젝트 이름과 시작 템플릿을 고르세요. 템플릿에 맞는 작업이 미리 들어갑니다." },
-  5: { title: "팀원 초대", description: "함께 일할 사람의 이메일을 입력하세요. 나중에 초대해도 됩니다." },
-  6: { title: "워크스페이스가 준비되었습니다", description: "이제 작업을 추가하고 팀과 함께 진행 상황을 관리해 보세요." },
-};
+// 단계 번호(1부터) 순서의 사전 키(org.onboarding.steps.<키>)
+const STEP_KEYS = ["usage", "workspace", "teamSize", "project", "invite", "done"] as const;
 
 // 서버 오류 칸이 어느 단계에 있는지
 function stepOf(field: string) {
@@ -40,24 +35,24 @@ function stepOf(field: string) {
 
 type Errors = Record<string, string>;
 
-function validate(step: number, v: OnboardingInput): Errors {
+function validate(step: number, v: OnboardingInput, t: T): Errors {
   const e: Errors = {};
-  if (step === 1 && !v.usage) e.usage = MSG.usageRequired;
+  if (step === 1 && !v.usage) e.usage = t("errors.msg.usageRequired");
   if (step === 2) {
-    if (!v.name.trim()) e.name = MSG.workspaceNameRequired;
-    else if (v.name.trim().length > 80) e.name = MSG.workspaceNameTooLong;
+    if (!v.name.trim()) e.name = t("errors.msg.workspaceNameRequired");
+    else if (v.name.trim().length > 80) e.name = t("errors.msg.workspaceNameTooLong");
     if (!SLUG_RE.test(v.slug)) {
-      e.slug = MSG.slugInvalid;
+      e.slug = t("errors.msg.slugInvalid");
     }
   }
-  if (step === 3 && !v.teamSize) e.teamSize = MSG.teamSizeRequired;
+  if (step === 3 && !v.teamSize) e.teamSize = t("errors.msg.teamSizeRequired");
   if (step === 4) {
-    if (!v.projectName.trim()) e.projectName = MSG.projectNameRequired;
-    if (!v.template) e.template = MSG.templateRequired;
+    if (!v.projectName.trim()) e.projectName = t("errors.msg.projectNameRequired");
+    if (!v.template) e.template = t("errors.msg.templateRequired");
   }
   if (step === 5) {
     v.invites.forEach((mail, i) => {
-      if (mail.trim() && !EMAIL_RE.test(mail.trim())) e[`invite-${i}`] = MSG.emailInvalid;
+      if (mail.trim() && !EMAIL_RE.test(mail.trim())) e[`invite-${i}`] = t("errors.msg.emailInvalid");
     });
   }
   return e;
@@ -67,6 +62,7 @@ function Choices({
   name,
   labelledBy,
   options,
+  label,
   value,
   onChange,
   error,
@@ -74,7 +70,9 @@ function Choices({
 }: {
   name: string;
   labelledBy: string;
-  options: readonly { id: string; label: string }[];
+  options: readonly { id: string }[];
+  // 선택지 표시명. 사전에서 id로 찾는다
+  label: (id: string) => string;
   value: string;
   onChange: (id: string) => void;
   error?: string;
@@ -108,7 +106,7 @@ function Choices({
               onChange={() => onChange(o.id)}
               className="size-4 accent-[var(--accent)]"
             />
-            {o.label}
+            {label(o.id)}
           </label>
         ))}
       </div>
@@ -122,6 +120,7 @@ function Choices({
 }
 
 export function OnboardingWizard() {
+  const t = useT();
   const [step, setStep] = useState(1);
   const [values, setValues] = useState<OnboardingInput>({
     usage: "",
@@ -161,15 +160,21 @@ export function OnboardingWizard() {
       firstStep.current = false;
       return;
     }
-    setAnnounce(`${TOTAL}단계 중 ${step}단계, ${STEPS[step].title}`);
-  }, [step]);
+    setAnnounce(
+      t("org.onboarding.stepAnnounce", {
+        total: TOTAL,
+        step,
+        title: t(`org.onboarding.steps.${STEP_KEYS[step - 1]}.title`),
+      }),
+    );
+  }, [step, t]);
 
   const set = (patch: Partial<OnboardingInput>) => setValues((v) => ({ ...v, ...patch }));
 
   function next(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(undefined);
-    const found = validate(step, values);
+    const found = validate(step, values, t);
     setErrors(found);
     if (Object.keys(found).length) return;
     if (step < 5) {
@@ -193,27 +198,27 @@ export function OnboardingWizard() {
         }
       } catch {
         // 네트워크 오류 등. 입력은 그대로 두고 다시 시도하게 한다
-        setFormError(GENERIC_ERROR);
+        setFormError(t("errors.generic"));
       }
     });
   }
 
-  const meta = STEPS[step];
+  const stepKey = STEP_KEYS[step - 1];
   return (
     <div ref={cardRef} className="w-full max-w-[480px]">
       <AuthCard
-        title={meta.title}
-        description={meta.description}
+        title={t(`org.onboarding.steps.${stepKey}.title`)}
+        description={t(`org.onboarding.steps.${stepKey}.description`)}
         className="max-w-none"
       >
         <div className="mb-[var(--s-6)] flex items-center gap-[var(--s-3)]">
           <div
             role="progressbar"
-            aria-label="온보딩 진행"
+            aria-label={t("org.onboarding.progress")}
             aria-valuemin={1}
             aria-valuemax={TOTAL}
             aria-valuenow={step}
-            aria-valuetext={`${TOTAL}단계 중 ${step}단계`}
+            aria-valuetext={t("org.onboarding.stepOf", { total: TOTAL, step })}
             className="h-1 flex-1 overflow-hidden rounded-[var(--r-full)] bg-[var(--surface-3)]"
           >
             <div className="h-full bg-[var(--accent)]" style={{ width: `${(step / TOTAL) * 100}%` }} />
@@ -225,7 +230,7 @@ export function OnboardingWizard() {
 
         {step === 6 ? (
           <Button asChild className={cn(buttonClass, primaryHover)}>
-            <Link href={`/${doneSlug}/home`}>워크스페이스로 이동</Link>
+            <Link href={`/${doneSlug}/home`}>{t("org.onboarding.goToWorkspace")}</Link>
           </Button>
         ) : (
           <form method="post" onSubmit={next} noValidate className="flex flex-col gap-[var(--s-4)]">
@@ -237,6 +242,7 @@ export function OnboardingWizard() {
                   name="usage"
                   labelledBy="auth-title"
                   options={USAGES}
+                  label={(id) => t(`org.onboarding.usage.${id as (typeof USAGES)[number]["id"]}`)}
                   value={values.usage}
                   onChange={(usage) => set({ usage })}
                   error={errors.usage}
@@ -249,8 +255,8 @@ export function OnboardingWizard() {
               <>
                 <Field
                   id="name"
-                  label="워크스페이스 이름"
-                  placeholder="예: 컴퍼니"
+                  label={t("org.onboarding.wsName")}
+                  placeholder={t("org.onboarding.wsNamePlaceholder")}
                   autoComplete="organization"
                   maxLength={80}
                   required
@@ -263,8 +269,8 @@ export function OnboardingWizard() {
                 />
                 <Field
                   id="slug"
-                  label="워크스페이스 URL"
-                  placeholder="예: company"
+                  label={t("org.onboarding.wsUrl")}
+                  placeholder={t("org.onboarding.wsUrlPlaceholder")}
                   autoCapitalize="none"
                   spellCheck={false}
                   maxLength={39}
@@ -274,7 +280,7 @@ export function OnboardingWizard() {
                     setSlugTouched(true);
                     set({ slug: e.target.value.toLowerCase() });
                   }}
-                  hint={`주소는 /${values.slug || "주소"}/home 형태가 됩니다. 영문 소문자·숫자·하이픈만 쓸 수 있습니다.`}
+                  hint={t("org.onboarding.urlHint", { slug: values.slug || t("org.onboarding.urlHintFallback") })}
                   error={errors.slug}
                 />
               </>
@@ -286,6 +292,7 @@ export function OnboardingWizard() {
                   name="teamSize"
                   labelledBy="auth-title"
                   options={TEAM_SIZES}
+                  label={(id) => t(`org.onboarding.teamSize.${id as (typeof TEAM_SIZES)[number]["id"]}`)}
                   value={values.teamSize}
                   onChange={(teamSize) => set({ teamSize })}
                   error={errors.teamSize}
@@ -297,20 +304,21 @@ export function OnboardingWizard() {
               <>
                 <Field
                   id="projectName"
-                  label="프로젝트 이름"
-                  placeholder="예: 웹사이트 개편"
+                  label={t("org.onboarding.projectName")}
+                  placeholder={t("org.onboarding.projectNamePlaceholder")}
                   required
                   value={values.projectName}
                   onChange={(e) => set({ projectName: e.target.value })}
                   error={errors.projectName}
                 />
                 <span id="template-label" className="text-[length:var(--fs-sm)] font-medium text-[var(--text-2)]">
-                  템플릿
+                  {t("org.onboarding.template")}
                 </span>
                 <Choices
                   name="template"
                   labelledBy="template-label"
                   options={TEMPLATES}
+                  label={(id) => t(`common.template.${id as (typeof TEMPLATES)[number]["id"]}`)}
                   value={values.template}
                   onChange={(template) => set({ template })}
                   error={errors.template}
@@ -324,7 +332,7 @@ export function OnboardingWizard() {
                 <Field
                   key={i}
                   id={`invite-${i}`}
-                  label={`초대할 이메일 ${i + 1} (선택)`}
+                  label={t("org.onboarding.inviteEmail", { n: i + 1 })}
                   type="email"
                   placeholder="teammate@example.com"
                   autoComplete="off"
@@ -347,11 +355,15 @@ export function OnboardingWizard() {
                   }}
                   className={cn(buttonClass, "flex-1")}
                 >
-                  이전
+                  {t("org.onboarding.back")}
                 </Button>
               )}
               <SubmitButton pending={pending} className="flex-1">
-                {step < 5 ? "다음" : pending ? "만드는 중…" : "워크스페이스 만들기"}
+                {step < 5
+                  ? t("org.onboarding.next")
+                  : pending
+                    ? t("org.onboarding.creating")
+                    : t("org.onboarding.create")}
               </SubmitButton>
             </div>
           </form>

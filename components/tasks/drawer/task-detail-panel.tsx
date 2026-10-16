@@ -48,14 +48,8 @@ import { overdueDays } from "@/components/tasks/drawer/rules";
 import { SubtaskSection } from "@/components/tasks/drawer/subtasks";
 import { NewTaskDialog } from "@/components/tasks/new-task/new-task-dialog";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
-import { formatDue, formatRelative } from "@/lib/format/date";
-import {
-  ESTIMATE_LABELS,
-  REPEAT_LABELS,
-  TASK_PRIORITY_LABELS,
-  TASK_STATUS_LABELS,
-  UNASSIGNED_LABEL,
-} from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
+import { ESTIMATE_LABELS } from "@/lib/i18n/labels";
 import { loadTaskDetail } from "@/lib/tasks/actions";
 import type { Subtask, TaskDetail, TaskItem, TaskStatus } from "@/lib/tasks/types";
 
@@ -83,6 +77,8 @@ type Props = {
 };
 
 export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggleLayout, onOpenTask }: Props) {
+  const t = useT();
+  const f = useFormatter();
   const { workspace, members } = useTasks();
   const actions = useTaskActions();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -153,14 +149,14 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
       if (!d) return;
       titleDraft.current = null;
       setDraft(null);
-      const t = d.value.replace(/\s+/g, " ").trim();
-      if (!t) {
-        if (notifyEmpty) toast.error("작업 이름을 입력해 주세요.");
+      const text = d.value.replace(/\s+/g, " ").trim();
+      if (!text) {
+        if (notifyEmpty) toast.error(t("tasks.detail.titleRequired"));
         return;
       }
-      if (t !== d.original) void update(d.id, { title: t });
+      if (text !== d.original) void update(d.id, { title: text });
     },
-    [update],
+    [update, t],
   );
   useEffect(() => () => flushTitle(false), [task.id, flushTitle]);
 
@@ -189,9 +185,9 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/${workspace.slug}/task/${task.key}`);
-      toast.success("링크를 복사했습니다");
+      toast.success(t("tasks.detail.linkCopied"));
     } catch {
-      toast.error("링크를 복사하지 못했습니다. 주소창의 주소를 직접 복사해 주세요.");
+      toast.error(t("tasks.detail.linkCopyFailed"));
     }
   };
 
@@ -211,7 +207,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
   const label = "text-(length:--fs-sm) text-(--text-3)";
   const value =
     "inline-flex h-(--h-sm) max-w-full items-center gap-1.5 rounded-(--r-sm) px-1.5 text-(length:--fs-base) text-(--text) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) disabled:opacity-60";
-  const empty = <span className="text-(--text-4)">비어 있음</span>;
+  const empty = <span className="text-(--text-4)">{t("tasks.detail.empty")}</span>;
 
   return (
     <div ref={rootRef} className="relative flex h-full min-h-0 flex-col bg-(--surface)">
@@ -227,12 +223,12 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
           <Button variant="outline" size="sm" className="mr-1 gap-1.5" onClick={toggleDone}>
             <Check size={14} strokeWidth={1.8} aria-hidden />
-            <span className="max-[480px]:sr-only">{done ? "다시 열기" : "완료로 표시"}</span>
+            <span className="max-[480px]:sr-only">{done ? t("tasks.detail.reopen") : t("tasks.detail.markDone")}</span>
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="즐겨찾기"
+            aria-label={t("tasks.detail.favorite")}
             aria-pressed={favorite === true}
             disabled={favorite === null}
             className={favorite ? "text-(--amber)" : icon}
@@ -240,13 +236,13 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
           >
             <Star size={16} strokeWidth={1.8} aria-hidden fill={favorite ? "currentColor" : "none"} />
           </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="링크 복사" className={icon} onClick={() => void copyLink()}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("tasks.detail.copyLink")} className={icon} onClick={() => void copyLink()}>
             <Link2 size={16} strokeWidth={1.8} aria-hidden />
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={mode === "drawer" ? "전체 페이지로 보기" : "사이드 패널로 보기"}
+            aria-label={mode === "drawer" ? t("tasks.detail.openPage") : t("tasks.detail.openPanel")}
             className={icon}
             onClick={onToggleLayout}
           >
@@ -258,25 +254,25 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="작업 메뉴" className={icon}>
+              <Button variant="ghost" size="icon-sm" aria-label={t("tasks.detail.menu")} className={icon}>
                 <MoreHorizontal size={16} strokeWidth={1.8} aria-hidden />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onSelect={() => setEditOpen(true)}>
                 <Pencil size={14} strokeWidth={1.8} aria-hidden />
-                편집
+                {t("tasks.detail.edit")}
                 <kbd className="ml-auto font-mono text-(length:--fs-2xs) text-(--text-3)">E</kbd>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onSelect={remove}>
                 <Trash2 size={14} strokeWidth={1.8} aria-hidden />
-                삭제
+                {t("tasks.detail.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           {onClose && (
-            <Button variant="ghost" size="icon-sm" aria-label="닫기" className={icon} onClick={onClose}>
+            <Button variant="ghost" size="icon-sm" aria-label={t("tasks.detail.close")} className={icon} onClick={onClose}>
               <X size={16} strokeWidth={1.8} aria-hidden />
             </Button>
           )}
@@ -288,20 +284,22 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
           <div className="flex items-center gap-2 border-b border-(--divider) bg-(--green-soft) px-5 py-2 text-(length:--fs-sm) text-(--green)">
             <CheckCircle2 size={14} strokeWidth={1.8} aria-hidden />
             <span className="flex-1">
-              완료됨{task.completed_at ? ` · ${formatRelative(task.completed_at, now)}` : ""}
+              {task.completed_at
+                ? t("tasks.detail.completedAt", { time: f.relative(task.completed_at, now) })
+                : t("tasks.detail.completed")}
             </span>
             <Button variant="ghost" size="xs" className="text-(--green) hover:text-(--green)" onClick={toggleDone}>
-              다시 열기
+              {t("tasks.detail.reopen")}
             </Button>
           </div>
         )}
         {late > 0 && (
           <div className="flex items-center gap-2 border-b border-(--divider) bg-(--red-soft) px-5 py-2 text-(length:--fs-sm) text-(--red)">
             <AlertCircle size={14} strokeWidth={1.8} aria-hidden />
-            <span className="flex-1">{late}일 지남</span>
-            <DatePicker label="기한" value={task.due_date} onChange={(v) => void actions.update(task.id, { due: v })}>
+            <span className="flex-1">{t("tasks.detail.overdue", { count: late })}</span>
+            <DatePicker label={t("tasks.detail.due")} value={task.due_date} onChange={(v) => void actions.update(task.id, { due: v })}>
               <Button variant="ghost" size="xs" className="text-(--red) hover:text-(--red)">
-                일정 변경
+                {t("tasks.detail.reschedule")}
               </Button>
             </DatePicker>
           </div>
@@ -309,7 +307,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
 
         <div className={mode === "page" ? "mx-auto flex max-w-3xl flex-col gap-5 px-6 py-6" : "flex flex-col gap-5 px-5 py-4"}>
           <label htmlFor={`title-${task.id}`} className="sr-only">
-            작업 이름
+            {t("tasks.detail.title")}
           </label>
           <textarea
             id={`title-${task.id}`}
@@ -335,29 +333,29 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
 
           <dl className="flex flex-col gap-0.5">
             <div className={row}>
-              <dt className={label}>상태</dt>
+              <dt className={label}>{t("tasks.detail.status")}</dt>
               <dd>
                 <StatusPicker value={task.status} onChange={setStatus}>
                   <button type="button" className={value}>
                     <StatusIcon status={task.status} size={14} />
-                    {TASK_STATUS_LABELS[task.status]}
+                    {t(`common.taskStatus.${task.status}`)}
                   </button>
                 </StatusPicker>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>우선순위</dt>
+              <dt className={label}>{t("tasks.detail.priority")}</dt>
               <dd>
                 <PriorityPicker value={task.priority} onChange={(v) => v && void actions.update(task.id, { priority: v })}>
                   <button type="button" className={value}>
                     <PriorityIcon priority={task.priority} size={14} />
-                    {TASK_PRIORITY_LABELS[task.priority]}
+                    {t(`common.taskPriority.${task.priority}`)}
                   </button>
                 </PriorityPicker>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>담당자</dt>
+              <dt className={label}>{t("tasks.detail.assignee")}</dt>
               <dd>
                 <AssigneePicker
                   value={task.assignee_id}
@@ -366,78 +364,78 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
                 >
                   <button type="button" className={value}>
                     <AssigneeAvatar assignee={assignee} size={18} />
-                    {assignee?.name ?? UNASSIGNED_LABEL}
+                    {assignee?.name ?? t("common.unassigned")}
                   </button>
                 </AssigneePicker>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>기한</dt>
+              <dt className={label}>{t("tasks.detail.due")}</dt>
               <dd>
-                <DatePicker label="기한" value={task.due_date} onChange={(v) => void actions.update(task.id, { due: v })}>
+                <DatePicker label={t("tasks.detail.due")} value={task.due_date} onChange={(v) => void actions.update(task.id, { due: v })}>
                   <button type="button" className={`${value} ${late > 0 ? "text-(--red)" : ""}`}>
-                    {task.due_date ? formatDue(task.due_date, now) : empty}
+                    {task.due_date ? f.due(task.due_date, now) : empty}
                   </button>
                 </DatePicker>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>시작일</dt>
+              <dt className={label}>{t("tasks.detail.start")}</dt>
               <dd>
-                <DatePicker label="시작일" value={task.start_date} onChange={(v) => void actions.update(task.id, { start: v })}>
+                <DatePicker label={t("tasks.detail.start")} value={task.start_date} onChange={(v) => void actions.update(task.id, { start: v })}>
                   <button type="button" className={value}>
-                    {task.start_date ? formatDue(task.start_date, now) : empty}
+                    {task.start_date ? f.due(task.start_date, now) : empty}
                   </button>
                 </DatePicker>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>프로젝트</dt>
-              <dd className="flex h-(--h-sm) items-center gap-1.5 px-1.5 text-(length:--fs-base) text-(--text)" title="작업의 프로젝트는 바꿀 수 없습니다">
+              <dt className={label}>{t("tasks.detail.project")}</dt>
+              <dd className="flex h-(--h-sm) items-center gap-1.5 px-1.5 text-(length:--fs-base) text-(--text)" title={t("tasks.detail.projectLocked")}>
                 <ProjectIcon icon={task.project.icon} color={task.project.color} size={14} />
                 <span className="truncate">{task.project.name}</span>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>라벨</dt>
+              <dt className={label}>{t("tasks.detail.labels")}</dt>
               <dd>
                 <LabelPicker value={task.labels} onChange={(v) => void actions.update(task.id, { labels: v })}>
-                  <button type="button" className={value} aria-label={task.labels.length ? `라벨 ${task.labels.length}개` : "라벨"}>
+                  <button type="button" className={value} aria-label={task.labels.length ? t("tasks.detail.labelCount", { count: task.labels.length }) : t("tasks.detail.labels")}>
                     {task.labels.length ? <LabelChips labels={task.labels} /> : empty}
                   </button>
                 </LabelPicker>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>반복</dt>
+              <dt className={label}>{t("tasks.detail.repeat")}</dt>
               <dd>
                 <RepeatPicker value={task.recur} onChange={(v) => void actions.update(task.id, { recur: v })}>
                   <button type="button" className={value}>
-                    {task.recur === "none" ? empty : REPEAT_LABELS[task.recur]}
+                    {task.recur === "none" ? empty : t(`common.repeat.${task.recur}`)}
                   </button>
                 </RepeatPicker>
               </dd>
             </div>
             <div className={row}>
-              <dt className={label}>예상 시간</dt>
+              <dt className={label}>{t("tasks.detail.estimate")}</dt>
               <dd>
                 <EstimateInput value={task.estimate} onChange={(v) => void actions.update(task.id, { estimate: v })}>
                   <button type="button" className={value}>
                     {task.estimate && task.estimate in ESTIMATE_LABELS
-                      ? ESTIMATE_LABELS[task.estimate as keyof typeof ESTIMATE_LABELS]
+                      ? t(`common.estimate.${task.estimate as keyof typeof ESTIMATE_LABELS}`)
                       : empty}
                   </button>
                 </EstimateInput>
               </dd>
             </div>
             <div className="grid grid-cols-[112px_minmax(0,1fr)] items-start gap-2 py-0.5">
-              <dt className={`${label} pt-1.5`}>선행 작업</dt>
+              <dt className={`${label} pt-1.5`}>{t("tasks.detail.blockedBy")}</dt>
               <dd>
                 {detail ? (
                   <BlockedBy task={task} deps={detail.blockedBy} setDeps={setDeps} onOpenTask={onOpenTask} />
                 ) : (
                   <span className="inline-flex h-(--h-sm) items-center px-1.5 text-(--text-4)">
-                    {task.blockedBy.length ? `${task.blockedBy.length}개` : "없음"}
+                    {task.blockedBy.length ? t("tasks.detail.blockedByCount", { count: task.blockedBy.length }) : t("tasks.detail.none")}
                   </span>
                 )}
               </dd>
@@ -446,7 +444,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
 
           <section aria-labelledby={`desc-${task.id}`} className="flex flex-col gap-1.5">
             <h3 id={`desc-${task.id}`} className="text-(length:--fs-sm) font-semibold text-(--text)">
-              설명
+              {t("tasks.detail.description")}
             </h3>
             <DescriptionEditor
               html={task.description_html}
@@ -457,9 +455,9 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
 
           {detailError ? (
             <div role="alert" className="flex items-center gap-2 rounded-(--r) bg-(--red-soft) px-3 py-2 text-(length:--fs-sm) text-(--red)">
-              <span className="flex-1">하위 작업과 선행 작업을 불러오지 못했습니다. {detailError}</span>
+              <span className="flex-1">{t("tasks.detail.relationsLoadFailed", { error: detailError })}</span>
               <Button variant="outline" size="xs" onClick={() => setReload((n) => n + 1)}>
-                다시 시도
+                {t("tasks.detail.retry")}
               </Button>
             </div>
           ) : detail ? (
@@ -472,7 +470,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
             />
           ) : (
             <p aria-busy="true" className="text-(length:--fs-sm) text-(--text-3)">
-              하위 작업을 불러오는 중…
+              {t("tasks.detail.subtasksLoading")}
             </p>
           )}
 

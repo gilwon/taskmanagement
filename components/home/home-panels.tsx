@@ -10,16 +10,9 @@ import { AssigneeAvatar, DueLabel, PriorityIcon } from "@/components/tasks/parts
 import { useTasks } from "@/components/tasks/task-store";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
 import { formatActivity } from "@/lib/activity/format";
-import { formatDue, formatRelative } from "@/lib/format/date";
 import type { HomeActivity, HomeProject } from "@/lib/home/queries";
 import { deadlineGroups, myTaskTabs, projectProgress } from "@/lib/home/stats";
-import {
-  DEADLINE_GROUP_LABELS,
-  MY_TASK_BUCKET_LABELS,
-  PROJECT_PROGRESS_COLUMN_LABELS,
-  PROJECT_STATUS_LABELS,
-  UNKNOWN_USER_LABEL,
-} from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import type { TaskItem } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -34,13 +27,12 @@ const titleBtn =
 // 내 작업
 // ─────────────────────────────────────────────
 
-const TABS = [
-  { key: "upcoming", label: MY_TASK_BUCKET_LABELS.upcoming, empty: "예정된 작업이 없습니다" },
-  { key: "overdue", label: MY_TASK_BUCKET_LABELS.overdue, empty: "기한이 지난 작업이 없습니다" },
-  { key: "done", label: MY_TASK_BUCKET_LABELS.done, empty: "완료한 작업이 없습니다" },
-] as const;
+// 탭 이름은 common.myTaskBucket, 빈 문구는 home.myTasks.empty에 같은 키로 있다
+const TABS = [{ key: "upcoming" }, { key: "overdue" }, { key: "done" }] as const;
 
 function MyTaskRow({ t, now }: { t: TaskItem; now: Date }) {
+  // 작업 prop이 t라서 번역 함수는 tr로 부른다
+  const tr = useT();
   const { open } = useTaskDrawer();
   const done = t.status === "done";
   return (
@@ -61,24 +53,25 @@ function MyTaskRow({ t, now }: { t: TaskItem; now: Date }) {
         done={done}
         now={now}
         className="w-16 shrink-0 text-right text-(length:--fs-sm)"
-        placeholder={<span className="sr-only">기한 없음</span>}
+        placeholder={<span className="sr-only">{tr("home.myTasks.noDue")}</span>}
       />
     </li>
   );
 }
 
 export function MyTasksPanel({ now }: { now: Date }) {
+  const t = useT();
   const { items, meId, workspace } = useTasks();
   const tabs = useMemo(() => myTaskTabs(items, meId, now), [items, meId, now]);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("upcoming");
 
   return (
-    <Panel title="내 작업" titleId="home-my-tasks" delay={160}>
+    <Panel title={t("home.myTasks.title")} titleId="home-my-tasks" delay={160}>
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="gap-0">
-        <TabsList variant="line" aria-label="내 작업 구분" className="h-10 px-(--s-2)">
+        <TabsList variant="line" aria-label={t("home.myTasks.tabs")} className="h-10 px-(--s-2)">
           {TABS.map((x) => (
             <TabsTrigger key={x.key} value={x.key} className="flex-none px-2 text-(length:--fs-sm)">
-              {x.label}
+              {t(`common.myTaskBucket.${x.key}`)}
               <span className="rounded-(--r-full) bg-(--surface-3) px-1.5 text-(length:--fs-2xs) text-(--text-3) tabular-nums">
                 {tabs[x.key].length}
               </span>
@@ -90,12 +83,12 @@ export function MyTasksPanel({ now }: { now: Date }) {
           return (
             <TabsContent key={x.key} value={x.key} className="border-t border-(--divider)">
               {list.length === 0 ? (
-                <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{x.empty}</p>
+                <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{t(`home.myTasks.empty.${x.key}`)}</p>
               ) : (
                 <>
                   <ul>
-                    {list.slice(0, MY_TASKS_MAX).map((t) => (
-                      <MyTaskRow key={t.id} t={t} now={now} />
+                    {list.slice(0, MY_TASKS_MAX).map((task) => (
+                      <MyTaskRow key={task.id} t={task} now={now} />
                     ))}
                   </ul>
                   <div className="border-t border-(--divider) px-(--s-4) py-(--s-2)">
@@ -103,7 +96,7 @@ export function MyTasksPanel({ now }: { now: Date }) {
                       href={`/${workspace.slug}/my-tasks`}
                       className="rounded-(--r-xs) text-(length:--fs-sm) font-medium text-(--accent) outline-none hover:underline focus-visible:ring-2 focus-visible:ring-(--accent)"
                     >
-                      작업 {list.length}개 모두 보기
+                      {t("home.myTasks.viewAll", { count: list.length })}
                     </Link>
                   </div>
                 </>
@@ -121,32 +114,33 @@ export function MyTasksPanel({ now }: { now: Date }) {
 // ─────────────────────────────────────────────
 
 export function ProjectProgressPanel({ projects, now }: { projects: HomeProject[]; now: Date }) {
+  const t = useT();
   const { items, members, workspace } = useTasks();
   const progress = useMemo(() => projectProgress(items), [items]);
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
   return (
-    <Panel title="프로젝트 진행" titleId="home-progress" delay={200}>
+    <Panel title={t("home.progress.title")} titleId="home-progress" delay={200}>
       {projects.length === 0 ? (
-        <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">아직 프로젝트가 없습니다</p>
+        <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{t("home.progress.empty")}</p>
       ) : (
         <table className="w-full table-fixed text-(length:--fs-sm)">
           <thead>
             <tr className="h-9 border-b border-(--divider) text-left text-(length:--fs-xs) text-(--text-3)">
               <th scope="col" className="px-(--s-4) font-medium">
-                {PROJECT_PROGRESS_COLUMN_LABELS.project}
+                {t("common.projectProgressColumn.project")}
               </th>
               <th scope="col" className="hide-m w-24 font-medium">
-                {PROJECT_PROGRESS_COLUMN_LABELS.status}
+                {t("common.projectProgressColumn.status")}
               </th>
               <th scope="col" className="w-36 font-medium max-[640px]:w-24">
-                {PROJECT_PROGRESS_COLUMN_LABELS.progress}
+                {t("common.projectProgressColumn.progress")}
               </th>
               <th scope="col" className="hide-m w-20 font-medium">
-                {PROJECT_PROGRESS_COLUMN_LABELS.due}
+                {t("common.projectProgressColumn.due")}
               </th>
               <th scope="col" className="hide-m w-24 pr-(--s-4) font-medium">
-                {PROJECT_PROGRESS_COLUMN_LABELS.team}
+                {t("common.projectProgressColumn.team")}
               </th>
             </tr>
           </thead>
@@ -172,14 +166,14 @@ export function ProjectProgressPanel({ projects, now }: { projects: HomeProject[
                   <td className="hide-m">
                     <span className="inline-flex items-center gap-1.5 text-(--text-2)">
                       <ProjectStatusDot status={p.status} />
-                      <span aria-hidden>{PROJECT_STATUS_LABELS[p.status]}</span>
+                      <span aria-hidden>{t(`common.projectStatus.${p.status}`)}</span>
                     </span>
                   </td>
                   <td>
                     <span className="flex items-center gap-2 pr-(--s-3)">
                       <span
                         role="progressbar"
-                        aria-label={`${p.name} 진행률`}
+                        aria-label={t("home.progress.bar", { name: p.name })}
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={pct}
@@ -208,7 +202,7 @@ export function ProjectProgressPanel({ projects, now }: { projects: HomeProject[
                     {team.length > 0 && (
                       <span
                         role="img"
-                        aria-label={`팀 ${team.map((m) => m.name).join(", ")}`}
+                        aria-label={t("home.progress.team", { names: team.map((m) => m.name).join(", ") })}
                         className="flex items-center"
                       >
                         {team.slice(0, TEAM_MAX).map((m) => (
@@ -242,12 +236,12 @@ export function ProjectProgressPanel({ projects, now }: { projects: HomeProject[
 // 다가오는 마감
 // ─────────────────────────────────────────────
 
-const DEADLINE_GROUPS = (["today", "tomorrow", "week"] as const).map((key) => ({
-  key,
-  label: DEADLINE_GROUP_LABELS[key],
-}));
+// 묶음 이름은 common.deadlineGroup에 같은 키로 있다
+const DEADLINE_GROUPS = (["today", "tomorrow", "week"] as const).map((key) => ({ key }));
 
 export function DeadlinesPanel({ now }: { now: Date }) {
+  const t = useT();
+  const f = useFormatter();
   const { items } = useTasks();
   const { open } = useTaskDrawer();
   const groups = useMemo(() => deadlineGroups(items, now), [items, now]);
@@ -255,9 +249,9 @@ export function DeadlinesPanel({ now }: { now: Date }) {
   const empty = DEADLINE_GROUPS.every((g) => groups[g.key].length === 0);
 
   return (
-    <Panel title="다가오는 마감" titleId="home-deadlines" delay={180}>
+    <Panel title={t("home.deadlines.title")} titleId="home-deadlines" delay={180}>
       {empty ? (
-        <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">예정된 마감이 없습니다</p>
+        <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{t("home.deadlines.empty")}</p>
       ) : (
         <div className="py-(--s-1)">
           {DEADLINE_GROUPS.map((g) => {
@@ -272,26 +266,26 @@ export function DeadlinesPanel({ now }: { now: Date }) {
                   id={`${listId}-title`}
                   className="flex items-center gap-1.5 px-(--s-2) py-1 text-(length:--fs-xs) font-medium text-(--text-3)"
                 >
-                  {g.label}
+                  {t(`common.deadlineGroup.${g.key}`)}
                   <span className="tabular-nums">{list.length}</span>
                 </h3>
                 <ul id={listId}>
-                  {shown.map((t) => (
-                    <li key={t.id}>
+                  {shown.map((task) => (
+                    <li key={task.id}>
                       <button
                         type="button"
-                        onClick={() => open(t.key)}
+                        onClick={() => open(task.key)}
                         className="flex h-9 w-full items-center gap-2 rounded-(--r) px-(--s-2) text-left outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)"
                       >
-                        <ProjectDot color={t.project.color} />
-                        <span className="sr-only">{t.project.name}</span>
-                        <span className="min-w-0 flex-1 truncate text-(length:--fs-sm) text-(--text)">{t.title}</span>
-                        {g.key === "week" && t.due_date && (
+                        <ProjectDot color={task.project.color} />
+                        <span className="sr-only">{task.project.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-(length:--fs-sm) text-(--text)">{task.title}</span>
+                        {g.key === "week" && task.due_date && (
                           <span className="shrink-0 text-(length:--fs-xs) text-(--text-3)">
-                            {formatDue(t.due_date, now)}
+                            {f.due(task.due_date, now)}
                           </span>
                         )}
-                        <AssigneeAvatar assignee={t.assignee} size={18} />
+                        <AssigneeAvatar assignee={task.assignee} size={18} />
                       </button>
                     </li>
                   ))}
@@ -311,7 +305,7 @@ export function DeadlinesPanel({ now }: { now: Date }) {
                     }
                     className="ml-(--s-2) rounded-(--r-xs) px-1 text-(length:--fs-xs) font-medium text-(--accent) outline-none hover:underline focus-visible:ring-2 focus-visible:ring-(--accent)"
                   >
-                    {isOpen ? "접기" : `+${list.length - DEADLINE_MAX}개 더`}
+                    {isOpen ? t("home.deadlines.collapse") : t("home.deadlines.more", { count: list.length - DEADLINE_MAX })}
                   </button>
                 )}
               </section>
@@ -328,14 +322,16 @@ export function DeadlinesPanel({ now }: { now: Date }) {
 // ─────────────────────────────────────────────
 
 export function ActivityPanel({ activities, now }: { activities: HomeActivity[]; now: Date }) {
+  const t = useT();
+  const f = useFormatter();
   const { members, workspace } = useTasks();
   const { open } = useTaskDrawer();
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
   return (
-    <Panel title="최근 활동" titleId="home-activity" delay={220}>
+    <Panel title={t("home.activity.title")} titleId="home-activity" delay={220}>
       {activities.length === 0 ? (
-        <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">아직 활동이 없습니다</p>
+        <p className="px-(--s-4) py-(--s-6) text-center text-(length:--fs-sm) text-(--text-3)">{t("home.activity.empty")}</p>
       ) : (
         <ul className="py-(--s-1)">
           {activities.map((a) => {
@@ -347,12 +343,12 @@ export function ActivityPanel({ activities, now }: { activities: HomeActivity[];
               hasTask: a.hasTask,
               projectName: a.project.name,
               memberName: (id) => byId.get(id)?.name,
-            });
+            }, t, f);
             const actor = a.actorId ? byId.get(a.actorId) : undefined;
             return (
               <li key={a.id} className="flex gap-2.5 px-(--s-4) py-(--s-2)">
                 <MemberAvatar
-                  name={a.actorName ?? UNKNOWN_USER_LABEL}
+                  name={a.actorName ?? t("common.unknownUser")}
                   color={actor?.color}
                   size={24}
                   className="mt-0.5"
@@ -386,7 +382,7 @@ export function ActivityPanel({ activities, now }: { activities: HomeActivity[];
                   )}
                   <span className="text-(--text-3)">
                     {a.hasTask && ` · ${a.project.name}`} ·{" "}
-                    <time dateTime={a.created_at}>{formatRelative(a.created_at, now)}</time>
+                    <time dateTime={a.created_at}>{f.relative(a.created_at, now)}</time>
                   </span>
                 </p>
               </li>

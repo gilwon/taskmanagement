@@ -4,13 +4,16 @@ import { notFound } from "next/navigation";
 import { FavoritesView } from "@/components/projects/favorites-view";
 import { PageHeader } from "@/components/shell/page-header";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
-import { NAV_LABELS } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 import { getFavorites } from "@/lib/projects/queries";
 import { getWorkspaceMembers } from "@/lib/tasks/queries";
 
-export const metadata: Metadata = { title: NAV_LABELS.favorites };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("common.nav.favorites") };
+}
 
 export default async function FavoritesPage({ params }: { params: Promise<{ ws: string }> }) {
+  const t = await getT();
   const { ws } = await params;
   const [userId, workspace] = await Promise.all([requireUserId(), getWorkspace(ws)]);
   if (!workspace) notFound();
@@ -20,7 +23,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ ws: 
   ]);
   return (
     <>
-      <PageHeader title={NAV_LABELS.favorites} subtitle="즐겨찾기한 프로젝트와 작업을 모아 봅니다." />
+      <PageHeader title={t("common.nav.favorites")} subtitle={t("projects.page.favoritesSubtitle")} />
       <FavoritesView
         projects={projects}
         tasks={tasks}

@@ -32,4 +32,7 @@ export const getT = cache(async () => {
   return createT(messagesFor(locale), locale);
 });
 
-export const getFormatter = cache(async () => createFormatter(await getLocale()));
+export const getFormatter = cache(async () => {
+  const locale = await getLocale();
+  return createFormatter(locale, { justNow: messagesFor(locale).common.justNow });
+});

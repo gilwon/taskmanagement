@@ -5,11 +5,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { announce } from "@/components/tasks/views/shared";
 import { Button } from "@/components/ui/button";
-import { ROLE_LABELS } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
 import { acceptInvite, declineInvite } from "@/lib/org/actions";
 import type { MyInvite } from "@/lib/org/queries";
 
 export function InvitesList({ invites }: { invites: MyInvite[] }) {
+  const t = useT();
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export function InvitesList({ invites }: { invites: MyInvite[] }) {
       setBusy(null);
       return setError(r.error);
     }
-    toast.success(`${i.workspaceName}에 들어왔습니다.`);
+    toast.success(t("org.myInvites.joined", { ws: i.workspaceName }));
     router.push(`/${r.data.slug}/home`);
   };
 
@@ -32,11 +33,11 @@ export function InvitesList({ invites }: { invites: MyInvite[] }) {
     const r = await declineInvite(i.id);
     setBusy(null);
     if (!r.ok) return setError(r.error);
-    announce(`${i.workspaceName} 초대를 거절했습니다.`);
+    announce(t("org.myInvites.declined", { ws: i.workspaceName }));
   };
 
   if (invites.length === 0) {
-    return <p className="text-(length:--fs-base) text-(--text-3)">받은 초대가 없습니다.</p>;
+    return <p className="text-(length:--fs-base) text-(--text-3)">{t("org.myInvites.empty")}</p>;
   }
   return (
     <div className="grid gap-3">
@@ -50,7 +51,7 @@ export function InvitesList({ invites }: { invites: MyInvite[] }) {
           <li key={i.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-(--s-3) py-(--s-3)">
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-(--text)">{i.workspaceName}</p>
-              <p className="text-(length:--fs-xs) text-(--text-3)">{ROLE_LABELS[i.role]}(으)로 초대됨</p>
+              <p className="text-(length:--fs-xs) text-(--text-3)">{t("org.myInvites.invitedAs", { role: t(`common.role.${i.role}`) })}</p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -58,18 +59,18 @@ export function InvitesList({ invites }: { invites: MyInvite[] }) {
                 size="sm"
                 disabled={busy !== null}
                 onClick={() => decline(i)}
-                aria-label={`${i.workspaceName} 초대 거절`}
+                aria-label={t("org.myInvites.declineOf", { ws: i.workspaceName })}
               >
-                거절
+                {t("org.myInvites.decline")}
               </Button>
               <Button
                 size="sm"
                 disabled={busy !== null}
                 aria-busy={busy === i.id}
                 onClick={() => accept(i)}
-                aria-label={`${i.workspaceName} 초대 수락`}
+                aria-label={t("org.myInvites.acceptOf", { ws: i.workspaceName })}
               >
-                수락
+                {t("org.myInvites.accept")}
               </Button>
             </div>
           </li>

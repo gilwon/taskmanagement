@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Reaction } from "@/lib/comments/queries";
-import { ME_LABEL, REACTION_EMOJIS, UNKNOWN_USER_LABEL } from "@/lib/i18n/labels";
+import { useT } from "@/lib/i18n/client";
+import { REACTION_EMOJIS } from "@/lib/i18n/labels";
 import { cn } from "@/lib/utils";
 
 type Emoji = (typeof REACTION_EMOJIS)[number];
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export function Reactions({ reactions, meId, nameOf, canReact, onToggle }: Props) {
+  const t = useT();
   if (reactions.length === 0 && !canReact) return null;
   const mine = (r: Reaction) => r.userIds.includes(meId);
   const chip =
@@ -27,8 +29,8 @@ export function Reactions({ reactions, meId, nameOf, canReact, onToggle }: Props
   return (
     <div className="flex flex-wrap items-center gap-1">
       {reactions.map((r) => {
-        const names = r.userIds.map((id) => (id === meId ? ME_LABEL : (nameOf(id) ?? UNKNOWN_USER_LABEL))).join(", ");
-        const label = `${r.emoji} 반응 ${r.userIds.length}개: ${names}`;
+        const names = r.userIds.map((id) => (id === meId ? t("common.me") : (nameOf(id) ?? t("common.unknownUser")))).join(", ");
+        const label = t("comments.reactionChip", { emoji: r.emoji, count: r.userIds.length, names });
         return (
           <Tooltip key={r.emoji}>
             <TooltipTrigger asChild>
@@ -66,7 +68,7 @@ export function Reactions({ reactions, meId, nameOf, canReact, onToggle }: Props
       {canReact && (
         <Popover>
           <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="icon-xs" aria-label="반응 추가" className="text-(--text-3)">
+            <Button type="button" variant="ghost" size="icon-xs" aria-label={t("comments.reactionAdd")} className="text-(--text-3)">
               <SmilePlus size={14} strokeWidth={1.8} aria-hidden />
             </Button>
           </PopoverTrigger>
@@ -78,7 +80,7 @@ export function Reactions({ reactions, meId, nameOf, canReact, onToggle }: Props
                   key={emoji}
                   type="button"
                   aria-pressed={on}
-                  aria-label={`${emoji} 반응`}
+                  aria-label={t("comments.reaction", { emoji })}
                   onClick={() => onToggle(emoji, !on)}
                   className={cn(
                     "inline-flex size-(--h-md) items-center justify-center rounded-(--r-sm) text-(length:--fs-lg) outline-none hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent)",

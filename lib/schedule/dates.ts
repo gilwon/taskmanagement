@@ -1,5 +1,12 @@
 // 캘린더·타임라인 순수 날짜 계산. 날짜는 "YYYY-MM-DD" 문자열과 Date.UTC 자정 ms로만 다룬다(서울 달력 날짜, 로컬 시간대 메서드 금지)
 import { seoulDay } from "@/lib/format/date";
+import type { Locale } from "@/lib/i18n/locales";
+import koSchedule from "@/lib/i18n/messages/ko/schedule";
+import type { Messages } from "@/lib/i18n/messages/types";
+import { createT, type T } from "@/lib/i18n/t";
+
+// 한국어 기본값. 클라이언트 번들에 사전 전체가 실리지 않게 schedule 영역만 담은 t를 만든다
+const koScheduleT = createT({ schedule: koSchedule } as unknown as Messages, "ko");
 
 const DAY_MS = 86_400_000;
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -96,14 +103,16 @@ export function editBar(start: string | null, due: string | null, edit: BarEdit,
   return { start: s, due: diffDays(s, next) < 0 ? s : next };
 }
 
-// 주 보기 제목. 한 달 안이면 "2026년 10월", 두 달에 걸치면 "2026년 9월 – 10월", 해가 바뀌면 "2026년 12월 – 2027년 1월"
-export function weekTitle(weekStart: string) {
+// 주 보기 제목. 한 달 안이면 "2026년 10월", 두 달에 걸치면 "2026년 9월 – 10월", 해가 바뀌면 "2026년 12월 – 2027년 1월".
+// t·locale을 넘기지 않으면 한국어다. 연도는 숫자 포맷(2,026)이 붙지 않게 문자열로 넘긴다
+export function weekTitle(weekStart: string, t: T = koScheduleT, locale: Locale = "ko") {
   const end = addDays(weekStart, 6);
-  const [y1, m1] = [Number(weekStart.slice(0, 4)), Number(weekStart.slice(5, 7))];
-  const [y2, m2] = [Number(end.slice(0, 4)), Number(end.slice(5, 7))];
-  if (y1 !== y2) return `${y1}년 ${m1}월 – ${y2}년 ${m2}월`;
-  if (m1 !== m2) return `${y1}년 ${m1}월 – ${m2}월`;
-  return `${y1}년 ${m1}월`;
+  const monthName = new Intl.DateTimeFormat(locale, { timeZone: "UTC", month: "long" });
+  const [y1, m1] = [weekStart.slice(0, 4), monthName.format(seoulDay(weekStart))];
+  const [y2, m2] = [end.slice(0, 4), monthName.format(seoulDay(end))];
+  if (y1 !== y2) return t("schedule.weekTitle.crossYear", { fromYear: y1, from: m1, toYear: y2, to: m2 });
+  if (m1 !== m2) return t("schedule.weekTitle.crossMonth", { year: y1, from: m1, to: m2 });
+  return t("schedule.weekTitle.sameMonth", { year: y1, month: m1 });
 }
 
 // 캘린더 주소 값. ?w=YYYY-MM-DD면 그 주, ?m=YYYY-MM이면 그 달, 틀리거나 없으면 이번 달

@@ -34,8 +34,7 @@ import {
   type ViewCtl,
 } from "@/components/tasks/views/shared";
 import { useTaskDrag } from "@/components/tasks/views/use-drag";
-import { formatDue } from "@/lib/format/date";
-import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, UNASSIGNED_LABEL } from "@/lib/i18n/labels";
+import { useFormatter, useT } from "@/lib/i18n/client";
 import type { GroupField, TaskGroup, TaskItem, TaskStatus } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -47,8 +46,9 @@ export const cellBtn =
 const DBL_WAIT = 220;
 
 export function ListView({ ctl, groups, empty }: { ctl: ViewCtl; groups: TaskGroup[]; empty: boolean }) {
+  const t = useT();
   const field = ctl.state.group;
-  const { dragId, target, onPointerDown } = useTaskDrag((id, t) => ctl.drop(id, t, groups, field));
+  const { dragId, target, onPointerDown } = useTaskDrag((id, to) => ctl.drop(id, to, groups, field));
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [composing, setComposing] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -59,8 +59,8 @@ export function ListView({ ctl, groups, empty }: { ctl: ViewCtl; groups: TaskGro
     return (
       <EmptyState
         icon={ListChecks}
-        title="작업이 없습니다"
-        description="작업을 추가해 일을 시작하세요."
+        title={t("tasks.cell.emptyTitle")}
+        description={t("tasks.cell.emptyDescription")}
         action={
           <Button
             size="sm"
@@ -69,7 +69,7 @@ export function ListView({ ctl, groups, empty }: { ctl: ViewCtl; groups: TaskGro
               setComposing(groups.find((g) => ctl.canAssign(field, g.key))?.key ?? null);
             }}
           >
-            <Plus aria-hidden strokeWidth={1.8} /> 작업 추가
+            <Plus aria-hidden strokeWidth={1.8} /> {t("tasks.views.addTask")}
           </Button>
         }
       />
@@ -121,7 +121,7 @@ export function ListView({ ctl, groups, empty }: { ctl: ViewCtl; groups: TaskGro
               {canAdd && (
                 <button
                   type="button"
-                  aria-label={`${g.label}에 작업 추가`}
+                  aria-label={t("tasks.cell.addToGroup", { group: g.label })}
                   onClick={() => {
                     if (isCollapsed) toggle(g.key);
                     setComposing(g.key);
@@ -135,19 +135,19 @@ export function ListView({ ctl, groups, empty }: { ctl: ViewCtl; groups: TaskGro
             {!isCollapsed && (
               <>
                 <ul>
-                  {g.items.map((t, i) => (
-                    <Fragment key={t.id}>
+                  {g.items.map((item, i) => (
+                    <Fragment key={item.id}>
                       {marks.before(i) && (
                         <li aria-hidden className="px-(--gutter)">
                           <DropLine />
                         </li>
                       )}
                       <Row
-                        t={t}
+                        t={item}
                         ctl={ctl}
-                        dragging={dragId === t.id}
-                        editing={editing === t.id}
-                        onEdit={() => setEditing(t.id)}
+                        dragging={dragId === item.id}
+                        editing={editing === item.id}
+                        onEdit={() => setEditing(item.id)}
                         onEditDone={() => setEditing(null)}
                         onPointerDown={onPointerDown}
                         groups={groups}
@@ -200,6 +200,9 @@ function Row({
   groups: TaskGroup[];
   field: GroupField;
 }) {
+  // t는 작업 행이라 번역 함수는 tr로 둔다
+  const tr = useT();
+  const f = useFormatter();
   const { open } = useTaskDrawer();
   const { move, update } = useTaskActions();
   const { members } = useTasks();
@@ -249,7 +252,7 @@ function Row({
         )}
         <Checkbox
           checked={checked}
-          aria-label={`${t.key} 선택`}
+          aria-label={tr("tasks.cell.select", { key: t.key })}
           onClick={(e) => {
             e.stopPropagation();
             ctl.select(t.id, { range: e.shiftKey });
@@ -257,8 +260,8 @@ function Row({
         />
         <EditCell
           canEdit={t.canEdit}
-          label={`상태 ${TASK_STATUS_LABELS[t.status]}, 바꾸기`}
-          readLabel={`상태 ${TASK_STATUS_LABELS[t.status]}`}
+          label={tr("tasks.cell.statusChange", { label: tr(`common.taskStatus.${t.status}`) })}
+          readLabel={tr("tasks.cell.status", { label: tr(`common.taskStatus.${t.status}`) })}
           className={cellBtn}
           wrap={(b) => (
             <StatusPicker value={t.status} onChange={(s) => s && s !== t.status && void move(t.id, s)}>
@@ -295,8 +298,8 @@ function Row({
         )}
         <EditCell
           canEdit={t.canEdit}
-          label={`담당자 ${t.assignee?.name ?? UNASSIGNED_LABEL}, 바꾸기`}
-          readLabel={`담당자 ${t.assignee?.name ?? UNASSIGNED_LABEL}`}
+          label={tr("tasks.cell.assigneeChange", { name: t.assignee?.name ?? tr("common.unassigned") })}
+          readLabel={tr("tasks.cell.assignee", { name: t.assignee?.name ?? tr("common.unassigned") })}
           className={cellBtn}
           wrap={(b) => (
             <AssigneePicker
@@ -312,8 +315,14 @@ function Row({
         </EditCell>
         <EditCell
           canEdit={t.canEdit}
-          label={`${t.priority === "none" ? "" : "우선순위 "}${TASK_PRIORITY_LABELS[t.priority]}, 바꾸기`}
-          readLabel={`${t.priority === "none" ? "" : "우선순위 "}${TASK_PRIORITY_LABELS[t.priority]}`}
+          label={tr(t.priority === "none" ? "tasks.cell.plainChange" : "tasks.cell.priorityChange", {
+            label: tr(`common.taskPriority.${t.priority}`),
+          })}
+          readLabel={
+            t.priority === "none"
+              ? tr("common.taskPriority.none")
+              : tr("tasks.display.priority", { label: tr(`common.taskPriority.${t.priority}`) })
+          }
           className={cn(cellBtn, "hide-m")}
           wrap={(b) => (
             <PriorityPicker value={t.priority} onChange={(p) => p && p !== t.priority && void update(t.id, { priority: p })}>
@@ -325,11 +334,11 @@ function Row({
         </EditCell>
         <EditCell
           canEdit={t.canEdit}
-          label={`기한 ${t.due_date ? formatDue(t.due_date, ctl.now) : "없음"}, 바꾸기`}
-          readLabel={t.due_date ? undefined : "기한 없음"}
+          label={t.due_date ? tr("tasks.cell.dueChange", { date: f.due(t.due_date, ctl.now) }) : tr("tasks.cell.dueNoneChange")}
+          readLabel={t.due_date ? undefined : tr("tasks.cell.dueNone")}
           className={cn(cellBtn, "w-20 justify-start text-(length:--fs-sm) max-[640px]:w-14")}
           wrap={(b) => (
-            <DatePicker label="기한" value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
+            <DatePicker label={tr("tasks.cell.due")} value={t.due_date} onChange={(d) => d !== t.due_date && void update(t.id, { due: d })}>
               {b}
             </DatePicker>
           )}
@@ -337,7 +346,7 @@ function Row({
           {t.due_date ? (
             <DueLabel due={t.due_date} done={t.status === "done"} now={ctl.now} />
           ) : t.canEdit ? (
-            <span className="truncate text-(--text-4)">날짜 지정</span>
+            <span className="truncate text-(--text-4)">{tr("tasks.cell.setDate")}</span>
           ) : (
             <span aria-hidden className="truncate text-(--text-4)">—</span>
           )}

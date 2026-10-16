@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { FileItem, LinkableTask } from "@/lib/files/types";
 import { NAMELESS_MEMBER_LABEL } from "@/lib/i18n/labels";
+import { getT } from "@/lib/i18n/server";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -66,7 +67,7 @@ export async function getProjectFilesPage(projectId: string) {
   const error = files.error ?? tasks.error ?? perms.error;
   if (error) {
     console.error("[프로젝트 파일]", error.message);
-    throw new Error("파일 목록을 불러오지 못했습니다.");
+    throw new Error((await getT())("files.errors.listFailed"));
   }
   return {
     files: files.files,
