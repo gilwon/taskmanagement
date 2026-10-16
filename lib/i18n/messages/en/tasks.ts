@@ -308,6 +308,8 @@ export default {
     deletedTitle: "This task was deleted",
     deletedDescription: "You can restore it with Undo in the notification.",
     backToList: "Go to tasks",
+    prevTask: "Previous task",
+    nextTask: "Next task",
   },
   newTask: {
     subtasksFailed: {

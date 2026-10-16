@@ -308,6 +308,8 @@ export default {
     deletedTitle: "このタスクは削除されました",
     deletedDescription: "通知の「元に戻す」で復元できます。",
     backToList: "タスク一覧へ",
+    prevTask: "前のタスク",
+    nextTask: "次のタスク",
   },
   newTask: {
     subtasksFailed: {

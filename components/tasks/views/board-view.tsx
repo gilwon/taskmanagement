@@ -52,6 +52,8 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
   );
   const { bulkUpdate, update } = useTaskActions();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const { onCollapsedChange } = ctl;
+  useEffect(() => onCollapsedChange(collapsed), [collapsed, onCollapsedChange]);
   const [composing, setComposing] = useState<string | null>(null);
   // 편집 가능한 프로젝트가 없으면 빠른 추가를 숨긴다
   const canAdd = ctl.projects.length > 0;
@@ -255,7 +257,7 @@ function Card({
           }
         }}
         className={cn(
-          "flex-col gap-2 rounded-(--r) select-none [-webkit-touch-callout:none] bg-(--surface) p-(--card-pad) shadow-(--shadow-card) outline-none hover:shadow-(--shadow-pop) focus-visible:ring-2 focus-visible:ring-(--accent)",
+          "flex-col gap-2 rounded-(--r-lg) select-none [-webkit-touch-callout:none] bg-(--surface) p-(--card-pad) shadow-(--shadow-card) outline-none hover:shadow-(--shadow-pop) focus-visible:ring-2 focus-visible:ring-(--accent)",
           t.canEdit ? "cursor-grab" : "cursor-pointer",
           checked && "ring-2 ring-(--accent)",
           // 끄는 동안 흐름에서 빼고 그 자리는 틈이 맡는다. 요소는 남겨 포인터 캡처를 지킨다

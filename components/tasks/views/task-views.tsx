@@ -102,6 +102,14 @@ export function TaskViews({
   );
   const visibleIds = useMemo(() => groups.flatMap((g) => g.items.map((t) => t.id)), [groups]);
   const visibleCount = visibleIds.length;
+  // 목록·보드가 알려 준 접은 묶음. 어느 모드의 값인지 함께 두어 모드를 바꾸면(표 포함) 이전 모드 값을 쓰지 않는다
+  const [collapsed, setCollapsed] = useState<{ mode: ViewMode; keys: ReadonlySet<string> } | null>(null);
+  const onCollapsedChange = useCallback((keys: ReadonlySet<string>) => setCollapsed({ mode, keys }), [mode]);
+  // 드로어 이전·다음 이동 순서. 화면에 그린 묶음 순서(보드는 열 순서, 열 안은 위에서 아래)이고 접은 묶음의 작업은 뺀다
+  const visibleKeys = useMemo(() => {
+    const hidden = collapsed?.mode === mode ? collapsed.keys : null;
+    return groups.filter((g) => !hidden?.has(g.key)).flatMap((g) => g.items.map((t) => t.key));
+  }, [groups, collapsed, mode]);
 
   // ─── 다중 선택 ───
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -202,6 +210,7 @@ export function TaskViews({
     projects: editable,
     selected: new Set(selectedIds),
     select,
+    onCollapsedChange,
     canAssign: (field, key) =>
       canAssign(field, key) && (field === "project" ? editable.some((p) => p.id === key) : editable.length > 0),
     drop: (id, target, groupList, field) => void commit(id, groupList, field, target.group, target.index),
@@ -290,7 +299,7 @@ export function TaskViews({
       )}
 
       {selectedIds.length > 0 && <BulkBar selectedIds={selectedIds} onClear={clearSelection} />}
-      <TaskDrawerHost />
+      <TaskDrawerHost order={visibleKeys} />
     </>
   );
 }

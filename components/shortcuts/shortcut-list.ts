@@ -45,6 +45,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
     title: "shortcuts.group.task",
     items: [
       { keys: ["E"], label: "shortcuts.item.edit" },
+      { keys: ["J / K"], label: "shortcuts.item.nextPrevTask" },
       { keys: ["1–5"], label: "shortcuts.item.pickStatus" },
       { keys: ["Alt", "↑↓"], label: "shortcuts.item.reorder" },
       { keys: ["Alt", "←→"], label: "shortcuts.item.moveColumn" },

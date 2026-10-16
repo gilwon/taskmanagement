@@ -1,7 +1,7 @@
 "use client";
 // 목록 뷰. 그룹 헤더(접기·개수·+), 작업 행(선택·키·제목·상태·담당자·우선순위·기한·프로젝트·⋯), 그룹 하단 인라인 컴포저, 행 드래그
 import { ChevronRight, GripVertical, ListChecks, Plus } from "lucide-react";
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/shell/empty-state";
 import { ProjectIcon } from "@/components/shell/project-icon";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,8 @@ export function ListView({ ctl, groups, empty }: { ctl: ViewCtl; groups: TaskGro
   const field = ctl.state.group;
   const { dragId, target, onPointerDown } = useTaskDrag((id, to) => ctl.drop(id, to, groups, field));
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const { onCollapsedChange } = ctl;
+  useEffect(() => onCollapsedChange(collapsed), [collapsed, onCollapsedChange]);
   const [composing, setComposing] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   // 작업이 하나도 없으면 빈 상태를 먼저 보이고, "작업 추가"를 누르면 첫 그룹 컴포저를 연다

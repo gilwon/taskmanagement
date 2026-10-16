@@ -7,11 +7,13 @@ import { Dialog as SheetPrimitive } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTitle } from "@/components/ui/sheet";
 import { fetchTaskByKey } from "@/components/tasks/drawer/actions";
+import { neighbors } from "@/components/tasks/drawer/rules";
 import { TaskDetailPanel } from "@/components/tasks/drawer/task-detail-panel";
 import { useNewTaskTarget } from "@/components/tasks/new-task/launcher";
 import { useTaskDrawer } from "@/components/tasks/task-drawer-state";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { useT } from "@/lib/i18n/client";
+import "@/components/tasks/drawer/lucian-drawer.css";
 
 const SMALL = "(max-width: 640px)";
 
@@ -34,18 +36,19 @@ export function cameFromDrawer(ws: string, key: string) {
   return expandedKey === `${ws}/${key}`;
 }
 
-export function TaskDrawerHost() {
+// order는 지금 보기에 보이는 작업 키 순서. 주면 서랍 머리에 이전·다음 이동(버튼·J/K)이 생긴다
+export function TaskDrawerHost({ order }: { order?: readonly string[] }) {
   // useSearchParams를 쓰므로 정적 렌더 경계를 둔다
   return (
     <Suspense fallback={null}>
-      <Host />
+      <Host order={order} />
     </Suspense>
   );
 }
 
 type Fetched = { key: string; status: "loading" | "missing" | "error"; error?: string };
 
-function Host() {
+function Host({ order }: { order?: readonly string[] }) {
   const t = useT();
   const router = useRouter();
   const { openKey, open, close } = useTaskDrawer();
@@ -61,6 +64,8 @@ function Host() {
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const escRef = useRef<(() => boolean) | null>(null);
   const announced = useRef<string | null>(null);
+  // 이전·다음으로 바꾼 참이면 제목으로 포커스를 옮기지 않는다. 옮기면 다음 J/K가 제목 입력으로 들어간다
+  const stepping = useRef(false);
 
   useNewTaskTarget(useMemo(() => ({ create: actions.create, open }), [actions.create, open]));
 
@@ -118,13 +123,16 @@ function Host() {
   useEffect(() => {
     if (!item) {
       if (!openKey) announced.current = null;
+      // 서버에서 읽는 경로로 빠지면 이동 표시를 지운다. 남으면 다음 일반 열기에서 제목 포커스를 건너뛴다
+      stepping.current = false;
       return;
     }
     if (announced.current === item.key) return;
     announced.current = item.key;
     const live = document.getElementById("sr-live");
     if (live) live.textContent = t("tasks.drawer.opened", { key: item.key, title: item.title });
-    titleRef.current?.focus();
+    if (!stepping.current) titleRef.current?.focus();
+    stepping.current = false;
   }, [item, openKey, t]);
 
   const expand = useCallback(() => {
@@ -132,6 +140,25 @@ function Host() {
     expandedKey = `${workspace.slug}/${item.key}`;
     router.push(`/${workspace.slug}/task/${item.key}`);
   }, [item, router, workspace.slug]);
+
+  // 이전·다음 이동. 앞뒤 키가 바뀔 때만 새로 만들어 패널의 J/K 리스너가 렌더마다 다시 붙지 않게 한다
+  const near = order && openKey ? neighbors(order, openKey) : null;
+  const hasNav = !!near;
+  const prevKey = near?.prev ?? null;
+  const nextKey = near?.next ?? null;
+  const nav = useMemo(() => {
+    if (!hasNav) return undefined;
+    return {
+      prev: !!prevKey,
+      next: !!nextKey,
+      go: (dir: "prev" | "next") => {
+        const key = dir === "prev" ? prevKey : nextKey;
+        if (!key) return;
+        stepping.current = true;
+        open(key);
+      },
+    };
+  }, [hasNav, prevKey, nextKey, open]);
 
   const state = openKey && !item && fetched?.key === openKey ? fetched : null;
 
@@ -164,7 +191,7 @@ function Host() {
             if (escRef.current?.()) e.preventDefault();
           }}
         >
-        <aside ref={asideRef} className="fixed inset-y-0 right-0 z-50 flex h-full w-[620px] max-w-full flex-col border-l border-(--border) bg-(--surface) shadow-(--shadow-pop) outline-none duration-300 ease-(--ease-drawer) data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right max-[640px]:w-full max-[640px]:border-l-0">
+        <aside ref={asideRef} className="u273-pn fixed inset-y-0 right-0 z-50 flex h-full w-[620px] max-w-full flex-col border-l border-(--border) bg-(--surface) shadow-(--shadow-pop) outline-none max-[640px]:w-full max-[640px]:border-l-0">
           <SheetTitle className="sr-only">{item ? `${item.key} ${item.title}` : (openKey ?? t("tasks.drawer.fallbackTitle"))}</SheetTitle>
           {item ? (
             <TaskDetailPanel
@@ -175,6 +202,7 @@ function Host() {
               onClose={close}
               onToggleLayout={expand}
               onOpenTask={open}
+              nav={nav}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">

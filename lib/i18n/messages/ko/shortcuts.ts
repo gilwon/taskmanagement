@@ -21,6 +21,7 @@ export default {
     escape: "팝오버·대화상자·드로어 닫기, 선택 해제",
     submit: "대화상자 제출, 댓글 보내기",
     edit: "열린 작업 편집(드로어)",
+    nextPrevTask: "열린 작업에서 다음·이전 작업으로(드로어)",
     pickStatus: "상태 선택에서 상태 고르기",
     reorder: "목록·보드에서 순서 옮기기",
     moveColumn: "보드에서 열 옮기기",

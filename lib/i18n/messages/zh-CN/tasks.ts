@@ -308,6 +308,8 @@ export default {
     deletedTitle: "该任务已被删除",
     deletedDescription: "可以通过通知中的“撤销”恢复。",
     backToList: "前往任务列表",
+    prevTask: "上一个任务",
+    nextTask: "下一个任务",
   },
   newTask: {
     subtasksFailed: {

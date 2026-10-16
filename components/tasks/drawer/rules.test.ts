@@ -1,6 +1,6 @@
 // 드로어·새 작업 모달 순수 규칙 테스트
 import { describe, expect, it } from "vitest";
-import { overdueDays, validLink } from "@/components/tasks/drawer/rules";
+import { neighbors, overdueDays, validLink } from "@/components/tasks/drawer/rules";
 import { diffPatch, parseSubtaskLines, type Fields } from "@/components/tasks/new-task/rules";
 import type { TaskItem } from "@/lib/tasks/types";
 
@@ -71,4 +71,14 @@ describe("diffPatch", () => {
       status: "done",
     });
   });
+});
+
+describe("neighbors", () => {
+  const keys = ["A-1", "A-2", "A-3"];
+  it("가운데는 앞뒤 둘 다", () => expect(neighbors(keys, "A-2")).toEqual({ prev: "A-1", next: "A-3" }));
+  it("처음·끝은 한쪽이 null", () => {
+    expect(neighbors(keys, "A-1")).toEqual({ prev: null, next: "A-2" });
+    expect(neighbors(keys, "A-3")).toEqual({ prev: "A-2", next: null });
+  });
+  it("목록에 없으면 둘 다 null", () => expect(neighbors(keys, "B-9")).toEqual({ prev: null, next: null }));
 });

@@ -6,6 +6,8 @@ import {
   AlertCircle,
   Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Link2,
   Maximize2,
   MoreHorizontal,
@@ -50,6 +52,7 @@ import { NewTaskDialog } from "@/components/tasks/new-task/new-task-dialog";
 import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { useFormatter, useT } from "@/lib/i18n/client";
 import { ESTIMATE_LABELS } from "@/lib/i18n/labels";
+import { motionOff } from "@/lib/prefs/prefs";
 import { loadTaskDetail } from "@/lib/tasks/actions";
 import type { Subtask, TaskDetail, TaskItem, TaskStatus } from "@/lib/tasks/types";
 
@@ -74,9 +77,11 @@ type Props = {
   onToggleLayout: () => void;
   // 다른 작업 열기(선행 작업, 전환된 작업)
   onOpenTask: (key: string) => void;
+  // 지금 보기 순서의 이전·다음 작업 열기. 드로어만 넘긴다. prev·next는 그쪽 작업이 있는지(처음·끝이면 false)
+  nav?: { prev: boolean; next: boolean; go: (dir: "prev" | "next") => void };
 };
 
-export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggleLayout, onOpenTask }: Props) {
+export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggleLayout, onOpenTask, nav }: Props) {
   const t = useT();
   const f = useFormatter();
   const { workspace, members } = useTasks();
@@ -134,6 +139,53 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
+
+  // 이전·다음 이동. 바뀐 작업의 본문이 누른 방향으로 미끄러지도록 방향을 남겨 둔다
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const slideDir = useRef<"prev" | "next" | null>(null);
+  const prevBtn = useRef<HTMLButtonElement>(null);
+  const nextBtn = useRef<HTMLButtonElement>(null);
+  const go = useCallback(
+    (dir: "prev" | "next") => {
+      if (!nav?.[dir]) return;
+      slideDir.current = dir;
+      nav.go(dir);
+    },
+    [nav],
+  );
+
+  // j·k 단축키. 다음·이전 작업으로 옮긴다. 처음·끝이거나 누르고 있어 반복되는 입력이면 아무것도 하지 않는다
+  useEffect(() => {
+    if (!nav) return;
+    const onKey = (e: KeyboardEvent) => {
+      const next = isPlainKey(e, "KeyJ");
+      if ((!next && !isPlainKey(e, "KeyK")) || e.repeat || ignoreShortcut(e, rootRef.current)) return;
+      e.preventDefault();
+      go(next ? "next" : "prev");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [nav, go]);
+
+  useEffect(() => {
+    const dir = slideDir.current;
+    slideDir.current = null;
+    const el = bodyRef.current;
+    if (!dir || !el) return;
+    // 새 작업은 맨 위에서 시작한다
+    el.scrollTop = 0;
+    // 끝에 닿아 누른 버튼이 꺼지면 포커스가 body로 빠진다. 반대쪽 버튼으로 옮긴다
+    const pressed = dir === "prev" ? prevBtn.current : nextBtn.current;
+    const active = document.activeElement;
+    if (pressed?.disabled && (!active || active === document.body || active === pressed)) {
+      (dir === "prev" ? nextBtn.current : prevBtn.current)?.focus();
+    }
+    if (motionOff()) return;
+    // 같은 방향을 잇따라 눌러도 처음부터 다시 돌도록 떼고 리플로를 한 번 일으킨 뒤 붙인다. 끝난 뒤 남아도 다시 돌지 않는다
+    delete el.dataset.slide;
+    void el.offsetWidth;
+    el.dataset.slide = dir;
+  }, [task.id]);
 
   const done = task.status === "done";
   const late = overdueDays(task.due_date, task.status, now);
@@ -211,7 +263,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
 
   return (
     <div ref={rootRef} className="relative flex h-full min-h-0 flex-col bg-(--surface)">
-      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-(--divider) pr-2 pl-4">
+      <header className={`${nav ? "u273-tb " : ""}flex h-12 shrink-0 items-center gap-1 border-b border-(--divider) pr-2 pl-4`}>
         <div className="flex min-w-0 items-center gap-1.5 text-(length:--fs-sm) text-(--text-3)">
           <ProjectIcon icon={task.project.icon} color={task.project.color} size={16} />
           <span className="truncate max-[640px]:hidden">{task.project.name}</span>
@@ -221,6 +273,16 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
           <TaskKey value={task.key} className="font-mono" />
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
+          {nav && (
+            <>
+              <Button ref={prevBtn} variant="ghost" size="icon-sm" aria-label={t("tasks.drawer.prevTask")} className={icon} disabled={!nav.prev} onClick={() => go("prev")}>
+                <ChevronUp size={16} strokeWidth={1.8} aria-hidden />
+              </Button>
+              <Button ref={nextBtn} variant="ghost" size="icon-sm" aria-label={t("tasks.drawer.nextTask")} className={`${icon} mr-1`} disabled={!nav.next} onClick={() => go("next")}>
+                <ChevronDown size={16} strokeWidth={1.8} aria-hidden />
+              </Button>
+            </>
+          )}
           <Button variant="outline" size="sm" className="mr-1 gap-1.5" onClick={toggleDone}>
             <Check size={14} strokeWidth={1.8} aria-hidden />
             <span className="max-[480px]:sr-only">{done ? t("tasks.detail.reopen") : t("tasks.detail.markDone")}</span>
@@ -279,7 +341,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={bodyRef} className="u273-pg min-h-0 flex-1 overflow-y-auto">
         {done && (
           <div className="flex items-center gap-2 border-b border-(--divider) bg-(--green-soft) px-5 py-2 text-(length:--fs-sm) text-(--green)">
             <CheckCircle2 size={14} strokeWidth={1.8} aria-hidden />

@@ -337,6 +337,8 @@ export default {
     deletedTitle: "삭제한 작업입니다",
     deletedDescription: "알림의 실행 취소로 되돌릴 수 있습니다.",
     backToList: "작업 목록으로 가기",
+    prevTask: "이전 작업",
+    nextTask: "다음 작업",
   },
   // 새 작업·작업 편집 모달
   newTask: {

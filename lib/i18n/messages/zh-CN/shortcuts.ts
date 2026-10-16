@@ -22,6 +22,7 @@ export default {
     escape: "关闭弹出层、对话框或抽屉，取消选择",
     submit: "提交对话框、发送评论",
     edit: "编辑已打开的任务（抽屉）",
+    nextPrevTask: "下一个 / 上一个任务（抽屉）",
     pickStatus: "在状态选择器中选择状态",
     reorder: "在列表或看板中调整顺序",
     moveColumn: "在看板列之间移动",

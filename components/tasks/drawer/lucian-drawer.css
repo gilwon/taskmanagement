@@ -1,0 +1,65 @@
+/* Lucian UX/UI Prompt #273 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#273 */
+/* 작업 서랍(#273). 오른쪽에서 밀려 나오고 닫힐 때 들어간다. 이전·다음으로 바꾸면 본문이 그 방향으로 미끄러진다 */
+
+@layer components {
+  /* 서랍. Radix Content(asChild aside)의 data-state로 keyframes를 걸어 닫힘 애니메이션 동안 Presence가 기다린다.
+     곡선 cubic-bezier(.3,1.1,.4,1)은 원본 값이다(--ux-spring과 다른 곡선) */
+  .u273-pn[data-state="open"] {
+    animation: u273-in 0.45s cubic-bezier(0.3, 1.1, 0.4, 1);
+  }
+  .u273-pn[data-state="closed"] {
+    animation: u273-out 0.45s cubic-bezier(0.3, 1.1, 0.4, 1) forwards;
+  }
+  @keyframes u273-in {
+    from {
+      transform: translateX(calc(100% + 16px));
+    }
+  }
+  @keyframes u273-out {
+    to {
+      transform: translateX(calc(100% + 16px));
+    }
+  }
+
+  /* 서랍 머리. 위로 미끄러지는 본문이 머리를 덮지 않게 위에 둔다 */
+  .u273-tb {
+    position: relative;
+    z-index: 1;
+    background: var(--surface);
+  }
+
+  /* 본문. 다음은 아래에서, 이전은 위에서 40px 들어온다. data-slide는 task-detail-panel이 이동할 때마다 다시 붙이고,
+     끝난 뒤에는 떼지 않는다(남아 있어도 애니메이션은 다시 돌지 않는다) */
+  .u273-pg[data-slide="next"] {
+    animation:
+      u273-pg-next 0.4s cubic-bezier(0.3, 1.1, 0.4, 1),
+      u273-pg-fade 0.3s;
+  }
+  .u273-pg[data-slide="prev"] {
+    animation:
+      u273-pg-prev 0.4s cubic-bezier(0.3, 1.1, 0.4, 1),
+      u273-pg-fade 0.3s;
+  }
+  @keyframes u273-pg-next {
+    from {
+      transform: translateY(40px);
+    }
+  }
+  @keyframes u273-pg-prev {
+    from {
+      transform: translateY(-40px);
+    }
+  }
+  @keyframes u273-pg-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .u273-pn[data-state],
+    .u273-pg[data-slide] {
+      animation: none;
+    }
+  }
+}

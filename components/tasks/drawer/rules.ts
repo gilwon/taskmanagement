@@ -1,4 +1,4 @@
-// 드로어의 순수 규칙. 설명 링크 주소 검사와 기한 초과 일수
+// 드로어의 순수 규칙. 설명 링크 주소 검사, 기한 초과 일수, 이전·다음 작업
 import { seoulDay } from "@/lib/format/date";
 import type { TaskStatus } from "@/lib/tasks/types";
 
@@ -15,4 +15,11 @@ export function validLink(raw: string): string | null {
 export function overdueDays(due: string | null, status: TaskStatus, now: Date) {
   if (!due || status === "done") return 0;
   return Math.max(0, Math.round((seoulDay(now) - seoulDay(due)) / DAY_MS));
+}
+
+// 보기 순서에서 앞뒤 작업 키. 목록에 없거나 처음·끝이면 그쪽은 null
+export function neighbors(keys: readonly string[], key: string): { prev: string | null; next: string | null } {
+  const i = keys.indexOf(key);
+  if (i < 0) return { prev: null, next: null };
+  return { prev: keys[i - 1] ?? null, next: keys[i + 1] ?? null };
 }

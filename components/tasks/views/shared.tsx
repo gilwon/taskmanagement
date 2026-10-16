@@ -36,6 +36,8 @@ export type ViewCtl = {
   // 그룹 값을 채워 작업을 만든다
   create: (field: GroupField, groupKey: string, title: string, projectId: string) => Promise<boolean>;
   canAssign: (field: GroupField, groupKey: string) => boolean;
+  // 접은 묶음 키를 알린다. 드로어 이전·다음 순서에서 그 묶음의 작업을 뺀다
+  onCollapsedChange: (keys: ReadonlySet<string>) => void;
 };
 
 // 드래그·키보드 이동 안내. 카드·행의 aria-describedby가 가리킨다

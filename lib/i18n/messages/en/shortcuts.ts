@@ -22,6 +22,7 @@ export default {
     escape: "Close popover, dialog, or drawer; clear selection",
     submit: "Submit dialog, send comment",
     edit: "Edit open task (drawer)",
+    nextPrevTask: "Next / previous task (drawer)",
     pickStatus: "Pick a status in the status picker",
     reorder: "Reorder in list or board",
     moveColumn: "Move between board columns",

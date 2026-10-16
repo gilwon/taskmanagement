@@ -22,6 +22,7 @@ export default {
     escape: "ポップオーバー・ダイアログ・ドロワーを閉じる、選択を解除",
     submit: "ダイアログを送信、コメントを送信",
     edit: "開いているタスクを編集 (ドロワー)",
+    nextPrevTask: "次・前のタスクへ (ドロワー)",
     pickStatus: "ステータス選択でステータスを選ぶ",
     reorder: "リスト・ボードで並べ替え",
     moveColumn: "ボードの列間を移動",
