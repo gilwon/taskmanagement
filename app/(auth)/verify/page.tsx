@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
+import { Envelope } from "@/components/auth/envelope";
 import { getT } from "@/lib/i18n/server";
 import { ResendForm } from "./resend-form";
 
@@ -21,6 +22,7 @@ export default async function VerifyPage({
   const [before, after] = t("auth.verify.sentTo", { email: "{email}" }).split("{email}");
   return (
     <AuthCard
+      art={<Envelope />}
       title={t("auth.verify.title")}
       description={
         address ? (

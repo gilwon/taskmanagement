@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard, linkClass } from "@/components/auth/auth-card";
+import { Envelope } from "@/components/auth/envelope";
 import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -12,6 +13,7 @@ export default async function ForgotSentPage() {
   const t = await getT();
   return (
     <AuthCard
+      art={<Envelope />}
       title={t("auth.forgotSent.title")}
       description={t("auth.forgotSent.description")}
       footer={

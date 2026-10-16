@@ -8,6 +8,7 @@ export default {
     namePlaceholder: "홍길동",
     passwordMin: "{min}자 이상",
     passwordHint: "영문과 숫자를 섞어 {min}자 이상 입력해 주세요.",
+    showPassword: "비밀번호 보기",
   },
   backToLogin: "로그인으로 돌아가기",
   sending: "보내는 중…",
@@ -76,5 +77,7 @@ export default {
     spamHint: "메일이 보이지 않으면 스팸함을 확인하거나 다시 보내 주세요.",
     resent: "확인 메일을 다시 보냈습니다.",
     resend: "확인 메일 다시 보내기",
+    // 다시 보내기 잠금 중. {s}는 남은 초
+    resendIn: "확인 메일 다시 보내기 · {s}초",
   },
 } as const;

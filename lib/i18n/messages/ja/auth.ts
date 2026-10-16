@@ -10,6 +10,7 @@ export default {
     namePlaceholder: "山田 太郎",
     passwordMin: "{min} 文字以上",
     passwordHint: "英字と数字を含めて {min} 文字以上で入力してください。",
+    showPassword: "パスワードを表示",
   },
   backToLogin: "ログインに戻る",
   sending: "送信中…",
@@ -77,5 +78,7 @@ export default {
     spamHint: "届かない場合は、迷惑メールフォルダを確認するか、もう一度送信してください。",
     resent: "確認メールを再送信しました。",
     resend: "確認メールを再送信",
+    // 다시 보내기 잠금 중. {s}는 남은 초
+    resendIn: "確認メールを再送信 · {s}秒",
   },
 } satisfies Messages["auth"];

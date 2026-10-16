@@ -10,6 +10,7 @@ export default {
     namePlaceholder: "张三",
     passwordMin: "至少 {min} 个字符",
     passwordHint: "至少 {min} 个字符，需包含字母和数字。",
+    showPassword: "显示密码",
   },
   backToLogin: "返回登录",
   sending: "发送中…",
@@ -76,5 +77,7 @@ export default {
     spamHint: "没收到？请检查垃圾邮件，或重新发送。",
     resent: "验证邮件已重新发送。",
     resend: "重新发送验证邮件",
+    // 다시 보내기 잠금 중. {s}는 남은 초
+    resendIn: "重新发送验证邮件 · {s} 秒",
   },
 } satisfies Messages["auth"];

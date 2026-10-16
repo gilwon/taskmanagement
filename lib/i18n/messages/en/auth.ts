@@ -10,6 +10,7 @@ export default {
     namePlaceholder: "Jane Doe",
     passwordMin: "At least {min} characters",
     passwordHint: "Use at least {min} characters with letters and numbers.",
+    showPassword: "Show password",
   },
   backToLogin: "Back to log in",
   sending: "Sending…",
@@ -77,5 +78,7 @@ export default {
     spamHint: "Don't see it? Check your spam folder or send it again.",
     resent: "Confirmation email sent again.",
     resend: "Resend confirmation email",
+    // 다시 보내기 잠금 중. {s}는 남은 초
+    resendIn: "Resend confirmation email · {s}s",
   },
 } satisfies Messages["auth"];
