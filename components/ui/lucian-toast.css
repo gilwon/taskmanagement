@@ -1,0 +1,108 @@
+/* Lucian UX/UI Prompt #070 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#070 */
+/* sonner 토스트에 #070 카드 모양과 spring 곡선을 입힌다. 쌓기·펼치기·밀어 닫기·타이머는 sonner가 그대로 맡는다 */
+
+@layer components {
+  /* sonner는 자기 스타일을 층 밖으로 주입해 층 안 일반 선언이 진다. 그래서 sonner가 이미 정하는 속성만 !important로 덮는다 */
+  .u070[data-sonner-toaster] {
+    font-family: inherit !important;
+  }
+
+  .u070 [data-sonner-toast][data-styled="true"] {
+    min-height: 68px;
+    gap: 12px !important;
+    padding: 12px 12px 12px 14px !important;
+    border: 0 !important;
+    box-shadow:
+      0 0 0 1px var(--ux-line),
+      0 16px 30px -18px var(--ux-shadow-strong) !important;
+  }
+  .u070 [data-sonner-toast][data-styled="true"]:focus-visible {
+    outline: 2px solid var(--ux-accent) !important;
+    outline-offset: 2px;
+  }
+
+  /* 종류별 강조색. 원본 데모의 Saved·Error·New comment·Saving 색을 sonner 종류에 잇는다 */
+  .u070 [data-sonner-toast][data-type="success"] {
+    --u070-tone: var(--ux-mint);
+  }
+  .u070 [data-sonner-toast][data-type="error"] {
+    --u070-tone: var(--ux-danger);
+  }
+  .u070 [data-sonner-toast][data-type="info"] {
+    --u070-tone: var(--ux-accent);
+  }
+  .u070 [data-sonner-toast]:is([data-type="warning"], [data-type="loading"]) {
+    --u070-tone: var(--ux-warn);
+  }
+
+  .u070 [data-sonner-toast][data-styled="true"] [data-icon] {
+    width: 36px !important;
+    height: 36px !important;
+    margin: 0 !important;
+    justify-content: center !important;
+    border-radius: var(--r);
+    background: color-mix(in srgb, var(--u070-tone) 15%, transparent);
+    color: var(--u070-tone);
+  }
+  .u070 [data-sonner-toast][data-styled="true"] [data-icon] svg {
+    margin: 0 !important;
+    stroke-width: 2.4;
+  }
+
+  .u070 [data-sonner-toast][data-styled="true"] [data-title] {
+    font-size: 14px;
+    font-weight: 780 !important;
+    letter-spacing: -0.02em;
+  }
+  .u070 [data-sonner-toast][data-styled="true"] [data-description] {
+    font-size: 12.5px;
+    font-weight: 600 !important;
+    color: var(--ux-ink-3) !important;
+  }
+
+  .u070 [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]) {
+    height: 32px !important;
+    padding: 0 11px !important;
+    border-radius: var(--r-sm) !important;
+    background: var(--ux-surface-2) !important;
+    color: var(--ux-ink) !important;
+    font-size: 12.5px !important;
+    font-weight: 750 !important;
+  }
+  .u070 [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]):focus-visible {
+    outline: 2px solid var(--ux-accent) !important;
+    outline-offset: 1px;
+    /* sonner의 포커스 box-shadow 링을 빼서 outline 한 겹만 남긴다 */
+    box-shadow: none !important;
+  }
+
+  /* 원본 카드처럼 transform .5s spring, opacity .35s. 높이·그림자 전환은 sonner 값 그대로 두고, 밀고 있는 동안은 sonner처럼 전환을 끈다 */
+  :root[data-motion="full"] .u070 [data-sonner-toast]:not([data-swiping="true"]) {
+    transition:
+      transform 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)),
+      opacity 0.35s,
+      height 400ms,
+      box-shadow 200ms !important;
+  }
+  /* 접힌 뒤쪽 카드가 사라질 때는 sonner처럼 opacity .2s로 빨리 지운다 */
+  :root[data-motion="full"] .u070 [data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"]:not([data-swiping="true"]) {
+    transition:
+      transform 0.5s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)),
+      opacity 0.2s,
+      height 400ms,
+      box-shadow 200ms !important;
+  }
+  /* 뒤로 접힌 카드의 내용이 사라지는 시간(원본 .25s) */
+  :root[data-motion="full"] .u070 [data-sonner-toast] > :is([data-icon], [data-content]) {
+    transition: opacity 0.25s !important;
+  }
+
+  /* 층 안 !important가 sonner의 동작 줄이기 규칙보다 세므로 여기서 다시 끈다 */
+  @media (prefers-reduced-motion: reduce) {
+    :root[data-motion="full"] .u070 [data-sonner-toast]:not([data-swiping="true"]),
+    :root[data-motion="full"] .u070 [data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"]:not([data-swiping="true"]),
+    :root[data-motion="full"] .u070 [data-sonner-toast] > :is([data-icon], [data-content]) {
+      transition: none !important;
+    }
+  }
+}

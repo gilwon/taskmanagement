@@ -6,6 +6,7 @@ import { usePrefs } from "@/lib/prefs/provider"
 import { useT } from "@/lib/i18n/client"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import "./lucian-toast.css"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { prefs } = usePrefs()
@@ -23,23 +24,25 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={prefs.theme}
       position="bottom-right"
       duration={4200}
+      // 원본 #070 펼침 간격. sonner는 접힌 카드 간격에도 같은 값을 쓴다
+      gap={8}
       containerAriaLabel={t("common.toaster.label")}
-      className="toaster group"
+      className="toaster group u070"
       icons={{
         success: (
-          <CircleCheckIcon className="size-4" />
+          <CircleCheckIcon className="size-[18px]" />
         ),
         info: (
-          <InfoIcon className="size-4" />
+          <InfoIcon className="size-[18px]" />
         ),
         warning: (
-          <TriangleAlertIcon className="size-4" />
+          <TriangleAlertIcon className="size-[18px]" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <OctagonXIcon className="size-[18px]" />
         ),
         loading: (
-          <Loader2Icon className="size-4 animate-spin" />
+          <Loader2Icon className="size-[18px] animate-spin" />
         ),
       }}
       style={
@@ -47,7 +50,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--border-radius": "var(--r-xl)",
         } as React.CSSProperties
       }
       toastOptions={{
