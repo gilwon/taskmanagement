@@ -69,6 +69,12 @@ export function resolveMotion(motion: Prefs["motion"], osReduce: boolean) {
 
 export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
+// JS 애니메이션 공용 판정. 앱 모션이 full이 아니거나 OS가 동작 줄이기면 끄고, 서버 렌더에서는 끈 쪽으로 둔다
+export function motionOff() {
+  if (typeof window === "undefined") return true;
+  return document.documentElement.dataset.motion !== "full" || matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
 export function applyPrefs(prefs: Prefs) {
   const el = document.documentElement;
   el.dataset.theme = prefs.theme;

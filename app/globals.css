@@ -49,10 +49,10 @@
   --radius-sm: var(--r-sm);
   --radius-md: var(--r);
   --radius-lg: var(--r-lg);
-  --radius-xl: var(--r-lg);
-  --radius-2xl: var(--r-lg);
-  --radius-3xl: var(--r-lg);
-  --radius-4xl: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-xl);
+  --radius-3xl: var(--r-xl);
+  --radius-4xl: var(--r-xl);
 }
 
 /* 강조색 6종. light는 --acc-l, dark는 --acc-d를 쓴다 */
@@ -86,20 +86,22 @@
 
 /* light 토큰(기본값)과 테마에 무관한 토큰 */
 :root {
-  --bg: #fbfaf8;
+  /* Lucian 바탕 #F4F2EE는 강조색 blue·teal 글자를 4.5:1 아래로 내려 teal이 4.5:1을 넘는 가장 어두운 값으로 둔다 */
+  --bg: #f9f8f5;
   --bg-side: #f4f3f0;
   --surface: #ffffff;
-  --surface-2: #f6f5f2;
-  --surface-3: #eeede9;
-  --sunken: #f7f6f3;
+  --surface-2: #f5f3ef;
+  --surface-3: #eae7e1;
+  --sunken: #f7f5f1;
   --overlay: rgba(24, 22, 19, 0.28);
-  --border: #e9e7e2;
-  --border-strong: #dad7d0;
-  --divider: #f0eeea;
-  --text: #1d1c1a;
-  --text-2: #57544e;
-  --text-3: #6b6760;
-  --text-4: #6d6963;
+  --border: rgba(22, 21, 27, 0.09);
+  --border-strong: rgba(22, 21, 27, 0.17);
+  --divider: rgba(22, 21, 27, 0.06);
+  --text: #16151b;
+  --text-2: #57535f;
+  /* Lucian --ux-ink-3(#8E8A97)은 4.5:1 아래라 쓰지 않고, 같은 보랏빛 회색을 bg-side·surface-3·accent-soft 위 4.5:1까지 낮춘다 */
+  --text-3: #64606c;
+  --text-4: #66626e;
   --on-accent: #ffffff;
   --green: #25754b;
   --amber: #8f5e0e;
@@ -115,9 +117,14 @@
   --st-progress: #c88a14;
   --st-review: #7652c2;
   --st-done: #2e8456;
-  --shadow-card: 0 1px 2px rgba(28, 25, 20, 0.04), 0 0 0 1px var(--border);
-  --shadow-pop: 0 12px 32px -8px rgba(28, 25, 20, 0.16), 0 2px 6px -2px rgba(28, 25, 20, 0.06), 0 0 0 1px var(--border);
-  --shadow-drag: 0 16px 36px -10px rgba(28, 25, 20, 0.28), 0 0 0 1px var(--border-strong);
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(40, 30, 80, 0.05);
+  --shadow-pop: 0 0 0 1px var(--border), 0 30px 60px -36px rgba(40, 30, 80, 0.3);
+  --shadow-drag: 0 0 0 1px var(--border-strong), 0 24px 48px -20px rgba(40, 30, 80, 0.3);
+  /* Lucian 테마별 값 */
+  --ux-glass: rgba(255, 255, 255, 0.58);
+  --ux-glass-line: rgba(255, 255, 255, 0.85);
+  --ux-shadow: rgba(40, 30, 80, 0.14);
+  --ux-shadow-strong: rgba(40, 30, 80, 0.3);
 
   --accent: var(--acc-l);
   --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -133,9 +140,10 @@
 
   /* 반경 */
   --r-xs: 4px;
-  --r-sm: 6px;
-  --r: 8px;
-  --r-lg: 10px;
+  --r-sm: 10px;
+  --r: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
   --r-full: 999px;
 
   /* 간격 */
@@ -201,20 +209,21 @@
 
 /* dark 토큰. data-theme=dark일 때 */
 :root[data-theme=dark] {
-  --bg: #1a1a19;
-  --bg-side: #151514;
-  --surface: #1d1d1c;
-  --surface-2: #252524;
-  --surface-3: #2d2d2b;
-  --sunken: #181817;
+  --bg: #07080d;
+  --bg-side: #0b0c12;
+  --surface: #13141c;
+  --surface-2: #1a1b25;
+  --surface-3: #252632;
+  --sunken: #0e0f15;
   --overlay: rgba(0, 0, 0, 0.55);
-  --border: #2c2b29;
-  --border-strong: #3a3936;
-  --divider: #252523;
-  --text: #eceae5;
-  --text-2: #b5b2ab;
-  --text-3: #9a968f;
-  --text-4: #96938c;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --divider: rgba(255, 255, 255, 0.05);
+  --text: #f4f0e8;
+  /* Lucian rgba(244,240,232,.68)을 --surface 위에 합성한 불투명 근사색 */
+  --text-2: #acaaa7;
+  --text-3: #94919a;
+  --text-4: #928f98;
   --on-accent: #12131c;
   --green: #5cba86;
   --amber: #d8a443;
@@ -231,8 +240,13 @@
   --st-review: #a98deb;
   --st-done: #5cba86;
   --shadow-card: 0 0 0 1px var(--border);
-  --shadow-pop: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-strong);
-  --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
+  --shadow-pop: 0 0 0 1px var(--border-strong), 0 30px 60px -36px rgba(0, 0, 0, 0.72);
+  --shadow-drag: 0 0 0 1px var(--border-strong), 0 24px 48px -20px rgba(0, 0, 0, 0.72);
+  /* Lucian 테마별 값 */
+  --ux-glass: rgba(255, 255, 255, 0.07);
+  --ux-glass-line: rgba(255, 255, 255, 0.18);
+  --ux-shadow: rgba(0, 0, 0, 0.45);
+  --ux-shadow-strong: rgba(0, 0, 0, 0.72);
   --accent: var(--acc-d);
   --accent-ink: var(--accent);
   --sun-ink: color-mix(in srgb, var(--red) 85%, white);
@@ -243,20 +257,21 @@
 /* dark 토큰. system(또는 속성 없음)이면서 OS가 다크일 때. 위 블록과 값이 같아야 한다 */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme=light]):not([data-theme=dark]) {
-    --bg: #1a1a19;
-    --bg-side: #151514;
-    --surface: #1d1d1c;
-    --surface-2: #252524;
-    --surface-3: #2d2d2b;
-    --sunken: #181817;
+    --bg: #07080d;
+    --bg-side: #0b0c12;
+    --surface: #13141c;
+    --surface-2: #1a1b25;
+    --surface-3: #252632;
+    --sunken: #0e0f15;
     --overlay: rgba(0, 0, 0, 0.55);
-    --border: #2c2b29;
-    --border-strong: #3a3936;
-    --divider: #252523;
-    --text: #eceae5;
-    --text-2: #b5b2ab;
-    --text-3: #9a968f;
-    --text-4: #96938c;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --divider: rgba(255, 255, 255, 0.05);
+    --text: #f4f0e8;
+    /* Lucian rgba(244,240,232,.68)을 --surface 위에 합성한 불투명 근사색 */
+    --text-2: #acaaa7;
+    --text-3: #94919a;
+    --text-4: #928f98;
     --on-accent: #12131c;
     --green: #5cba86;
     --amber: #d8a443;
@@ -273,13 +288,71 @@
     --st-review: #a98deb;
     --st-done: #5cba86;
     --shadow-card: 0 0 0 1px var(--border);
-    --shadow-pop: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-strong);
-    --shadow-drag: 0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong);
+    --shadow-pop: 0 0 0 1px var(--border-strong), 0 30px 60px -36px rgba(0, 0, 0, 0.72);
+    --shadow-drag: 0 0 0 1px var(--border-strong), 0 24px 48px -20px rgba(0, 0, 0, 0.72);
+    /* Lucian 테마별 값 */
+    --ux-glass: rgba(255, 255, 255, 0.07);
+    --ux-glass-line: rgba(255, 255, 255, 0.18);
+    --ux-shadow: rgba(0, 0, 0, 0.45);
+    --ux-shadow-strong: rgba(0, 0, 0, 0.72);
     --accent: var(--acc-d);
     --accent-ink: var(--accent);
     --sun-ink: color-mix(in srgb, var(--red) 85%, white);
     --sat-ink: color-mix(in srgb, var(--blue) 85%, white);
     color-scheme: dark;
+  }
+}
+
+/* Lucian UX/UI Prompt theme tokens · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/ */
+/* 이식 요소가 읽는 --ux-* 이름을 프로젝트 토큰에 잇는다. 프로젝트 토큰이 테마별로 바뀌므로 한 블록이면 된다 */
+:root {
+  --ux-page: var(--bg);
+  --ux-surface: var(--surface);
+  --ux-surface-2: var(--surface-2);
+  --ux-surface-3: var(--surface-3);
+  --ux-ink: var(--text);
+  --ux-ink-2: var(--text-2);
+  --ux-ink-3: var(--text-3);
+  --ux-line: var(--border);
+  --ux-line-2: var(--border-strong);
+  --ux-accent: var(--accent);
+  --ux-accent-2: var(--blue);
+  --ux-accent-soft: var(--accent-soft);
+  --ux-accent-ink: var(--on-accent);
+  --ux-mint: var(--green);
+  --ux-warn: var(--amber);
+  --ux-danger: var(--red);
+  --ux-grad: linear-gradient(120deg, var(--accent), var(--blue) 55%, var(--teal));
+  --ux-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ux-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+/* Lucian .ux 기본 규칙. 호출부 Tailwind className이 이기도록 components 층에 둔다. 동작 줄이기는 아래 data-motion 규칙이 맡는다 */
+@layer components {
+  .ux,
+  .ux *,
+  .ux *::before,
+  .ux *::after {
+    box-sizing: border-box;
+  }
+  .ux {
+    font-family: inherit;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  :where(.ux) :is(button, input, textarea, select) {
+    font: inherit;
+    color: inherit;
+  }
+  :where(.ux) button {
+    cursor: pointer;
+  }
+  .ux :focus-visible {
+    outline: 2px solid var(--ux-accent);
+    outline-offset: 3px;
+  }
+  .ux [hidden] {
+    display: none !important;
   }
 }
 

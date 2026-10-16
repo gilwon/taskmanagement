@@ -1,6 +1,6 @@
 // 환경설정 저장값 검사와 head 인라인 스크립트가 같은 규칙으로 속성을 심는지 확인한다
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_PREFS, PREFS_KEY, PREFS_SCRIPT, parsePrefs, resolveMotion } from "./prefs";
+import { DEFAULT_PREFS, PREFS_KEY, PREFS_SCRIPT, motionOff, parsePrefs, resolveMotion } from "./prefs";
 
 describe("parsePrefs", () => {
   it("빈 값·깨진 값은 기본값", () => {
@@ -20,6 +20,25 @@ describe("resolveMotion", () => {
     expect(resolveMotion("system", true)).toBe("reduce");
     expect(resolveMotion("system", false)).toBe("full");
     expect(resolveMotion("reduce", false)).toBe("reduce");
+  });
+});
+
+describe("motionOff", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("서버에서는 끄고, 브라우저에서는 data-motion=full이면서 OS 동작 줄이기가 아닐 때만 켠다", () => {
+    expect(motionOff()).toBe(true);
+    const html = { dataset: { motion: "full" } as DOMStringMap };
+    let osReduce = false;
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("document", { documentElement: html });
+    vi.stubGlobal("matchMedia", () => ({ matches: osReduce }));
+    expect(motionOff()).toBe(false);
+    osReduce = true;
+    expect(motionOff()).toBe(true);
+    osReduce = false;
+    html.dataset.motion = "reduce";
+    expect(motionOff()).toBe(true);
   });
 });
 
