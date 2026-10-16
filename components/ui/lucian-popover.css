@@ -1,0 +1,53 @@
+/* Lucian UX/UI Prompt #077 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#077 */
+/* 팝오버 면과 여는 단추에서 자라나고 되돌아 줄어드는 모션(#077). 위치·포커스·바깥 클릭·Esc는 Radix Popover가 그대로 맡는다 */
+
+@layer components {
+  .u077-pop {
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-pop);
+    transform-origin: var(--radix-popover-content-transform-origin);
+  }
+
+  /* 원본처럼 opacity .2s(기본 ease)와 transform(열림 .45s spring, 닫힘 .3s ease)을 따로 건다 */
+  .u077-pop[data-state="open"] {
+    animation:
+      u077-fade-in 0.2s ease,
+      u077-grow 0.45s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  /* 닫힘은 Presence가 먼저 끝나는 opacity 쪽에서 내린다. forwards로 마지막 프레임에 되돌아오지 않게 한다 */
+  .u077-pop[data-state="closed"] {
+    pointer-events: none;
+    animation:
+      u077-fade-out 0.2s ease forwards,
+      u077-shrink 0.3s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)) forwards;
+  }
+
+  @keyframes u077-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes u077-grow {
+    from {
+      transform: scale(0.3);
+    }
+  }
+  @keyframes u077-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes u077-shrink {
+    to {
+      transform: scale(0.3);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .u077-pop[data-state] {
+      animation: none;
+    }
+  }
+}

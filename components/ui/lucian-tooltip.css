@@ -1,0 +1,72 @@
+/* Lucian UX/UI Prompt #076 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#076 */
+/* 툴팁 상자(#076 진한 상자·단축키 칸)와 등장·퇴장 모션. 위치·지연·Esc는 Radix Tooltip이 그대로 맡는다 */
+
+@layer components {
+  /* 상자. 원본 34px 높이는 최소 높이로 두어 이름 목록처럼 긴 글이 줄바꿈되게 한다 */
+  .u076-tip {
+    min-height: 34px;
+    padding: 6px 11px;
+    border-radius: 10px;
+    background: var(--text);
+    color: var(--bg);
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.4;
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
+    transform-origin: var(--radix-tooltip-content-transform-origin);
+  }
+  .u076-tip:has([data-slot="kbd"]) {
+    padding-right: 6px;
+  }
+  .u076-tip [data-slot="kbd"] {
+    position: relative;
+    isolation: isolate;
+    z-index: 50;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    background: color-mix(in srgb, var(--bg) 16%, transparent);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 750;
+  }
+
+  /* 등장. Presence가 닫힘을 기다리려면 열림·닫힘 keyframe 이름이 달라야 한다 */
+  .u076-tip[data-state="delayed-open"] {
+    animation: u076-in 0.16s ease;
+  }
+  /* 연달아 옮겨 갈 때(instant-open)는 원본의 미끄러짐 대신 크기 변화 없이 나타나기만 한다 */
+  .u076-tip[data-state="instant-open"] {
+    animation: u076-fade-in 0.16s ease;
+  }
+  .u076-tip[data-state="closed"] {
+    pointer-events: none;
+    animation: u076-out 0.16s ease forwards;
+  }
+
+  @keyframes u076-in {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+  }
+  @keyframes u076-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes u076-out {
+    to {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .u076-tip[data-state] {
+      animation: none;
+    }
+  }
+}
