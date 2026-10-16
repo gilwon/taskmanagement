@@ -83,7 +83,7 @@ function DemoLogin() {
       <SubmitButton pending={pending} variant="outline">
         {pending ? t("auth.login.demoPending") : t("auth.login.demo")}
       </SubmitButton>
-      <p id="demo-note" className="text-center text-[length:var(--fs-xs)] text-[var(--text-3)]">
+      <p id="demo-note" className="whitespace-pre-line text-center text-[length:var(--fs-xs)] text-[var(--text-3)]">
         {t("auth.login.demoNote")}
       </p>
     </form>

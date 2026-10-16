@@ -24,7 +24,7 @@ export default {
     demoPending: "데모 준비 중…",
     demoUserName: "데모 사용자",
     demoRateLimited: "지금 데모를 시작하는 사람이 많아 잠시 막혀 있습니다. 1시간쯤 뒤에 다시 시도해 주세요.",
-    demoNote: "가입 없이 나만의 데모가 열리고 24시간 뒤 지워집니다. 파일 업로드는 할 수 없습니다.",
+    demoNote: "가입 없이 나만의 데모가 열리고 24시간 뒤 지워집니다.\n파일 업로드는 할 수 없습니다.",
   },
   signup: {
     metaTitle: "가입",
