@@ -1,7 +1,7 @@
 "use client";
 // 보드 뷰. 상태 5열(완료 숨김 반영), 열 헤더(아이콘·이름·개수·+·⋯), 작업 카드, 열 하단 인라인 컴포저, 카드 드래그
 import { ChevronRight, MessageSquare, MoreHorizontal, Paperclip, Plus, Repeat } from "lucide-react";
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,11 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
   // t는 작업 변수로 쓰여 번역 함수는 tr로 둔다
   const tr = useT();
   const rootRef = useRef<HTMLDivElement>(null);
+  // 첫 그리기가 끝났는지. 그 뒤에 새로 완료 열에 들어온 카드만 체크가 튄다
+  const readyRef = useRef(false);
+  useEffect(() => {
+    readyRef.current = true;
+  }, []);
   const { dragId, target, height, onPointerDown } = useTaskDrag(
     (id, t) => {
       ctl.drop(id, t, groups, "status");
@@ -167,7 +172,7 @@ export function BoardView({ ctl, groups }: { ctl: ViewCtl; groups: TaskGroup[] }
                 {g.items.map((t, i) => (
                   <Fragment key={t.id}>
                     {marks.before(i) && gap}
-                    <Card t={t} ctl={ctl} groups={groups} dragging={dragId === t.id} onPointerDown={onPointerDown} />
+                    <Card t={t} ctl={ctl} groups={groups} dragging={dragId === t.id} onPointerDown={onPointerDown} readyRef={readyRef} />
                   </Fragment>
                 ))}
                 {marks.end && gap}
@@ -210,12 +215,14 @@ function Card({
   groups,
   dragging,
   onPointerDown,
+  readyRef,
 }: {
   t: TaskItem;
   ctl: ViewCtl;
   groups: TaskGroup[];
   dragging: boolean;
   onPointerDown: (e: React.PointerEvent<HTMLElement>, id: string) => void;
+  readyRef: React.RefObject<boolean>;
 }) {
   const tr = useT();
   const { open } = useTaskDrawer();
@@ -299,9 +306,23 @@ function Card({
             </span>
           )}
           <AssigneeAvatar assignee={t.assignee} size={20} />
-          {t.status === "done" && <em aria-hidden className="u255-check" />}
+          {t.status === "done" && <Check readyRef={readyRef} />}
         </div>
       </li>
     </TaskContextMenu>
   );
+}
+
+// 완료 체크. 보드 첫 그리기 뒤에 생긴 체크만 is-new로 튀게 한다.
+// 자식 layout effect가 보드의 effect보다 먼저 돌아 첫 로드의 체크는 readyRef가 false다.
+// layout effect는 리마운트 없이도 다시 돌 수 있어(Suspense 등) 판단은 처음 한 번만 한다
+function Check({ readyRef }: { readyRef: React.RefObject<boolean> }) {
+  const ref = useRef<HTMLElement>(null);
+  const decided = useRef(false);
+  useLayoutEffect(() => {
+    if (decided.current) return;
+    decided.current = true;
+    if (readyRef.current) ref.current?.classList.add("is-new");
+  }, [readyRef]);
+  return <em ref={ref} aria-hidden className="u255-check" />;
 }
