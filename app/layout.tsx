@@ -1,4 +1,6 @@
 // 루트 레이아웃. html 속성(로캘·테마·강조색·밀도·모션), 폰트, 기본 메타데이터, 사전·환경설정·툴팁·토스트 provider를 설정한다
+// globals.css를 가장 먼저 불러온다. 컴포넌트 CSS의 @layer components가 먼저 나오면 층 순서가 정해져 preflight(base)가 그 규칙을 이긴다
+import "./globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { InlineScript } from "@/components/inline-script";
@@ -8,7 +10,6 @@ import { I18nProvider } from "@/lib/i18n/client";
 import { getLocale, getT, messagesFor } from "@/lib/i18n/server";
 import { PREFS_SCRIPT } from "@/lib/prefs/prefs";
 import { PrefsProvider } from "@/lib/prefs/provider";
-import "./globals.css";
 
 // 한글 폴백은 globals.css의 --font-sans 스택에 둔다
 const geistSans = Geist({
