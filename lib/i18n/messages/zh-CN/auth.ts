@@ -26,7 +26,7 @@ export default {
     demoPending: "正在准备演示…",
     demoUserName: "演示用户",
     demoRateLimited: "当前开启演示的人数过多，请约一小时后重试。",
-    demoNote: "无需注册即可打开专属演示，24 小时后自动删除。演示中无法上传文件。",
+    demoNote: "无需注册即可打开专属演示，24 小时后自动删除。\n演示中无法上传文件。",
   },
   signup: {
     metaTitle: "注册",

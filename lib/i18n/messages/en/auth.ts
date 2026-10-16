@@ -26,7 +26,7 @@ export default {
     demoPending: "Preparing demo…",
     demoUserName: "Demo user",
     demoRateLimited: "Too many people are starting the demo right now. Please try again in about an hour.",
-    demoNote: "Opens your own demo without signing up. It's deleted after 24 hours. File uploads are disabled.",
+    demoNote: "Opens your own demo without signing up. It's deleted after 24 hours.\nFile uploads are disabled.",
   },
   signup: {
     metaTitle: "Sign up",
