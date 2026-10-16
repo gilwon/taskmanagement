@@ -1,0 +1,135 @@
+/* Lucian UX/UI Prompt #031 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#031 */
+/* 셀렉트(#031 펼쳐지는 목록·미끄러지는 강조 막대·체크). 동작은 Radix Select 그대로 두고 모양과 모션만 입힌다 */
+
+@layer components {
+  /* 트리거. 테두리 대신 안쪽 그림자 선을 쓰고, 열리면 강조색 선과 옅은 고리가 둘러싼다 */
+  .u031-btn {
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1.5px transparent;
+    transition: box-shadow 0.25s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)), background-color 0.25s;
+  }
+  .u031-btn:hover {
+    box-shadow: inset 0 0 0 1.5px var(--border-strong);
+  }
+  .u031-btn:focus-visible,
+  .u031-btn[data-state="open"] {
+    outline: 0;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px var(--accent-soft);
+  }
+  .u031-btn[aria-invalid="true"] {
+    box-shadow: inset 0 0 0 1.5px var(--red), 0 0 0 3px color-mix(in srgb, var(--red) 20%, transparent);
+  }
+  .u031-btn[data-placeholder] {
+    color: var(--text-3);
+  }
+  .u031-car {
+    color: var(--text-3);
+    transition: transform 0.45s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  .u031-btn[data-state="open"] .u031-car {
+    transform: rotate(180deg);
+  }
+
+  /* 목록. item-aligned 모드엔 Radix 원점 변수가 없어 원본 원점(위 가운데)으로 받는다.
+     scaleY·translateY는 x축을 건드리지 않아 Radix의 가로 정렬 계산이 그대로 맞는다 */
+  .u031-list {
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-pop);
+    transform-origin: var(--radix-select-content-transform-origin, 50% 0);
+  }
+  .u031-list[data-state="open"] {
+    animation:
+      u031-fade-in 0.2s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+      u031-grow-in 0.45s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+  /* 닫힘은 Presence가 먼저 끝나는 opacity 쪽에서 내린다. forwards로 마지막 프레임에 되돌아오지 않게 한다 */
+  /* 예전엔 닫히면 바로 사라졌으니 닫히는 동안의 클릭이 항목에 닿지 않게 한다 */
+  .u031-list[data-state="closed"] {
+    pointer-events: none;
+    animation:
+      u031-fade-out 0.2s var(--ux-ease, cubic-bezier(0.2, 0.8, 0.2, 1)) forwards,
+      u031-grow-out 0.4s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)) forwards;
+  }
+  .u031-vp {
+    padding: 6px;
+  }
+
+  /* 강조 막대. 위치는 select.tsx가 하이라이트된 항목 자리로 옮긴다. 항목보다 먼저 그려져 글자 뒤에 깔린다 */
+  .u031-hl {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      transform 0.35s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)),
+      height 0.35s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1)),
+      opacity 0.15s;
+  }
+  .u031-hl[data-on] {
+    opacity: 1;
+  }
+
+  /* 항목. 하이라이트 배경은 강조 막대가 맡아 항목 자체엔 두지 않는다 */
+  .u031-o {
+    border-radius: var(--r-sm);
+    color: var(--text);
+  }
+  .u031-ck {
+    color: var(--accent);
+    stroke-width: 3;
+    animation:
+      u031-fade-in 0.2s,
+      u031-ck-in 0.4s var(--ux-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
+  }
+
+  .u031-scroll {
+    background: var(--surface);
+    color: var(--text-3);
+  }
+
+  @keyframes u031-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes u031-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes u031-grow-in {
+    from {
+      transform: translateY(-6px) scaleY(0.92);
+    }
+  }
+  @keyframes u031-grow-out {
+    to {
+      transform: translateY(-6px) scaleY(0.92);
+    }
+  }
+  @keyframes u031-ck-in {
+    from {
+      transform: scale(0.4);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .u031-btn,
+    .u031-car,
+    .u031-hl {
+      transition: none;
+    }
+    .u031-list[data-state],
+    .u031-ck {
+      animation: none;
+    }
+  }
+}
