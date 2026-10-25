@@ -2,6 +2,7 @@
 // 알림 화면·수신함이 함께 쓰는 조각. 알림 한 줄 문장, 이동 주소, 읽음 처리 훅
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Package } from "lucide-react";
 import { toast } from "sonner";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { announce } from "@/components/tasks/views/shared";
@@ -11,10 +12,11 @@ import type { NotificationItem } from "@/lib/notifications/queries";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import { cn } from "@/lib/utils";
 
-// 알림 대상 주소. 작업이 있으면 작업 페이지, 없으면 프로젝트 개요. 삭제됐거나 볼 수 없으면 null
+// 알림 대상 주소. 작업이 있으면 작업 페이지, 없으면 프로젝트 개요, 재고 알림은 재고 화면. 삭제됐거나 볼 수 없으면 null
 export function notificationHref(ws: string, n: NotificationItem) {
   if (n.task && !n.task.deleted) return `/${ws}/task/${n.task.key}`;
   if (!n.task && n.project) return `/${ws}/projects/${n.project.key}/overview`;
+  if (n.type === "stock" && n.stockItemId) return `/${ws}/inventory?item=${n.stockItemId}`;
   return null;
 }
 
@@ -90,13 +92,21 @@ export function NotificationLine({
   const actor = n.actorName ?? t("common.unknownUser");
   // 문장 틀을 [이름 앞][굵은 이름][이름 뒤]로 나눈다
   const [before, after = ""] = t(`notifications.line.${n.type}`, { actor: SEP, text: n.text }).split(SEP);
+  // 재고 알림은 보낸 사람이 없다. 사람 아바타 대신 아이콘을 쓰고 문장 전체를 한 덩어리로 보인다
+  const isStock = n.type === "stock";
   return (
     <div className="flex min-w-0 flex-1 gap-2.5">
-      <MemberAvatar name={actor} color={color} size={28} className="mt-0.5" />
+      {isStock ? (
+        <span aria-hidden className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-(--surface-2) text-(--text-2)">
+          <Package size={14} strokeWidth={1.8} />
+        </span>
+      ) : (
+        <MemberAvatar name={actor} color={color} size={28} className="mt-0.5" />
+      )}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className={cn("text-(length:--fs-sm) leading-snug text-(--text-2)", !n.read && "text-(--text)")}>
           {before}
-          <span className="font-semibold text-(--text)">{actor}</span>
+          {!isStock && <span className="font-semibold text-(--text)">{actor}</span>}
           {after}
         </p>
         {(n.task || n.project) && (

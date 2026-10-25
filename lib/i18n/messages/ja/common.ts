@@ -107,6 +107,7 @@ export default {
     assign: "担当割り当て",
     comment: "コメント",
     update: "更新",
+    stock: "在庫",
   },
   template: {
     blank: "空のプロジェクト",
@@ -295,6 +296,7 @@ export default {
     assign: "担当割り当て",
     comment: "コメント",
     update: "更新",
+    stock: "在庫",
   },
   fileTypeAll: "すべて",
   me: "自分",
@@ -368,6 +370,7 @@ export default {
     assign: "タスクの担当者に設定されたとき",
     comment: "自分のタスクにコメントがついたとき",
     update: "自分のタスクが変更されたとき",
+    stock: "品目の在庫が安全在庫を下回ったとき",
   },
   favoriteSort: { recent: "追加が新しい順", name: "名前" },
   justNow: "たった今",

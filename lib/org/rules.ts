@@ -12,7 +12,7 @@ export const MAX_INVITES = 20;
 export const INVITE_ROLES = ["admin", "member", "guest"] as const satisfies readonly Role[];
 
 // 앱 내 알림 종류. user_prefs.notif_prefs의 키이고 notification_type enum과 같다
-export const NOTIF_KEYS = ["mention", "assign", "comment", "update"] as const satisfies readonly Enums<"notification_type">[];
+export const NOTIF_KEYS = ["mention", "assign", "comment", "update", "stock"] as const satisfies readonly Enums<"notification_type">[];
 
 // 팀 아이콘. 프로젝트 아이콘과 같은 목록(META §4)이고 components/shell/project-icon.tsx가 그린다
 export const TEAM_ICONS = [

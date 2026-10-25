@@ -107,6 +107,7 @@ export default {
     assign: "分配",
     comment: "评论",
     update: "更新",
+    stock: "库存",
   },
   template: {
     blank: "空白项目",
@@ -295,6 +296,7 @@ export default {
     assign: "分配",
     comment: "评论",
     update: "更新",
+    stock: "库存",
   },
   fileTypeAll: "全部",
   me: "我",
@@ -368,6 +370,7 @@ export default {
     assign: "你被分配任务时",
     comment: "有人评论你的任务时",
     update: "你负责的任务发生变更时",
+    stock: "物品库存低于安全库存时",
   },
   favoriteSort: { recent: "最近添加", name: "名称" },
   justNow: "刚刚",

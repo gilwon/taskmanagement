@@ -120,6 +120,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<Enums<"notification_type">, string
   assign: "담당자 지정",
   comment: "댓글",
   update: "업데이트",
+  stock: "재고",
 };
 
 export const TEMPLATE_LABELS = {
@@ -496,6 +497,7 @@ export const NOTIF_PREF_DESCRIPTIONS = {
   assign: "작업 담당자로 지정되었을 때",
   comment: "내가 담당한 작업에 댓글이 달렸을 때",
   update: "내가 담당한 작업이 바뀌었을 때",
+  stock: "품목 재고가 안전재고 아래로 내려갔을 때",
 } as const;
 
 // 즐겨찾기 화면 정렬

@@ -107,6 +107,7 @@ export default {
     assign: "Assignments",
     comment: "Comments",
     update: "Updates",
+    stock: "Stock",
   },
   template: {
     blank: "Blank project",
@@ -295,6 +296,7 @@ export default {
     assign: "Assignments",
     comment: "Comments",
     update: "Updates",
+    stock: "Stock",
   },
   fileTypeAll: "All",
   me: "You",
@@ -368,6 +370,7 @@ export default {
     assign: "When you're assigned to a task",
     comment: "When someone comments on your task",
     update: "When a task you own changes",
+    stock: "When an item drops below its safety stock",
   },
   favoriteSort: { recent: "Recently added", name: "Name" },
   justNow: "Just now",

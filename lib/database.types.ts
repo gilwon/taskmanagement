@@ -232,14 +232,14 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "actor_id": string | null,"created_at": string,"id": string,"project_id": string | null,"read_at": string | null,"snippet": string | null,"task_id": string | null,"text": string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
+                    "actor_id": string | null,"created_at": string,"id": string,"project_id": string | null,"read_at": string | null,"snippet": string | null,"stock_item_id": string | null,"task_id": string | null,"text": string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "actor_id"?: string | null,"created_at"?: string,"id"?: string,"project_id"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"task_id"?: string | null,"text"?: string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
+                    "actor_id"?: string | null,"created_at"?: string,"id"?: string,"project_id"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"stock_item_id"?: string | null,"task_id"?: string | null,"text"?: string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
                   }
                   Update: {
-                    "actor_id"?: string | null,"created_at"?: string,"id"?: string,"project_id"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"task_id"?: string | null,"text"?: string,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string,"workspace_id"?: string
+                    "actor_id"?: string | null,"created_at"?: string,"id"?: string,"project_id"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"stock_item_id"?: string | null,"task_id"?: string | null,"text"?: string,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -254,6 +254,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "projects"
       referencedColumns: ["id","workspace_id"]
+    },{
+      foreignKeyName: "notifications_stock_item_id_fkey"
+      columns: ["stock_item_id"]
+isOneToOne: false
+      referencedRelation: "stock_items"
+      referencedColumns: ["id"]
     },{
       foreignKeyName: "notifications_task_id_project_id_fkey"
       columns: ["task_id","project_id"]
@@ -375,6 +381,116 @@ isOneToOne: false
       columns: ["project_id","workspace_id"]
 isOneToOne: false
       referencedRelation: "projects"
+      referencedColumns: ["id","workspace_id"]
+    }
+                  ]
+                },"stock_items": {
+                  Row: {
+                    "archived_at": string | null,"category": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"safety_stock": number,"sku": string,"unit": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"category"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"safety_stock"?: number,"sku": string,"unit": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"category"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"safety_stock"?: number,"sku"?: string,"unit"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_items_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_items_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"stock_levels": {
+                  Row: {
+                    "item_id": string,"location_id": string,"qty": number,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "item_id": string,"location_id": string,"qty": number,"workspace_id": string
+                  }
+                  Update: {
+                    "item_id"?: string,"location_id"?: string,"qty"?: number,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_levels_item_id_workspace_id_fkey"
+      columns: ["item_id","workspace_id"]
+isOneToOne: false
+      referencedRelation: "stock_items"
+      referencedColumns: ["id","workspace_id"]
+    },{
+      foreignKeyName: "stock_levels_location_id_workspace_id_fkey"
+      columns: ["location_id","workspace_id"]
+isOneToOne: false
+      referencedRelation: "stock_locations"
+      referencedColumns: ["id","workspace_id"]
+    }
+                  ]
+                },"stock_locations": {
+                  Row: {
+                    "archived_at": string | null,"created_at": string,"id": string,"name": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"created_at"?: string,"id"?: string,"name": string,"workspace_id": string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"created_at"?: string,"id"?: string,"name"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_locations_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"stock_movements": {
+                  Row: {
+                    "balance_after": number,"created_at": string,"created_by": string | null,"id": string,"item_id": string,"kind": string,"location_id": string,"note": string | null,"qty": number,"to_location_id": string | null,"total_after": number,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "balance_after": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"item_id": string,"kind": string,"location_id": string,"note"?: string | null,"qty": number,"to_location_id"?: string | null,"total_after": number,"workspace_id": string
+                  }
+                  Update: {
+                    "balance_after"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"item_id"?: string,"kind"?: string,"location_id"?: string,"note"?: string | null,"qty"?: number,"to_location_id"?: string | null,"total_after"?: number,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_movements_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_movements_item_id_workspace_id_fkey"
+      columns: ["item_id","workspace_id"]
+isOneToOne: false
+      referencedRelation: "stock_items"
+      referencedColumns: ["id","workspace_id"]
+    },{
+      foreignKeyName: "stock_movements_location_id_workspace_id_fkey"
+      columns: ["location_id","workspace_id"]
+isOneToOne: false
+      referencedRelation: "stock_locations"
+      referencedColumns: ["id","workspace_id"]
+    },{
+      foreignKeyName: "stock_movements_to_location_id_workspace_id_fkey"
+      columns: ["to_location_id","workspace_id"]
+isOneToOne: false
+      referencedRelation: "stock_locations"
       referencedColumns: ["id","workspace_id"]
     }
                   ]
@@ -1106,6 +1222,192 @@ isOneToOne: false
 "start_demo_sandbox":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"stock_adjust":
+{ Args: { "p_item": string,"p_location": string,"p_note"?: string,"p_target": number }; Returns: {
+              "balance_after": number,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"item_id": string,
+"kind": string,
+"location_id": string,
+"note": string | null,
+"qty": number,
+"to_location_id": string | null,
+"total_after": number,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_movements"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_create_item":
+{ Args: { "p_category": string,"p_name": string,"p_safety": number,"p_sku": string,"p_unit": string,"p_ws": string }; Returns: {
+              "archived_at": string | null,
+"category": string | null,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"name": string,
+"safety_stock": number,
+"sku": string,
+"unit": string,
+"updated_at": string,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_items"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_create_location":
+{ Args: { "p_name": string,"p_ws": string }; Returns: {
+              "archived_at": string | null,
+"created_at": string,
+"id": string,
+"name": string,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_locations"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_issue":
+{ Args: { "p_item": string,"p_location": string,"p_note"?: string,"p_qty": number }; Returns: {
+              "balance_after": number,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"item_id": string,
+"kind": string,
+"location_id": string,
+"note": string | null,
+"qty": number,
+"to_location_id": string | null,
+"total_after": number,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_movements"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_receive":
+{ Args: { "p_item": string,"p_location": string,"p_note"?: string,"p_qty": number }; Returns: {
+              "balance_after": number,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"item_id": string,
+"kind": string,
+"location_id": string,
+"note": string | null,
+"qty": number,
+"to_location_id": string | null,
+"total_after": number,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_movements"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_rename_location":
+{ Args: { "p_location": string,"p_name": string }; Returns: {
+              "archived_at": string | null,
+"created_at": string,
+"id": string,
+"name": string,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_locations"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_set_item_archived":
+{ Args: { "p_archived": boolean,"p_item": string }; Returns: {
+              "archived_at": string | null,
+"category": string | null,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"name": string,
+"safety_stock": number,
+"sku": string,
+"unit": string,
+"updated_at": string,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_items"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_set_location_archived":
+{ Args: { "p_archived": boolean,"p_location": string }; Returns: {
+              "archived_at": string | null,
+"created_at": string,
+"id": string,
+"name": string,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_locations"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_transfer":
+{ Args: { "p_from": string,"p_item": string,"p_note"?: string,"p_qty": number,"p_to": string }; Returns: {
+              "balance_after": number,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"item_id": string,
+"kind": string,
+"location_id": string,
+"note": string | null,
+"qty": number,
+"to_location_id": string | null,
+"total_after": number,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_movements"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"stock_update_item":
+{ Args: { "p_category": string,"p_item": string,"p_name": string,"p_safety": number,"p_sku": string,"p_unit": string }; Returns: {
+              "archived_at": string | null,
+"category": string | null,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"name": string,
+"safety_stock": number,
+"sku": string,
+"unit": string,
+"updated_at": string,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stock_items"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "task_project_id":
 { Args: { "p_task": string }; Returns: string
                            },
@@ -1119,7 +1421,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "file_status": "pending"|"ready"|"failed","file_type": "fig"|"pdf"|"zip"|"img"|"sheet"|"doc"|"code"|"other","member_status": "active"|"invited"|"deactivated","notification_type": "mention"|"assign"|"comment"|"update","project_access": "workspace"|"private","project_status": "planning"|"active"|"risk"|"hold"|"complete","repeat_kind": "none"|"daily"|"weekly"|"biweekly"|"monthly","share_perm": "view"|"comment"|"edit"|"full","task_priority": "urgent"|"high"|"medium"|"low"|"none","task_status": "backlog"|"todo"|"progress"|"review"|"done","view_type": "list"|"board"|"table","ws_role": "owner"|"admin"|"member"|"guest"
+            "file_status": "pending"|"ready"|"failed","file_type": "fig"|"pdf"|"zip"|"img"|"sheet"|"doc"|"code"|"other","member_status": "active"|"invited"|"deactivated","notification_type": "mention"|"assign"|"comment"|"update"|"stock","project_access": "workspace"|"private","project_status": "planning"|"active"|"risk"|"hold"|"complete","repeat_kind": "none"|"daily"|"weekly"|"biweekly"|"monthly","share_perm": "view"|"comment"|"edit"|"full","task_priority": "urgent"|"high"|"medium"|"low"|"none","task_status": "backlog"|"todo"|"progress"|"review"|"done","view_type": "list"|"board"|"table","ws_role": "owner"|"admin"|"member"|"guest"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1239,7 +1541,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "file_status": ["pending", "ready", "failed"],"file_type": ["fig", "pdf", "zip", "img", "sheet", "doc", "code", "other"],"member_status": ["active", "invited", "deactivated"],"notification_type": ["mention", "assign", "comment", "update"],"project_access": ["workspace", "private"],"project_status": ["planning", "active", "risk", "hold", "complete"],"repeat_kind": ["none", "daily", "weekly", "biweekly", "monthly"],"share_perm": ["view", "comment", "edit", "full"],"task_priority": ["urgent", "high", "medium", "low", "none"],"task_status": ["backlog", "todo", "progress", "review", "done"],"view_type": ["list", "board", "table"],"ws_role": ["owner", "admin", "member", "guest"]
+            "file_status": ["pending", "ready", "failed"],"file_type": ["fig", "pdf", "zip", "img", "sheet", "doc", "code", "other"],"member_status": ["active", "invited", "deactivated"],"notification_type": ["mention", "assign", "comment", "update", "stock"],"project_access": ["workspace", "private"],"project_status": ["planning", "active", "risk", "hold", "complete"],"repeat_kind": ["none", "daily", "weekly", "biweekly", "monthly"],"share_perm": ["view", "comment", "edit", "full"],"task_priority": ["urgent", "high", "medium", "low", "none"],"task_status": ["backlog", "todo", "progress", "review", "done"],"view_type": ["list", "board", "table"],"ws_role": ["owner", "admin", "member", "guest"]
           }
         }
 } as const

@@ -18,6 +18,8 @@ export type NotificationItem = {
   // 볼 수 없거나 삭제된 작업은 null
   task: { key: string; title: string; deleted: boolean } | null;
   project: { key: string; name: string } | null;
+  // 재고 알림의 품목. 재고 알림이 아니면 null
+  stockItemId: string | null;
 };
 
 // shortcut: 최근 200건까지 읽고 읽지 않음·종류 필터는 화면에서 거른다. 알림이 많아지면 필터를 조회로 옮기고 더 보기를 붙인다
@@ -28,7 +30,7 @@ export async function getNotifications(workspaceId: string, userId: string): Pro
   const { data, error } = await supabase
     .from("notifications")
     .select(
-      `id, type, text, snippet, read_at, created_at, actor_id,
+      `id, type, text, snippet, read_at, created_at, actor_id, stock_item_id,
       actor:profiles!notifications_actor_id_fkey(name, email),
       task:tasks!notifications_task_id_project_id_fkey(key, title, deleted_at),
       project:projects!notifications_project_id_workspace_id_fkey(key, name, deleted_at)`,
@@ -54,5 +56,6 @@ export async function getNotifications(workspaceId: string, userId: string): Pro
     actorName: n.actor?.name || n.actor?.email || null,
     task: n.task ? { key: n.task.key, title: n.task.title, deleted: n.task.deleted_at !== null } : null,
     project: n.project && !n.project.deleted_at ? { key: n.project.key, name: n.project.name } : null,
+    stockItemId: n.stock_item_id,
   }));
 }

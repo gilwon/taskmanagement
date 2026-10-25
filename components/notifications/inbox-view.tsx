@@ -119,7 +119,7 @@ export function InboxView({ initial, workspace, colors, nowIso }: Props) {
                 <Button asChild size="sm">
                   <Link href={href}>
                     <SquareArrowOutUpRight size={14} strokeWidth={1.8} aria-hidden />
-                    {selected.task ? t("notifications.openTask") : t("notifications.openProject")}
+                    {selected.task ? t("notifications.openTask") : selected.type === "stock" ? t("notifications.openStock") : t("notifications.openProject")}
                   </Link>
                 </Button>
               )}
