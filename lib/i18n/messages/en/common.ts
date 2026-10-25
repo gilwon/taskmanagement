@@ -145,6 +145,7 @@ export default {
     list: "List",
     table: "Table",
     files: "Files",
+    inventory: "Inventory",
     settings: "Settings",
     help: "Help & resources",
     more: "More",

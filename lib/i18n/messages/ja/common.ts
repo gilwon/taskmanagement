@@ -145,6 +145,7 @@ export default {
     list: "リスト",
     table: "テーブル",
     files: "ファイル",
+    inventory: "在庫",
     settings: "設定",
     help: "ヘルプとリソース",
     more: "その他",

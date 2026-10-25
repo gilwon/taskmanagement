@@ -304,6 +304,10 @@ export default {
       manageAllProjects: "Manage all projects",
       publicProjects: "View & edit public projects",
       privateProjects: "Private projects",
+      stockView: "View inventory",
+      stockMove: "Record stock in, out & moves",
+      stockManage: "Create, edit & archive items and locations",
+      stockAdjust: "Stocktake adjustments",
     },
     cond: {
       exceptOwner: "Except owners",

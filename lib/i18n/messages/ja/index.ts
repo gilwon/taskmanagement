@@ -8,6 +8,7 @@ import projects from "./projects";
 import org from "./org";
 import comments from "./comments";
 import files from "./files";
+import inventory from "./inventory";
 import activity from "./activity";
 import notifications from "./notifications";
 import search from "./search";
@@ -18,4 +19,4 @@ import common from "./common";
 import errors from "./errors";
 import type { Messages } from "../types";
 
-export default { shell, auth, home, tasks, schedule, projects, org, comments, files, activity, notifications, search, command, shortcuts, help, common, errors } satisfies Messages;
+export default { shell, auth, home, tasks, schedule, projects, org, comments, files, inventory, activity, notifications, search, command, shortcuts, help, common, errors } satisfies Messages;

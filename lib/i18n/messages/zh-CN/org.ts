@@ -302,6 +302,10 @@ export default {
       manageAllProjects: "管理所有项目",
       publicProjects: "查看和编辑公开项目",
       privateProjects: "私有项目",
+      stockView: "查看库存",
+      stockMove: "记录入库、出库和移动",
+      stockManage: "创建、编辑和归档品目与位置",
+      stockAdjust: "盘点调整",
     },
     cond: {
       exceptOwner: "所有者除外",

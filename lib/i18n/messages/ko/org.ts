@@ -314,6 +314,10 @@ export default {
       manageAllProjects: "모든 프로젝트 관리",
       publicProjects: "공개 프로젝트 보기·편집",
       privateProjects: "비공개 프로젝트",
+      stockView: "재고 보기",
+      stockMove: "재고 입고·출고·이동 기록",
+      stockManage: "품목·위치 만들기·수정·보관",
+      stockAdjust: "실사 조정",
     },
     // ROLE_PERMISSIONS의 조건부 허용 값
     cond: {

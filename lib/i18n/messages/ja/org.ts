@@ -304,6 +304,10 @@ export default {
       manageAllProjects: "すべてのプロジェクトの管理",
       publicProjects: "公開プロジェクトの閲覧・編集",
       privateProjects: "非公開プロジェクト",
+      stockView: "在庫の閲覧",
+      stockMove: "入庫・出庫・移動の記録",
+      stockManage: "品目・場所の作成・編集・アーカイブ",
+      stockAdjust: "棚卸調整",
     },
     cond: {
       exceptOwner: "オーナーを除く",

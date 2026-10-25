@@ -70,4 +70,8 @@ export const ROLE_PERMISSIONS = [
     id: "privateProjects",
     allow: { owner: true, admin: true, member: "addedGranted", guest: "addedViewComment" },
   },
+  { id: "stockView", allow: { owner: true, admin: true, member: true, guest: false } },
+  { id: "stockMove", allow: { owner: true, admin: true, member: true, guest: false } },
+  { id: "stockManage", allow: { owner: true, admin: true, member: false, guest: false } },
+  { id: "stockAdjust", allow: { owner: true, admin: true, member: false, guest: false } },
 ] as const satisfies readonly { id: string; allow: Record<Role, boolean | PermissionCond> }[];

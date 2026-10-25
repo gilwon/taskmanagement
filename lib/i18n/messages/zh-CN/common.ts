@@ -145,6 +145,7 @@ export default {
     list: "列表",
     table: "表格",
     files: "文件",
+    inventory: "库存",
     settings: "设置",
     help: "帮助与资源",
     more: "更多",

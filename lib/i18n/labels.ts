@@ -163,6 +163,7 @@ export const NAV_LABELS = {
   list: "목록",
   table: "표",
   files: "파일",
+  inventory: "재고",
   settings: "설정",
   help: "도움말 및 자료",
   more: "더 보기",
