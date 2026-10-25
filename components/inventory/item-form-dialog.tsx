@@ -108,7 +108,7 @@ function ItemForm({ onDone, workspaceId, categories, item }: Omit<Props, "open" 
           id={`${id}-name`}
           autoFocus
           autoComplete="off"
-          maxLength={120}
+          maxLength={100}
           placeholder={t("inventory.form.namePlaceholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
