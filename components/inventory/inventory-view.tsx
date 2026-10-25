@@ -1,9 +1,9 @@
 "use client";
 // 재고 화면 본문. 머리말과 "품목"/"위치" 탭을 그린다. 탭·필터·열린 품목은 주소 쿼리가 원본이다.
-// detail은 다음 단계의 품목 서랍이 쓰므로 받아만 두고 아직 그리지 않는다
 import { Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
+import { ItemDrawer } from "@/components/inventory/item-drawer";
 import { ItemFormDialog } from "@/components/inventory/item-form-dialog";
 import { ItemTable, type Navigate, type StockFilters } from "@/components/inventory/item-table";
 import { LocationsPanel } from "@/components/inventory/locations-panel";
@@ -19,6 +19,8 @@ type Props = {
   workspace: { id: string; slug: string; name: string };
   items: StockItemRow[];
   locations: StockLocation[];
+  // 보관 위치까지 포함한 id별 이름. 서랍 이력 표시용
+  locationNames: Record<string, string>;
   categories: string[];
   filters: StockFilters;
   tab: "items" | "locations";
@@ -33,13 +35,16 @@ export function InventoryView({
   workspace,
   items,
   locations,
+  locationNames,
   categories,
   filters,
   tab,
   selectedId,
+  detail,
   canManage,
+  canMove,
+  canAdjust,
 }: Props) {
-  // detail·canMove·canAdjust는 다음 단계의 서랍·대화상자가 쓰므로 Props로만 받아 둔다
   const t = useT();
   const router = useRouter();
   const pathname = usePathname();
@@ -102,6 +107,20 @@ export function InventoryView({
           <LocationsPanel workspaceId={workspace.id} locations={locations} canManage={canManage} />
         </TabsContent>
       </Tabs>
+      {detail && (
+        <ItemDrawer
+          key={detail.item.id}
+          detail={detail}
+          locations={locations}
+          locationNames={locationNames}
+          categories={categories}
+          workspaceId={workspace.id}
+          canMove={canMove}
+          canAdjust={canAdjust}
+          canManage={canManage}
+          navigate={navigate}
+        />
+      )}
       {canManage && (
         <ItemFormDialog open={adding} onOpenChange={setAdding} workspaceId={workspace.id} categories={categories} />
       )}

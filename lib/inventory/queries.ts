@@ -92,10 +92,11 @@ export async function getStockLocations(
 
 export async function getStockItemDetail(
   itemId: string,
+  workspaceId: string,
 ): Promise<{ item: StockItem; levels: StockLevel[]; movements: StockMovement[] } | null> {
   const supabase = await createClient();
   const [item, levels, movements] = await Promise.all([
-    supabase.from("stock_items").select(ITEM_COLUMNS).eq("id", itemId).maybeSingle(),
+    supabase.from("stock_items").select(ITEM_COLUMNS).eq("id", itemId).eq("workspace_id", workspaceId).maybeSingle(),
     supabase.from("stock_levels").select("item_id, location_id, qty").eq("item_id", itemId),
     supabase
       .from("stock_movements")
