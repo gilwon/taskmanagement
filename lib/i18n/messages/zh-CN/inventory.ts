@@ -2,7 +2,7 @@
 import type { Messages } from "../types";
 
 export default {
-  // 库存页面副标题与页头操作
+  // 재고 화면 부제와 머리말 액션
   page: {
     subtitle: "按位置管理物品数量，并查看库存不足的物品。",
     addItem: "添加物品",
@@ -72,9 +72,8 @@ export default {
     emptyTitle: "需要先创建位置才能入库",
     emptyDescription: "请先创建存放库存的地方，例如仓库或门店。",
     emptyRequest: "还没有位置。请联系工作区管理员添加位置。",
-    menuOf: "{name} 的菜单",
   },
-  // 物品抽屉
+  // 품목 서랍
   drawer: {
     onHand: "当前库存",
     safety: "安全库存",
@@ -91,7 +90,7 @@ export default {
     goLocations: "前往库位标签页",
     noQty: "没有库位存有库存，无法出库或调拨。",
   },
-  // 入库、出库、调拨、盘点对话框
+  // 입출고·이동·조정 대화상자
   movement: {
     titleIn: "入库",
     titleOut: "出库",
@@ -118,14 +117,14 @@ export default {
     errExceeds: "不能超过调出库位的当前数量（{qty} {unit}）。",
     errUnchanged: "与当前数量相同，请输入其他值。",
   },
-  // 变动类型
+  // 이동 종류
   kind: {
     in: "入库",
     out: "出库",
     transfer: "调拨",
     adjust: "盘点",
   },
-  // 变动记录
+  // 이동 이력
   history: {
     title: "记录",
     empty: "暂无记录。",

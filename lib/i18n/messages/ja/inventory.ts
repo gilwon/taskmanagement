@@ -2,7 +2,7 @@
 import type { Messages } from "../types";
 
 export default {
-  // 在庫画面のサブタイトルとヘッダー操作
+  // 재고 화면 부제와 머리말 액션
   page: {
     subtitle: "品目と場所ごとの数量を管理し、不足している在庫を確認します。",
     addItem: "品目を追加",
@@ -72,9 +72,8 @@ export default {
     emptyTitle: "入庫するには最初に場所を作成してください",
     emptyDescription: "倉庫や店舗など、在庫を置く場所を先に作成してください。",
     emptyRequest: "場所がまだありません。ワークスペースの管理者に場所の追加を依頼してください。",
-    menuOf: "{name} のメニュー",
   },
-  // 品目ドロワー
+  // 품목 서랍
   drawer: {
     onHand: "現在庫",
     safety: "安全在庫",
@@ -91,7 +90,7 @@ export default {
     goLocations: "場所タブへ移動",
     noQty: "在庫のある場所がないため、出庫も移動もできません。",
   },
-  // 入庫・出庫・移動・調整ダイアログ
+  // 입출고·이동·조정 대화상자
   movement: {
     titleIn: "入庫",
     titleOut: "出庫",
@@ -118,14 +117,14 @@ export default {
     errExceeds: "移動元の現在の数量（{qty} {unit}）を超えることはできません。",
     errUnchanged: "現在の数量と同じです。別の値を入力してください。",
   },
-  // 移動の種類
+  // 이동 종류
   kind: {
     in: "入庫",
     out: "出庫",
     transfer: "移動",
     adjust: "調整",
   },
-  // 移動履歴
+  // 이동 이력
   history: {
     title: "履歴",
     empty: "まだ履歴がありません。",

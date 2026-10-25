@@ -70,7 +70,6 @@ export default {
     emptyTitle: "첫 위치를 만들어야 입고할 수 있습니다",
     emptyDescription: "창고나 매장처럼 재고를 두는 곳을 먼저 만드세요.",
     emptyRequest: "아직 위치가 없습니다. 워크스페이스 관리자에게 위치 추가를 요청하세요.",
-    menuOf: "{name} 위치 메뉴",
   },
   // 품목 서랍
   drawer: {

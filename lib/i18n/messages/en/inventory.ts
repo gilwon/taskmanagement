@@ -2,7 +2,7 @@
 import type { Messages } from "../types";
 
 export default {
-  // Inventory screen subtitle and header action
+  // 재고 화면 부제와 머리말 액션
   page: {
     subtitle: "Manage items and quantities by location, and spot low stock.",
     addItem: "Add item",
@@ -72,9 +72,8 @@ export default {
     emptyTitle: "Create a location first to receive stock",
     emptyDescription: "Add a place where stock is kept, such as a warehouse or a store.",
     emptyRequest: "No locations yet. Ask a workspace admin to add one.",
-    menuOf: "Menu for {name}",
   },
-  // Item drawer
+  // 품목 서랍
   drawer: {
     onHand: "On hand",
     safety: "Safety stock",
@@ -91,7 +90,7 @@ export default {
     goLocations: "Go to the Locations tab",
     noQty: "No location holds stock, so you cannot ship or move.",
   },
-  // Receive, issue, transfer and adjust dialog
+  // 입출고·이동·조정 대화상자
   movement: {
     titleIn: "Receive",
     titleOut: "Issue",
@@ -118,14 +117,14 @@ export default {
     errExceeds: "Cannot exceed the source location's current quantity ({qty} {unit}).",
     errUnchanged: "This equals the current quantity. Enter a different value.",
   },
-  // Movement kinds
+  // 이동 종류
   kind: {
     in: "Received",
     out: "Issued",
     transfer: "Transferred",
     adjust: "Adjusted",
   },
-  // Movement history
+  // 이동 이력
   history: {
     title: "History",
     empty: "No history yet.",
