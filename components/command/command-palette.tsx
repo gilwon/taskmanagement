@@ -8,6 +8,7 @@ import {
   Archive,
   ArrowLeft,
   Bell,
+  Boxes,
   Calendar,
   CalendarClock,
   ChartGantt,
@@ -51,6 +52,7 @@ import { StatusIcon } from "@/components/tasks/parts";
 import type { ShellData } from "@/lib/data/workspace";
 import { useT } from "@/lib/i18n/client";
 import { getRecentSearches, saveRecentSearch, searchWorkspaceAction } from "@/lib/search/actions";
+import { canUseStock } from "@/lib/inventory/rules";
 import { canOpenOrgScreens, isAdminRole } from "@/lib/org/rules";
 import { normalizeQuery } from "@/lib/search/text";
 import { SEARCH_SCOPES, type SearchResults, type SearchScope } from "@/lib/search/types";
@@ -158,6 +160,7 @@ export function CommandPalette({
   const canCreateProject = data.me.role !== null && data.me.role !== "guest";
   // 게스트는 구성원 화면이 403이라 구성원 이동과 사람 검색 결과를 보이지 않는다
   const showOrgLinks = canOpenOrgScreens(data.me.role);
+  const showStock = canUseStock(data.me.role);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState<"root" | "workspaces" | "overdue">("root");
   // 기한 지난 작업. null이면 읽는 중
@@ -247,6 +250,7 @@ export function CommandPalette({
         { path: "projects", label: t("common.nav.projects"), icon: FolderKanban, keys: ["G", "P"] },
         { path: "calendar", label: t("common.nav.calendar"), icon: Calendar, keys: ["G", "C"] },
         { path: "timeline", label: t("common.nav.timeline"), icon: ChartGantt },
+        { path: "inventory", label: t("common.nav.inventory"), icon: Boxes, keys: ["G", "V"] },
         { path: "members", label: t("common.nav.members"), icon: Users, keys: ["G", "M"] },
         { path: "tasks", label: t("common.nav.tasks"), icon: ListChecks },
         { path: "overview", label: t("common.nav.overview"), icon: LayoutDashboard },
@@ -479,7 +483,7 @@ export function CommandPalette({
                 )}
 
                 <CommandGroup heading={t("command.group.navigate")} className={groupClass}>
-                  {nav.filter((n) => showOrgLinks || n.path !== "members").map((n) => (
+                  {nav.filter((n) => (showOrgLinks || n.path !== "members") && (showStock || n.path !== "inventory")).map((n) => (
                     <Item
                       key={n.path}
                       value={t("command.goTo", { name: n.label })}

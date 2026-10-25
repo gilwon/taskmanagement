@@ -8,6 +8,7 @@ import {
   Activity,
   Archive,
   Bell,
+  Boxes,
   Calendar,
   ChartGantt,
   Check,
@@ -54,6 +55,7 @@ import { ProjectIcon, ProjectStatusDot } from "@/components/shell/project-icon";
 import { announce } from "@/components/tasks/views/shared";
 import { useTaskDrag } from "@/components/tasks/views/use-drag";
 import { moveId } from "@/lib/data/project-order";
+import { canUseStock } from "@/lib/inventory/rules";
 import { canOpenOrgScreens, isAdminRole } from "@/lib/org/rules";
 import { setProjectFavorite } from "@/lib/projects/actions";
 import type { ShellData, ShellProject } from "@/lib/data/workspace";
@@ -459,6 +461,9 @@ export function Sidebar({
             <NavItem href={p("tasks")} icon={ListChecks} label={t("common.nav.tasks")} onNavigate={onNavigate} />
             <NavItem href={p("calendar")} icon={Calendar} label={t("common.nav.calendar")} onNavigate={onNavigate} />
             <NavItem href={p("timeline")} icon={ChartGantt} label={t("common.nav.timeline")} onNavigate={onNavigate} />
+            {canUseStock(data.me.role) && (
+              <NavItem href={p("inventory")} icon={Boxes} label={t("common.nav.inventory")} onNavigate={onNavigate} />
+            )}
             {/* 게스트는 구성원·팀 화면이 403이라 링크를 숨긴다 */}
             {canOpenOrgScreens(data.me.role) && (
               <NavItem href={p("members")} icon={Users} label={t("common.nav.members")} onNavigate={onNavigate} />

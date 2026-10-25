@@ -39,6 +39,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["G"], then: ["N"], label: "common.nav.notifications" },
       { keys: ["G"], then: ["A"], label: "common.nav.activity" },
       { keys: ["G"], then: ["M"], label: "common.nav.members" },
+      { keys: ["G"], then: ["V"], label: "common.nav.inventory" },
     ],
   },
   {

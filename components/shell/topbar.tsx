@@ -42,6 +42,7 @@ const SEGMENT_KEYS: Record<string, keyof typeof NAV_LABELS> = {
   task: "tasks",
   calendar: "calendar",
   timeline: "timeline",
+  inventory: "inventory",
   members: "members",
   teams: "teams",
   activity: "activity",

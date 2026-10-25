@@ -25,6 +25,7 @@ export const GO_TARGETS = {
   KeyN: "notifications",
   KeyA: "activity",
   KeyM: "members",
+  KeyV: "inventory",
 } as const;
 export type GoCode = keyof typeof GO_TARGETS;
 
