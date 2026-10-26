@@ -164,8 +164,15 @@ export default {
     description: "파일의 수량을 실사 수량으로 맞춥니다. 없는 SKU는 새 품목으로 만들고, 한 행이라도 틀리면 아무것도 바뀌지 않습니다.",
     template: "양식 받기",
     file: "엑셀 파일 (.xlsx)",
-    fileHelp: "첫 시트의 첫 행은 머리글입니다. 최대 1000행, 5MB까지 올릴 수 있습니다.",
-    reading: "파일을 읽는 중입니다.",
+    // 끌어다 놓는 업로드 영역. title 뒤에 강조 문구 pick이 이어진다
+    drop: {
+      title: "엑셀 파일을 끌어다 놓거나",
+      pick: "골라 주세요",
+      hint: "XLSX · 첫 행은 머리글 · 최대 1000행, 5MB",
+      retry: "다시 선택",
+      ready: "읽었어요",
+      reading: "읽는 중이에요",
+    },
     summary: "{count}행을 읽었습니다. 없는 SKU는 새 품목으로 만들어집니다.",
     errorsTitle: "확인이 필요한 항목 {count}건",
     errorRow: "엑셀 {row}행 · {reason}",

@@ -166,8 +166,15 @@ export default {
     description: "Quantities in the file become the counted quantities. Unknown SKUs are created as new items, and if any row is wrong nothing changes.",
     template: "Download template",
     file: "Excel file (.xlsx)",
-    fileHelp: "The first row of the first sheet is the header. Up to 1000 rows and 5 MB.",
-    reading: "Reading the file.",
+    // 끌어다 놓는 업로드 영역. title 뒤에 강조 문구 pick이 이어진다
+    drop: {
+      title: "Drag an Excel file here or",
+      pick: "choose one",
+      hint: "XLSX · header in row 1 · up to 1000 rows, 5 MB",
+      retry: "Choose again",
+      ready: "Read",
+      reading: "Reading",
+    },
     summary: "Read {count} rows. Unknown SKUs will be created as new items.",
     errorsTitle: "{count} items need attention",
     errorRow: "Excel row {row} · {reason}",

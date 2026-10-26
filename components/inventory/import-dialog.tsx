@@ -1,7 +1,8 @@
 "use client";
+// Lucian UX/UI Prompt #032 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#032
 // 재고 엑셀 업로드 대화상자. 파일 선택 → 읽은 결과·형식 오류 확인 + 메모 → 업로드 순서로 진행한다. 형식 검사는 편의용이고 최종 판정은 서버·DB가 한다
 import { Download } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useInventory } from "@/components/inventory/use-inventory";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import "@/components/ui/lucian-upload.css";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/lib/i18n/client";
 import { importStock } from "@/lib/inventory/actions";
@@ -25,6 +27,11 @@ type Props = { open: boolean; onOpenChange: (open: boolean) => void; workspaceId
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 // 목록에 보이는 최대 오류 수
 const MAX_SHOWN_ERRORS = 20;
+
+// 원본 #032의 파일 크기 표기
+function sizeLabel(b: number) {
+  return b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
+}
 
 export function ImportDialog({ open, onOpenChange, workspaceId }: Props) {
   const t = useT();
@@ -47,6 +54,12 @@ function ImportForm({ workspaceId, onClose }: { workspaceId: string; onClose: ()
   const id = useId();
   const { run, pending } = useInventory();
   const [reading, setReading] = useState(false);
+  // 드롭 영역 아래 목록에 보이는 파일 한 줄
+  const [picked, setPicked] = useState<{ name: string; size: number } | null>(null);
+  const [isOver, setIsOver] = useState(false);
+  // 자식 요소를 넘나들 때 dragleave가 먼저 오므로 원본처럼 깊이를 센다
+  const depth = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [rows, setRows] = useState<ImportRow[] | null>(null);
   // 앱 형식 검사 오류와 서버가 돌려준 행 오류. 같은 목록 형식으로 보인다
@@ -66,10 +79,11 @@ function ImportForm({ workspaceId, onClose }: { workspaceId: string; onClose: ()
     setDone(null);
   };
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // 파일 입력의 change와 드롭이 함께 쓴다. 검증은 그대로다
+  const onFile = async (file: File | undefined) => {
     reset();
     if (!file) return;
+    setPicked({ name: file.name, size: file.size });
     if (!/\.xlsx$/i.test(file.name)) return setFileError(t("inventory.import.fileError.notXlsx"));
     if (file.size > MAX_FILE_BYTES) return setFileError(t("inventory.import.fileError.tooLarge"));
     setReading(true);
@@ -105,6 +119,11 @@ function ImportForm({ workspaceId, onClose }: { workspaceId: string; onClose: ()
   };
 
   const errors = [...formatErrors, ...serverErrors];
+  // 업로드 중이거나 끝난 뒤에는 드롭 영역을 잠근다
+  const fileDisabled = pending || !!done;
+  // 읽기 실패나 형식 오류가 있으면 파일 줄이 실패 상태가 된다. 업로드가 끝난 뒤에는 오류를 따지지 않는다
+  const fileFailed = !!fileError || (errors.length > 0 && !done);
+  const rowBusy = reading || pending;
 
   return (
     <form onSubmit={submit} method="post" noValidate className="grid gap-4">
@@ -121,27 +140,99 @@ function ImportForm({ workspaceId, onClose }: { workspaceId: string; onClose: ()
             {t("inventory.import.template")}
           </Button>
         </div>
-        <Input
-          id={`${id}-file`}
-          type="file"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          disabled={pending || !!done}
-          onChange={onFile}
-          className="max-sm:h-10"
-          aria-invalid={fileError ? true : undefined}
-          aria-describedby={`${id}-file-help${fileError ? ` ${id}-file-error` : ""}`}
-        />
-        <p id={`${id}-file-help`} className="text-(length:--fs-sm) text-(--text-3)">
-          {t("inventory.import.fileHelp")}
-        </p>
+        <div className={`ux u032${isOver && !fileDisabled ? " is-over" : ""}`}>
+          <button
+            type="button"
+            id={`${id}-file`}
+            className="u032-zone"
+            disabled={fileDisabled}
+            aria-label={t("inventory.import.file")}
+            aria-describedby={`${id}-file-help${fileError ? ` ${id}-file-error` : ""}`}
+            onClick={() => inputRef.current?.click()}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              depth.current++;
+              setIsOver(true);
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDragLeave={() => {
+              if (--depth.current <= 0) {
+                depth.current = 0;
+                setIsOver(false);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              depth.current = 0;
+              setIsOver(false);
+              // 여러 개를 놓아도 첫 파일 하나만 쓴다
+              if (!fileDisabled) void onFile(e.dataTransfer.files[0]);
+            }}
+          >
+            <svg className="u032-dash" aria-hidden="true">
+              <rect width="100%" height="100%" rx="25" />
+            </svg>
+            <span className="u032-orb" aria-hidden="true">
+              <svg viewBox="0 0 28 28">
+                <path d="M8.5 20.5H7a5 5 0 0 1-.6-10 7 7 0 0 1 13.4-1.6A5.5 5.5 0 0 1 21 20.5h-1.5M14 13v10M10.5 16.5L14 13l3.5 3.5" />
+              </svg>
+            </span>
+            <b>
+              {t("inventory.import.drop.title")} <em>{t("inventory.import.drop.pick")}</em>
+            </b>
+            <small id={`${id}-file-help`}>{t("inventory.import.drop.hint")}</small>
+          </button>
+          <input
+            ref={inputRef}
+            className="u032-file"
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            tabIndex={-1}
+            aria-hidden="true"
+            disabled={fileDisabled}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              // 같은 파일을 다시 골라도 change가 오도록 비운다
+              e.target.value = "";
+              void onFile(file);
+            }}
+          />
+          <ul className="u032-list" aria-live="polite">
+            {picked && (
+              <li className={`u032-row${fileFailed ? " fail" : rowBusy ? "" : " done"}`}>
+                <span className="u032-ic" style={{ "--c": "#22A06B" } as React.CSSProperties} aria-hidden="true">
+                  XLSX
+                </span>
+                <span className="u032-meta">
+                  <b>{picked.name}</b>
+                  <small>
+                    {fileFailed
+                      ? (fileError ?? t("inventory.import.errorsTitle", { count: errors.length }))
+                      : `${sizeLabel(picked.size)} · ${t(rowBusy ? "inventory.import.drop.reading" : "inventory.import.drop.ready")}`}
+                  </small>
+                </span>
+                {fileFailed ? (
+                  <button type="button" className="u032-retry" disabled={fileDisabled} onClick={() => inputRef.current?.click()}>
+                    {t("inventory.import.drop.retry")}
+                  </button>
+                ) : (
+                  <span className="u032-st">
+                    {rowBusy ? (
+                      <span className="u032-spin" aria-hidden="true" />
+                    ) : (
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M3.5 8.4l3 3 6-6.4" />
+                      </svg>
+                    )}
+                  </span>
+                )}
+              </li>
+            )}
+          </ul>
+        </div>
         {fileError && (
           <p id={`${id}-file-error`} role="alert" className="text-(length:--fs-sm) text-(--red)">
             {fileError}
-          </p>
-        )}
-        {reading && (
-          <p role="status" className="text-(length:--fs-sm) text-(--text-2)">
-            {t("inventory.import.reading")}
           </p>
         )}
       </div>

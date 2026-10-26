@@ -166,8 +166,15 @@ export default {
     description: "文件中的数量将作为盘点数量。不存在的 SKU 会创建为新物品，只要有一行有误，就不会更改任何内容。",
     template: "下载模板",
     file: "Excel 文件 (.xlsx)",
-    fileHelp: "第一个工作表的第一行是表头。最多 1000 行，5MB。",
-    reading: "正在读取文件。",
+    // 끌어다 놓는 업로드 영역. title 뒤에 강조 문구 pick이 이어진다
+    drop: {
+      title: "将 Excel 文件拖到此处，或",
+      pick: "点击选择",
+      hint: "XLSX · 首行为表头 · 最多 1000 行，5MB",
+      retry: "重新选择",
+      ready: "已读取",
+      reading: "读取中",
+    },
     summary: "已读取 {count} 行。不存在的 SKU 将创建为新物品。",
     errorsTitle: "需要确认的项目 {count} 条",
     errorRow: "Excel 第 {row} 行 · {reason}",

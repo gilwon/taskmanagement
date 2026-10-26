@@ -166,8 +166,15 @@ export default {
     description: "ファイルの数量を棚卸数量に合わせます。存在しないSKUは新しい品目として作成し、1行でも誤りがあると何も変更されません。",
     template: "テンプレートをダウンロード",
     file: "Excelファイル (.xlsx)",
-    fileHelp: "最初のシートの1行目はヘッダーです。最大1000行、5MBまでアップロードできます。",
-    reading: "ファイルを読み込んでいます。",
+    // 끌어다 놓는 업로드 영역. title 뒤에 강조 문구 pick이 이어진다
+    drop: {
+      title: "Excelファイルをドラッグするか",
+      pick: "選択してください",
+      hint: "XLSX · 1行目は見出し · 最大1000行、5MB",
+      retry: "選び直す",
+      ready: "読み込みました",
+      reading: "読み込み中",
+    },
     summary: "{count}行を読み込みました。存在しないSKUは新しい品目として作成されます。",
     errorsTitle: "確認が必要な項目 {count}件",
     errorRow: "Excel {row}行 · {reason}",
