@@ -67,10 +67,11 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: authErrorMessage(error.code, t) };
-  await syncLocaleCookie(supabase, data.user.id);
-  // 2단계 인증을 등록한 사용자는 코드를 확인한 뒤에 들여보낸다
+  // 2단계 인증을 등록한 사용자는 코드를 확인한 뒤에 들여보낸다.
+  // 이 시점 세션은 aal1이라 DB 호출(로캘 동기화)이 거부되므로 코드 확인(verifyMfa) 뒤로 미룬다
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (needsMfaStep(aal?.currentLevel, aal?.nextLevel)) redirect(mfaStepPath(text(formData, "next")));
+  await syncLocaleCookie(supabase, data.user.id);
   redirect(safeNext(text(formData, "next")));
 }
 
@@ -89,6 +90,9 @@ export async function verifyMfa(_prev: ActionState, formData: FormData): Promise
     if (error.status === 429) return fail(undefined, t("auth.mfa.rateLimited"));
     return fail("code", t("auth.mfa.codeWrong"));
   }
+  // 세션이 aal2가 된 뒤라 DB를 읽을 수 있다. 로그인 때 미룬 로캘 동기화를 여기서 한다
+  const { data: claims } = await supabase.auth.getClaims();
+  if (claims?.claims?.sub) await syncLocaleCookie(supabase, claims.claims.sub);
   redirect(safeNext(text(formData, "next")));
 }
 
