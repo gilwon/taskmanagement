@@ -1,7 +1,7 @@
--- 재고 RPC(018). 입고·출고·이동·조정, 품목·위치 관리, 권한, 안전재고 알림과 기존 알림 회귀를 검증한다.
+-- 재고 RPC(018, 019). 입고·출고·이동·조정, 품목·위치 관리, 권한, 안전재고 알림과 기존 알림 회귀를 검증한다.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(106);
+select plan(124);
 
 -- ─────────────────────────────────────────────
 -- 픽스처
@@ -131,7 +131,7 @@ select is(
   (select archived_at is not null from public.stock_items where id = '40000000-0000-0000-0000-0000000021c6'),
   true, '보관 시각이 찍힌다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'archived', '보관 품목은 수량을 바꿀 수 없다');
 select lives_ok(
   $$select public.stock_set_item_archived('40000000-0000-0000-0000-0000000021c6', false)$$,
@@ -174,13 +174,13 @@ select throws_ok(
   'P0001', 'forbidden', 'member는 위치를 보관할 수 없다');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a1","role":"authenticated"}', true);
 select lives_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d3', 5)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d3', 5, '메모')$$,
   '보관 규칙 검증용으로 L3에 입고한다');
 select throws_ok(
   $$select public.stock_set_location_archived('50000000-0000-0000-0000-0000000021d3', true)$$,
   'P0001', 'location_not_empty', '수량이 있는 위치는 보관할 수 없다');
 select lives_ok(
-  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d3', 5)$$,
+  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d3', 5, '메모')$$,
   'L3를 비운다');
 select lives_ok(
   $$select public.stock_set_location_archived('50000000-0000-0000-0000-0000000021d3', true)$$,
@@ -189,7 +189,7 @@ select is(
   (select archived_at is not null from public.stock_locations where id = '50000000-0000-0000-0000-0000000021d3'),
   true, '위치 보관 시각이 찍힌다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d3', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c6', '50000000-0000-0000-0000-0000000021d3', 1, '메모')$$,
   'P0001', 'archived', '보관된 위치에는 입고할 수 없다');
 select lives_ok(
   $$select public.stock_set_location_archived('50000000-0000-0000-0000-0000000021d3', false)$$,
@@ -205,24 +205,24 @@ select is(
   'in|100.000|100.000|100.000', 'L1에 100 입고');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 30) m),
+   from public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 30, '메모') m),
   'in|30.000|30.000|130.000', 'L2에 30 입고, 합계는 130');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 20) m),
+   from public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 20, '메모') m),
   'out|20.000|80.000|110.000', 'L1에서 20 출고');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a4","role":"authenticated"}', true);
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 10) m),
+   from public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 10, '메모') m),
   'in|10.000|40.000|120.000', 'member가 입고한다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 10) m),
+   from public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 10, '메모') m),
   'out|10.000|30.000|110.000', 'member가 출고한다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 25) m),
+   from public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 25, '메모') m),
   'transfer|25.000|55.000|110.000', 'member가 이동한다(합계 불변)');
 select is(
   (select (select qty from public.stock_levels where item_id = '40000000-0000-0000-0000-0000000021c1' and location_id = '50000000-0000-0000-0000-0000000021d1')::text || '|' || (select qty from public.stock_levels where item_id = '40000000-0000-0000-0000-0000000021c1' and location_id = '50000000-0000-0000-0000-0000000021d2')::text),
@@ -234,28 +234,28 @@ select is(
   (select created_by::text from public.stock_movements where item_id = '40000000-0000-0000-0000-0000000021c1' and kind = 'transfer'),
   '00000000-0000-0000-0000-0000000021a4', '이력 created_by는 호출자다');
 select throws_ok(
-  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 500)$$,
+  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d2', 500, '메모')$$,
   'P0001', 'insufficient_stock', '재고보다 많은 출고는 거부한다');
 select throws_ok(
-  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 100)$$,
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 100, '메모')$$,
   'P0001', 'insufficient_stock', '재고보다 많은 이동은 거부한다');
 select throws_ok(
-  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'same_location', '같은 위치로는 이동할 수 없다');
 select throws_ok(
-  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d4', 1)$$,
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d4', 1, '메모')$$,
   'P0001', 'archived', '보관된 위치로는 이동할 수 없다');
 select throws_ok(
-  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d5', 1)$$,
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d5', 1, '메모')$$,
   'P0001', 'not_found', '다른 워크스페이스 위치로는 이동할 수 없다');
 select throws_ok(
-  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d2', 1)$$,
+  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d2', 1, '메모')$$,
   'P0001', 'insufficient_stock', '수량 행이 없는 위치에서는 출고할 수 없다');
 select is(
   (select (select qty from public.stock_levels where item_id = '40000000-0000-0000-0000-0000000021c1' and location_id = '50000000-0000-0000-0000-0000000021d1')::text || '|' || (select sum(qty) from public.stock_levels where item_id = '40000000-0000-0000-0000-0000000021c1')::text),
   '55.000|110.000', '거부된 요청은 수량을 바꾸지 않는다');
 select throws_ok(
-  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 50)$$,
+  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 50, '메모')$$,
   'P0001', 'forbidden', 'member는 조정할 수 없다');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a2","role":"authenticated"}', true);
 select is(
@@ -263,15 +263,15 @@ select is(
    from public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 50, '실사') m),
   'adjust|-5.000|50.000|105.000', '조정은 차이를 부호 있는 qty로 남긴다');
 select throws_ok(
-  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 50)$$,
+  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 50, '메모')$$,
   'P0001', 'invalid_qty', '현재와 같은 목표는 거부한다');
 select throws_ok(
-  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', -1)$$,
+  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', -1, '메모')$$,
   'P0001', 'invalid_qty', '음수 목표는 거부한다');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a1","role":"authenticated"}', true);
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 60) m),
+   from public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 60, '메모') m),
   'adjust|10.000|60.000|115.000', '늘리는 조정은 양수 qty다');
 select is(
   (select count(*)::int from public.stock_movements where item_id = '40000000-0000-0000-0000-0000000021c1'),
@@ -285,52 +285,52 @@ select is(
 -- ─────────────────────────────────────────────
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a1","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 0)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 0, '메모')$$,
   'P0001', 'invalid_qty', '입고 0은 거부한다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', -1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', -1, '메모')$$,
   'P0001', 'invalid_qty', '음수 입고는 거부한다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', null)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', null, '메모')$$,
   'P0001', 'invalid_qty', 'null 수량은 거부한다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 0.0001)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 0.0001, '메모')$$,
   'P0001', 'invalid_qty', '소수 3자리를 넘는 수량은 거부한다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021ff', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021ff', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'not_found', '없는 품목은 not_found다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d5', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d5', 1, '메모')$$,
   'P0001', 'not_found', '다른 워크스페이스 위치는 not_found다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c3', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c3', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'archived', '보관 품목 입고는 archived다');
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d4', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d4', 1, '메모')$$,
   'P0001', 'archived', '보관 위치 입고는 archived다');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a5","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'forbidden', 'guest는 입고할 수 없다');
 select throws_ok(
-  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'forbidden', 'guest는 출고할 수 없다');
 select throws_ok(
-  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 1)$$,
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 1, '메모')$$,
   'P0001', 'forbidden', 'guest는 이동할 수 없다');
 select throws_ok(
-  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'forbidden', 'guest는 조정할 수 없다');
 select throws_ok(
   $$select public.stock_create_location('10000000-0000-0000-0000-0000000021b1', '게스트 위치')$$,
   'P0001', 'forbidden', 'guest는 위치를 만들 수 없다');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a6","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'forbidden', '비소속은 입고할 수 없다');
 select set_config('request.jwt.claims', '{"role":"authenticated"}', true);
 select throws_ok(
-  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1)$$,
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '메모')$$,
   'P0001', 'unauthenticated', '로그인하지 않으면 거부한다');
 
 -- ─────────────────────────────────────────────
@@ -339,14 +339,14 @@ select throws_ok(
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a1","role":"authenticated"}', true);
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_receive('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 12) m),
+   from public.stock_receive('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 12, '메모') m),
   'in|12.000|12.000|12.000', '12 입고(이전 합계 0이라 알림 없음)');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
   0, '임계값 위로 채우는 입고는 알리지 않는다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 5) m),
+   from public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 5, '메모') m),
   'out|5.000|7.000|7.000', '5 출고로 합계가 7이 된다');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
@@ -373,21 +373,21 @@ select is(
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a1","role":"authenticated"}', true);
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 2) m),
+   from public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 2, '메모') m),
   'out|2.000|5.000|5.000', '이미 임계값 아래에서 추가 출고');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
   1, '같은 상태의 추가 출고는 알림을 더 만들지 않는다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_receive('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 10) m),
+   from public.stock_receive('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 10, '메모') m),
   'in|10.000|15.000|15.000', '입고로 임계값 위로 회복');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
   1, '회복 입고는 알리지 않는다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 6) m),
+   from public.stock_issue('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 6, '메모') m),
   'out|6.000|9.000|9.000', '다시 임계값 아래로 내려간다');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
@@ -399,36 +399,95 @@ select is(
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a1","role":"authenticated"}', true);
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_transfer('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 4) m),
+   from public.stock_transfer('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 4, '메모') m),
   'transfer|4.000|5.000|9.000', '임계값 아래에서 이동');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
   2, '이동은 알림을 만들지 않는다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_adjust('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 16) m),
+   from public.stock_adjust('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 16, '메모') m),
   'adjust|11.000|16.000|20.000', '조정으로 합계를 20으로 올린다');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
   2, '조정으로 올려도 알리지 않는다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_adjust('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 1) m),
+   from public.stock_adjust('40000000-0000-0000-0000-0000000021c4', '50000000-0000-0000-0000-0000000021d1', 1, '메모') m),
   'adjust|-15.000|1.000|5.000', '조정으로 합계를 5로 내린다');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
   3, '조정이 임계값을 가로지르면 알린다');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_receive('40000000-0000-0000-0000-0000000021c2', '50000000-0000-0000-0000-0000000021d1', 5) m),
+   from public.stock_receive('40000000-0000-0000-0000-0000000021c2', '50000000-0000-0000-0000-0000000021d1', 5, '메모') m),
   'in|5.000|5.000|5.000', '안전재고 0 품목에 입고');
 select is(
   (select m.kind || '|' || m.qty::text || '|' || m.balance_after::text || '|' || m.total_after::text
-   from public.stock_issue('40000000-0000-0000-0000-0000000021c2', '50000000-0000-0000-0000-0000000021d1', 5) m),
+   from public.stock_issue('40000000-0000-0000-0000-0000000021c2', '50000000-0000-0000-0000-0000000021d1', 5, '메모') m),
   'out|5.000|0.000|0.000', '안전재고 0 품목을 비운다');
 select is(
   (select count(*)::int from public.notifications where type = 'stock'),
   3, '안전재고가 0이면 알리지 않는다');
+
+-- ─────────────────────────────────────────────
+-- 메모 필수(019). null·빈 문자열·공백뿐인 메모는 note_required로 거부하고 아무것도 바꾸지 않는다
+-- ─────────────────────────────────────────────
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000021a1","role":"authenticated"}', true);
+select throws_ok(
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, null)$$,
+  'P0001', 'note_required', '입고는 null를 거부한다');
+select throws_ok(
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '')$$,
+  'P0001', 'note_required', '입고는 빈 문자열를 거부한다');
+select throws_ok(
+  $$select public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '   ')$$,
+  'P0001', 'note_required', '입고는 공백뿐인 메모를 거부한다');
+select throws_ok(
+  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, null)$$,
+  'P0001', 'note_required', '출고는 null를 거부한다');
+select throws_ok(
+  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '')$$,
+  'P0001', 'note_required', '출고는 빈 문자열를 거부한다');
+select throws_ok(
+  $$select public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '   ')$$,
+  'P0001', 'note_required', '출고는 공백뿐인 메모를 거부한다');
+select throws_ok(
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 1, null)$$,
+  'P0001', 'note_required', '이동는 null를 거부한다');
+select throws_ok(
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 1, '')$$,
+  'P0001', 'note_required', '이동는 빈 문자열를 거부한다');
+select throws_ok(
+  $$select public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 1, '   ')$$,
+  'P0001', 'note_required', '이동는 공백뿐인 메모를 거부한다');
+select throws_ok(
+  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 70, null)$$,
+  'P0001', 'note_required', '조정는 null를 거부한다');
+select throws_ok(
+  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 70, '')$$,
+  'P0001', 'note_required', '조정는 빈 문자열를 거부한다');
+select throws_ok(
+  $$select public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 70, '   ')$$,
+  'P0001', 'note_required', '조정는 공백뿐인 메모를 거부한다');
+select is(
+  (select (select sum(qty) from public.stock_levels where item_id = '40000000-0000-0000-0000-0000000021c1')::text || '|' || (select count(*) from public.stock_movements where item_id = '40000000-0000-0000-0000-0000000021c1')::text),
+  '115.000|8', '메모 거부된 요청은 수량과 이력을 바꾸지 않는다');
+select is(
+  (select m.note from public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '  입고 메모  ') m),
+  '입고 메모', '메모의 앞뒤 공백은 잘려 저장된다');
+select is(
+  (select char_length(m.note)::text || '|' || (m.note = repeat('a', 500))::text from public.stock_receive('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '  ' || repeat('a', 600) || '  ') m),
+  '500|true', '입고 메모는 trim 뒤 앞 500자만 저장된다');
+select is(
+  (select char_length(m.note)::text || '|' || (m.note = repeat('a', 500))::text from public.stock_issue('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 1, '  ' || repeat('a', 600) || '  ') m),
+  '500|true', '출고 메모는 trim 뒤 앞 500자만 저장된다');
+select is(
+  (select char_length(m.note)::text || '|' || (m.note = repeat('a', 500))::text from public.stock_transfer('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', '50000000-0000-0000-0000-0000000021d2', 1, '  ' || repeat('a', 600) || '  ') m),
+  '500|true', '이동 메모는 trim 뒤 앞 500자만 저장된다');
+select is(
+  (select char_length(m.note)::text || '|' || (m.note = repeat('a', 500))::text from public.stock_adjust('40000000-0000-0000-0000-0000000021c1', '50000000-0000-0000-0000-0000000021d1', 70, '  ' || repeat('a', 600) || '  ') m),
+  '500|true', '조정 메모는 trim 뒤 앞 500자만 저장된다');
 
 -- ─────────────────────────────────────────────
 -- 기존 알림 회귀. 작업 배정 알림이 이전처럼 생긴다
