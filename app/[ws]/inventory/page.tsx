@@ -4,7 +4,7 @@ import { forbidden, notFound } from "next/navigation";
 import { InventoryView } from "@/components/inventory/inventory-view";
 import { getMember, getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { getT } from "@/lib/i18n/server";
-import { canAdjustStock, canManageStock, canMoveStock, canUseStock } from "@/lib/inventory/rules";
+import { canAdjustStock, canManageStock, canMoveStock, canUseStock, parseHistoryFilter } from "@/lib/inventory/rules";
 import { getStockCategories, getStockItemDetail, getStockItems, getStockLocations } from "@/lib/inventory/queries";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 type Props = {
   params: Promise<{ ws: string }>;
-  searchParams: Promise<{ q?: string; cat?: string; low?: string; tab?: string; item?: string }>;
+  searchParams: Promise<{ q?: string; cat?: string; low?: string; tab?: string; item?: string; hk?: string; hf?: string; ht?: string }>;
 };
 
 export default async function InventoryPage({ params, searchParams }: Props) {
@@ -28,13 +28,15 @@ export default async function InventoryPage({ params, searchParams }: Props) {
   const q = query.q ?? "";
   const cat = query.cat ?? "";
   const low = query.low === "1";
+  // 이력 필터는 주소 값을 검증해 쓴다. 잘못된 값은 무시된다
+  const historyFilter = parseHistoryFilter(query);
   const [items, locations, allLocations, categories, rawDetail] = await Promise.all([
     getStockItems(workspace.id, { q, category: cat || undefined, low }),
     getStockLocations(workspace.id),
     // 이력에는 보관된 위치도 나오므로 이름 맵은 보관 위치까지 포함한다
     getStockLocations(workspace.id, { archived: true }),
     getStockCategories(workspace.id),
-    query.item && UUID_RE.test(query.item) ? getStockItemDetail(query.item, workspace.id) : null,
+    query.item && UUID_RE.test(query.item) ? getStockItemDetail(query.item, workspace.id, historyFilter) : null,
   ]);
   // 다른 워크스페이스 품목은 조회에서 걸러진다. 보관 품목은 서랍을 열지 않는다. 검색·부족 필터로 목록에서 빠져도 열려 있다
   const detail = rawDetail && !rawDetail.item.archived ? rawDetail : null;
@@ -52,6 +54,7 @@ export default async function InventoryPage({ params, searchParams }: Props) {
       tab={query.tab === "locations" ? "locations" : "items"}
       selectedId={detail?.item.id ?? null}
       detail={detail}
+      historyFilter={historyFilter}
       canManage={canManageStock(role)}
       canMove={canMoveStock(role)}
       canAdjust={canAdjustStock(role)}

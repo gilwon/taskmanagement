@@ -1,6 +1,6 @@
 // 재고 입력·판정 순수 규칙. 수량 파싱, 합계, 상태, 역할별 권한을 클라이언트와 Server Action이 함께 쓴다
 import { isAdminRole, type Role } from "@/lib/org/rules";
-import type { StockStatus } from "@/lib/inventory/types";
+import type { StockMovementKind, StockStatus } from "@/lib/inventory/types";
 
 // 수량 상한(미만). DB numeric(14,3) 범위를 넘지 않게 막는다
 const MAX_QTY = 1e11;
@@ -62,4 +62,32 @@ export function canMoveStock(role: Role | null | undefined) {
 // 실사 조정
 export function canAdjustStock(role: Role | null | undefined) {
   return isAdminRole(role);
+}
+
+// 이력 필터. 주소 값(hk·hf·ht)이 원본이고 잘못된 값은 버린다
+export type HistoryFilter = { kind?: StockMovementKind; from?: string; to?: string };
+
+const HISTORY_KINDS: readonly StockMovementKind[] = ["in", "out", "transfer", "adjust"];
+
+// 실존하는 YYYY-MM-DD만 통과한다(2월 30일 같은 값은 Date가 밀어내므로 되돌려 비교한다)
+function parseYmd(v: unknown): string | undefined {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return undefined;
+  const d = new Date(`${v}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v ? undefined : v;
+}
+
+export function parseHistoryFilter(raw: { hk?: unknown; hf?: unknown; ht?: unknown }): HistoryFilter {
+  const kind = HISTORY_KINDS.find((k) => k === raw.hk);
+  return { kind, from: parseYmd(raw.hf), to: parseYmd(raw.ht) };
+}
+
+// 서울(+09:00) 하루 단위 경계. 시작은 from 00:00 이상, 종료는 to 다음 날 00:00 미만이라 종료일 당일을 포함한다
+export function historyRange(f: HistoryFilter): { gte?: string; lt?: string } {
+  let lt: string | undefined;
+  if (f.to) {
+    const next = new Date(`${f.to}T00:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + 1);
+    lt = `${next.toISOString().slice(0, 10)}T00:00:00+09:00`;
+  }
+  return { gte: f.from ? `${f.from}T00:00:00+09:00` : undefined, lt };
 }

@@ -133,6 +133,16 @@ export default {
     balance: "이후 {qty} {unit}",
     limit: "최근 {count}건만 보여 줍니다.",
     list: "이력 목록",
+    filter: {
+      label: "이력 필터",
+      all: "전체",
+      from: "시작일",
+      to: "종료일",
+      clear: "필터 지우기",
+      noMatch: "조건에 맞는 이력이 없습니다",
+      noMatchHint: "종류나 기간을 바꿔 보세요.",
+      invalidRange: "시작일이 종료일보다 늦습니다.",
+    },
   },
   toast: {
     itemAdded: "품목을 추가했습니다.",

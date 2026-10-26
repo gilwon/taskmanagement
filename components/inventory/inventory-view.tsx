@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useT } from "@/lib/i18n/client";
+import type { HistoryFilter } from "@/lib/inventory/rules";
 import type { StockItem, StockItemRow, StockLevel, StockLocation, StockMovement } from "@/lib/inventory/types";
 
 export type InventoryDetail = { item: StockItem; levels: StockLevel[]; movements: StockMovement[] };
@@ -26,6 +27,7 @@ type Props = {
   tab: "items" | "locations";
   selectedId: string | null;
   detail: InventoryDetail | null;
+  historyFilter: HistoryFilter;
   canManage: boolean;
   canMove: boolean;
   canAdjust: boolean;
@@ -41,6 +43,7 @@ export function InventoryView({
   tab,
   selectedId,
   detail,
+  historyFilter,
   canManage,
   canMove,
   canAdjust,
@@ -111,6 +114,7 @@ export function InventoryView({
         <ItemDrawer
           key={detail.item.id}
           detail={detail}
+          historyFilter={historyFilter}
           locations={locations}
           locationNames={locationNames}
           categories={categories}

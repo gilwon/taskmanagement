@@ -5,6 +5,8 @@ import {
   canManageStock,
   canMoveStock,
   canUseStock,
+  historyRange,
+  parseHistoryFilter,
   parseQty,
   parseTarget,
   stockStatus,
@@ -66,5 +68,49 @@ describe("역할 판정", () => {
       move,
       adjust,
     ]);
+  });
+});
+
+describe("parseHistoryFilter", () => {
+  it("올바른 값은 통과하고 잘못된 값은 무시한다", () => {
+    expect(parseHistoryFilter({ hk: "out", hf: "2026-10-01", ht: "2026-10-26" })).toEqual({
+      kind: "out",
+      from: "2026-10-01",
+      to: "2026-10-26",
+    });
+    expect(parseHistoryFilter({ hk: "bogus", hf: "2026-13-01", ht: "abc" })).toEqual({
+      kind: undefined,
+      from: undefined,
+      to: undefined,
+    });
+    expect(parseHistoryFilter({ hk: ["in"], hf: ["2026-10-01"] })).toEqual({ kind: undefined, from: undefined, to: undefined });
+  });
+  it("실존하지 않는 날짜는 거른다(2월 29일은 윤년만)", () => {
+    expect(parseHistoryFilter({ hf: "2028-02-29" }).from).toBe("2028-02-29");
+    expect(parseHistoryFilter({ hf: "2026-02-29" }).from).toBeUndefined();
+    expect(parseHistoryFilter({ hf: "2026-04-31" }).from).toBeUndefined();
+    expect(parseHistoryFilter({ hf: "2026-1-1" }).from).toBeUndefined();
+  });
+});
+
+describe("historyRange", () => {
+  it("시작은 from 00:00, 종료는 to 다음 날 00:00 미만(서울)이다", () => {
+    expect(historyRange({ from: "2026-10-01", to: "2026-10-26" })).toEqual({
+      gte: "2026-10-01T00:00:00+09:00",
+      lt: "2026-10-27T00:00:00+09:00",
+    });
+  });
+  it("하나만 있으면 그쪽 경계만 만든다", () => {
+    expect(historyRange({ from: "2026-10-01" })).toEqual({ gte: "2026-10-01T00:00:00+09:00", lt: undefined });
+    expect(historyRange({ to: "2026-10-26" }).gte).toBeUndefined();
+  });
+  it("월말·연말·윤년 2월 말 다음 날을 넘긴다", () => {
+    expect(historyRange({ to: "2026-12-31" }).lt).toBe("2027-01-01T00:00:00+09:00");
+    expect(historyRange({ to: "2028-02-28" }).lt).toBe("2028-02-29T00:00:00+09:00");
+    expect(historyRange({ to: "2028-02-29" }).lt).toBe("2028-03-01T00:00:00+09:00");
+  });
+  it("시작일이 종료일보다 늦으면 gte가 lt 이상이라 빈 구간이 된다", () => {
+    const r = historyRange({ from: "2026-10-26", to: "2026-10-01" });
+    expect(new Date(r.gte!).getTime()).toBeGreaterThanOrEqual(new Date(r.lt!).getTime());
   });
 });

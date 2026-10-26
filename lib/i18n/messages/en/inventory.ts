@@ -135,6 +135,16 @@ export default {
     balance: "Then {qty} {unit}",
     limit: "Showing the latest {count} only.",
     list: "Movement history",
+    filter: {
+      label: "Filter history",
+      all: "All",
+      from: "From",
+      to: "To",
+      clear: "Clear filters",
+      noMatch: "No history matches the filters",
+      noMatchHint: "Try a different type or date range.",
+      invalidRange: "The start date is after the end date.",
+    },
   },
   toast: {
     itemAdded: "Item added.",

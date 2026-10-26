@@ -135,6 +135,16 @@ export default {
     balance: "処理後 {qty} {unit}",
     limit: "最新{count}件のみ表示しています。",
     list: "移動履歴",
+    filter: {
+      label: "履歴の絞り込み",
+      all: "すべて",
+      from: "開始日",
+      to: "終了日",
+      clear: "絞り込みを解除",
+      noMatch: "条件に一致する履歴がありません",
+      noMatchHint: "種別や期間を変えてみてください。",
+      invalidRange: "開始日が終了日より後になっています。",
+    },
   },
   toast: {
     itemAdded: "品目を追加しました。",

@@ -135,6 +135,16 @@ export default {
     balance: "之后 {qty} {unit}",
     limit: "仅显示最近 {count} 条。",
     list: "变动记录",
+    filter: {
+      label: "筛选记录",
+      all: "全部",
+      from: "开始日期",
+      to: "结束日期",
+      clear: "清除筛选",
+      noMatch: "没有符合条件的记录",
+      noMatchHint: "请更换类型或日期范围。",
+      invalidRange: "开始日期晚于结束日期。",
+    },
   },
   toast: {
     itemAdded: "已添加物品。",

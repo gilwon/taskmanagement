@@ -1,7 +1,7 @@
 // 재고 조회. 품목 목록(위치별 수량·합계·상태), 위치, 카테고리, 품목 상세(수량·이동 이력)를 RLS가 걸린 세션 클라이언트로 읽는다
 import "server-only";
 import { stockErrorMessage } from "@/lib/inventory/errors";
-import { stockStatus, sumLevels } from "@/lib/inventory/rules";
+import { historyRange, stockStatus, sumLevels, type HistoryFilter } from "@/lib/inventory/rules";
 import type { StockItem, StockItemRow, StockLevel, StockLocation, StockMovement, StockMovementKind } from "@/lib/inventory/types";
 import { NAMELESS_MEMBER_LABEL } from "@/lib/i18n/labels";
 import { getT } from "@/lib/i18n/server";
@@ -93,17 +93,24 @@ export async function getStockLocations(
 export async function getStockItemDetail(
   itemId: string,
   workspaceId: string,
+  history: HistoryFilter = {},
 ): Promise<{ item: StockItem; levels: StockLevel[]; movements: StockMovement[] } | null> {
   const supabase = await createClient();
+  const { gte, lt } = historyRange(history);
+  // 조건은 서버에서 걸어 조건에 맞는 최신 100건을 읽는다
+  let movementQuery = supabase
+    .from("stock_movements")
+    .select(
+      "id, kind, item_id, location_id, to_location_id, qty, balance_after, total_after, note, created_at, actor:profiles(name, email)",
+    )
+    .eq("item_id", itemId);
+  if (history.kind) movementQuery = movementQuery.eq("kind", history.kind);
+  if (gte) movementQuery = movementQuery.gte("created_at", gte);
+  if (lt) movementQuery = movementQuery.lt("created_at", lt);
   const [item, levels, movements] = await Promise.all([
     supabase.from("stock_items").select(ITEM_COLUMNS).eq("id", itemId).eq("workspace_id", workspaceId).maybeSingle(),
     supabase.from("stock_levels").select("item_id, location_id, qty").eq("item_id", itemId),
-    supabase
-      .from("stock_movements")
-      .select(
-        "id, kind, item_id, location_id, to_location_id, qty, balance_after, total_after, note, created_at, actor:profiles(name, email)",
-      )
-      .eq("item_id", itemId)
+    movementQuery
       .order("created_at", { ascending: false })
       .order("id")
       .limit(MOVEMENT_LIMIT),

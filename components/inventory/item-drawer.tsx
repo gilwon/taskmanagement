@@ -2,6 +2,7 @@
 // 품목 서랍. 위치별 수량과 이동 이력을 보이고 입고·출고·이동·조정·수정·보관 동작을 연다. 열림은 주소의 ?item=<id>가 원본이다
 import { Archive, ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ClipboardCheck, Pencil } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
+import { HistoryFilterBar } from "@/components/inventory/history-filter";
 import { ItemFormDialog } from "@/components/inventory/item-form-dialog";
 import type { InventoryDetail } from "@/components/inventory/inventory-view";
 import type { Navigate } from "@/components/inventory/item-table";
@@ -14,11 +15,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useFormatter, useT } from "@/lib/i18n/client";
 import { setStockItemArchived } from "@/lib/inventory/actions";
-import { stockStatus, sumLevels } from "@/lib/inventory/rules";
+import { stockStatus, sumLevels, type HistoryFilter } from "@/lib/inventory/rules";
 import type { StockLocation, StockMovement, StockMovementKind } from "@/lib/inventory/types";
 
 type Props = {
   detail: InventoryDetail;
+  // 주소에서 검증된 이력 필터
+  historyFilter: HistoryFilter;
   // 보관되지 않은 위치
   locations: StockLocation[];
   // 보관 위치까지 포함한 id별 이름. 이력 표시용
@@ -49,11 +52,25 @@ const KIND_LABEL = {
   transfer: "inventory.kind.transfer",
   adjust: "inventory.kind.adjust",
 } as const;
+// 줄 왼쪽 색 막대와 라벨 배지 색. 이동·조정은 중립이다
+const KIND_BAR = {
+  in: "border-l-(--green)",
+  out: "border-l-(--red)",
+  transfer: "border-l-transparent",
+  adjust: "border-l-transparent",
+} as const;
+const KIND_BADGE = {
+  in: "bg-(--green-soft)",
+  out: "bg-(--red-soft)",
+  transfer: "bg-muted",
+  adjust: "bg-muted",
+} as const;
 // 입고·출고는 부호와 색을 함께 쓴다. 이동·조정은 중립 색이고 조정은 차이의 부호를 수량에 붙인다
 const KIND_TONE = { in: "text-(--green)", out: "text-(--red)", transfer: "text-(--text)", adjust: "text-(--text)" } as const;
 
 export function ItemDrawer({
   detail,
+  historyFilter,
   locations,
   locationNames,
   categories,
@@ -84,6 +101,8 @@ export function ItemDrawer({
   const total = sumLevels(levels);
   const status = stockStatus(total, item.safetyStock);
   const noLocation = locations.length === 0;
+  const filtered = Boolean(historyFilter.kind || historyFilter.from || historyFilter.to);
+  const invalidRange = Boolean(historyFilter.from && historyFilter.to && historyFilter.from > historyFilter.to);
   const nameOf = (id: string) => locationNames[id] ?? t("inventory.history.unknownLocation");
   const stocked = levels
     .filter((l) => l.qty > 0)
@@ -221,7 +240,15 @@ export function ItemDrawer({
               <h3 id="inventory-history-title" className="mb-2 text-(length:--fs-md) font-medium text-(--text)">
                 {t("inventory.history.title")}
               </h3>
-              {movements.length === 0 ? (
+              <HistoryFilterBar filter={historyFilter} filtered={filtered} navigate={navigate} />
+              {movements.length === 0 && filtered ? (
+                <div>
+                  <p className="text-(length:--fs-base) text-(--text-2)">{t("inventory.history.filter.noMatch")}</p>
+                  <p className="text-(length:--fs-sm) text-(--text-3)">
+                    {t(invalidRange ? "inventory.history.filter.invalidRange" : "inventory.history.filter.noMatchHint")}
+                  </p>
+                </div>
+              ) : movements.length === 0 ? (
                 <div>
                   <p className="text-(length:--fs-base) text-(--text-2)">{t("inventory.history.empty")}</p>
                   <p className="text-(length:--fs-sm) text-(--text-3)">{t("inventory.history.emptyHint")}</p>
@@ -298,9 +325,13 @@ function HistoryRow({
       : nameOf(m.locationId);
 
   return (
-    <li className="grid gap-1 px-3 py-2.5 transition-colors ease-(--ux-ease) hover:bg-muted/50">
+    <li
+      className={`grid gap-1 border-l-[3px] px-3 py-2.5 transition-colors ease-(--ux-ease) hover:bg-muted/50 ${KIND_BAR[m.kind]}`}
+    >
       <div className="flex items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-1.5 text-(length:--fs-base) font-medium text-(--text)">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-(length:--fs-sm) font-medium text-(--text) ${KIND_BADGE[m.kind]}`}
+        >
           <Icon aria-hidden size={14} strokeWidth={1.8} className={KIND_TONE[m.kind]} />
           {t(KIND_LABEL[m.kind])}
         </span>
