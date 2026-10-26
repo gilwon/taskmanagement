@@ -54,19 +54,20 @@ const KIND_LABEL = {
 } as const;
 // 줄 왼쪽 색 막대와 라벨 배지 색. 이동·조정은 중립이다
 const KIND_BAR = {
-  in: "border-l-(--green)",
+  in: "border-l-(--blue)",
   out: "border-l-(--red)",
   transfer: "border-l-transparent",
   adjust: "border-l-transparent",
 } as const;
 const KIND_BADGE = {
-  in: "bg-(--green-soft)",
+  // --blue-soft 토큰이 없어 --red-soft와 같은 농도로 직접 섞는다
+  in: "bg-[color-mix(in_srgb,var(--blue)_10%,transparent)]",
   out: "bg-(--red-soft)",
   transfer: "bg-muted",
   adjust: "bg-muted",
 } as const;
-// 입고·출고는 부호와 색을 함께 쓴다. 이동·조정은 중립 색이고 조정은 차이의 부호를 수량에 붙인다
-const KIND_TONE = { in: "text-(--green)", out: "text-(--red)", transfer: "text-(--text)", adjust: "text-(--text)" } as const;
+// 입고는 파랑(글자는 대비를 위해 한 단계 진한 --sat-ink), 출고는 빨강이고 부호를 함께 쓴다. 이동·조정은 중립 색이고 조정은 차이의 부호를 수량에 붙인다
+const KIND_TONE = { in: "text-(--sat-ink)", out: "text-(--red)", transfer: "text-(--text)", adjust: "text-(--text)" } as const;
 
 export function ItemDrawer({
   detail,
@@ -330,7 +331,7 @@ function HistoryRow({
     >
       <div className="flex items-center justify-between gap-3">
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-(length:--fs-sm) font-medium text-(--text) ${KIND_BADGE[m.kind]}`}
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-(length:--fs-sm) font-medium ${KIND_TONE[m.kind]} ${KIND_BADGE[m.kind]}`}
         >
           <Icon aria-hidden size={14} strokeWidth={1.8} className={KIND_TONE[m.kind]} />
           {t(KIND_LABEL[m.kind])}
