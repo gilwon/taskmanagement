@@ -14,6 +14,37 @@ export const INVITE_ROLES = ["admin", "member", "guest"] as const satisfies read
 // 앱 내 알림 종류. user_prefs.notif_prefs의 키이고 notification_type enum과 같다
 export const NOTIF_KEYS = ["mention", "assign", "comment", "update", "stock"] as const satisfies readonly Enums<"notification_type">[];
 
+// 외부 발송 채널. notif_prefs에 알림 종류 키와 함께 저장되지만 종류가 아니라 DB(private.notify)는 보지 않는다
+export const CHANNEL_KEYS = ["email", "push"] as const;
+export const ALL_NOTIF_KEYS = [...NOTIF_KEYS, ...CHANNEL_KEYS] as const;
+export type NotifPrefKey = (typeof ALL_NOTIF_KEYS)[number];
+
+// 키별 기본값. 종류는 켜짐, 채널은 꺼짐(옵트인)이다. 값이 없거나 boolean이 아니면 기본값을 쓴다
+export const NOTIF_PREF_DEFAULTS: Record<NotifPrefKey, boolean> = {
+  mention: true,
+  assign: true,
+  comment: true,
+  update: true,
+  stock: true,
+  email: false,
+  push: false,
+};
+
+export function readNotifPrefs(raw: unknown): Record<NotifPrefKey, boolean> {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return Object.fromEntries(
+    ALL_NOTIF_KEYS.map((k) => [k, typeof o[k] === "boolean" ? o[k] : NOTIF_PREF_DEFAULTS[k]]),
+  ) as Record<NotifPrefKey, boolean>;
+}
+
+// saveNotifPrefs 입력 검증. 종류 5개와 채널 2개가 모두 boolean이어야 한다(저장은 jsonb 전체를 바꾼다). 모르는 키는 버린다
+export function parseNotifPrefs(v: unknown): Record<NotifPrefKey, boolean> | null {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const o = v as Record<string, unknown>;
+  if (!ALL_NOTIF_KEYS.every((k) => typeof o[k] === "boolean")) return null;
+  return readNotifPrefs(o);
+}
+
 // 환경 설정(user_prefs). 시작 화면의 허용값과 작업 여는 방식. 컬럼 default_tab, task_open, show_done_board, confirm_del에 대응한다
 export const START_TABS = ["home", "my-tasks", "projects", "inbox"] as const;
 export type StartTab = (typeof START_TABS)[number];

@@ -24,13 +24,13 @@ describe("safeNext", () => {
 
 describe("isPublicPath", () => {
   it("인증 화면과 하위 경로는 공개다", () => {
-    for (const p of ["/login", "/signup", "/verify", "/forgot", "/forgot/sent", "/reset/done", "/auth/confirm"]) {
+    for (const p of ["/login", "/signup", "/verify", "/forgot", "/forgot/sent", "/reset/done", "/auth/confirm", "/api/notifications/dispatch"]) {
       expect(isPublicPath(p)).toBe(true);
     }
   });
 
   it("비슷한 이름이나 앱 경로는 공개가 아니다", () => {
-    for (const p of ["/", "/loginx", "/login/x", "/forgotten", "/authx", "/acme/home"]) {
+    for (const p of ["/", "/loginx", "/login/x", "/forgotten", "/authx", "/acme/home", "/api/notifications/config", "/api/notifications/dispatch/x"]) {
       expect(isPublicPath(p)).toBe(false);
     }
   });

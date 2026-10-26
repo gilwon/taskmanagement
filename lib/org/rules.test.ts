@@ -5,8 +5,10 @@ import {
   canOpenOrgScreens,
   canOpenSettingsSection,
   parseInviteEmails,
+  parseNotifPrefs,
   parsePrefsPatch,
   parseStartTab,
+  readNotifPrefs,
   startPath,
 } from "@/lib/org/rules";
 
@@ -73,5 +75,22 @@ describe("환경 설정 검증", () => {
     expect(parsePrefsPatch({ confirmDel: "yes" })).toBeNull();
     expect(parsePrefsPatch({ notif_prefs: {} })).toBeNull();
     expect(parsePrefsPatch([])).toBeNull();
+  });
+});
+
+describe("알림 설정 키", () => {
+  it("값이 없으면 종류는 켜짐, 이메일·푸시는 꺼짐이다", () => {
+    expect(readNotifPrefs(null)).toEqual({
+      mention: true, assign: true, comment: true, update: true, stock: true, email: false, push: false,
+    });
+    expect(readNotifPrefs({ comment: false, email: true, push: "yes" })).toMatchObject({ comment: false, email: true, push: false });
+  });
+  it("종류와 채널이 모두 boolean이어야 저장 입력으로 통과한다", () => {
+    const all = { mention: true, assign: true, comment: false, update: true, stock: true, email: true, push: false };
+    expect(parseNotifPrefs(all)).toEqual(all);
+    expect(parseNotifPrefs({ ...all, extra: true })).toEqual(all);
+    expect(parseNotifPrefs({ ...all, push: undefined })).toBeNull();
+    expect(parseNotifPrefs({ ...all, email: "true" })).toBeNull();
+    expect(parseNotifPrefs([])).toBeNull();
   });
 });

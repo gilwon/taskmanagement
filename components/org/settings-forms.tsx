@@ -1,12 +1,12 @@
 "use client";
 // 설정 화면의 입력 폼. 워크스페이스 일반·위험 구역, 화면 설정, 알림, 프로필, 시간대, 비밀번호, 로그인 세션
 import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { AtSign, MessageSquare, Package, UserCheck } from "lucide-react";
+import { AtSign, MessageSquare, Package, RefreshCw, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { ConfirmDialog } from "@/components/org/confirm-dialog";
-import { SettingsCard, UnavailableBadge } from "@/components/org/settings-parts";
+import { SettingsCard } from "@/components/org/settings-parts";
 import { announce } from "@/components/tasks/views/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { signOut } from "@/lib/auth/actions";
 import { MIN_PASSWORD_LENGTH, SLUG_RE } from "@/lib/auth/rules";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { disablePush, enablePush, pushSupported } from "@/lib/notifications/push-client";
 import {
   changePassword,
   deleteWorkspace,
@@ -219,16 +220,15 @@ export function AppearanceForm() {
 }
 
 // ─────────────────────────────────────────────
-// 알림. 이메일·푸시는 발송 서비스가 없어 비활성(spec R23). 앱 내 알림은 종류별로 끄고 켠다
+// 알림. 앱 내 알림은 종류별로 끄고 켠다. 이메일·푸시는 서버에 발송 설정이 있을 때만 켤 수 있다
 // ─────────────────────────────────────────────
-// update 알림은 아직 보내는 경로가 없어 켜고 끄는 컨트롤을 두지 않는다
-const LIVE_NOTIF_KEYS = NOTIF_KEYS.filter((k) => k !== "update");
 
 // Lucian UX/UI Prompt #023 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#023
 // 종류별 아이콘과 배경 그라디언트 색(프로젝트 토큰)
 const NOTIF_ICON = {
   mention: { Icon: AtSign, from: "var(--accent)", to: "var(--blue)" },
   assign: { Icon: UserCheck, from: "var(--blue)", to: "var(--teal)" },
+  update: { Icon: RefreshCw, from: "var(--accent)", to: "var(--amber)" },
   comment: { Icon: MessageSquare, from: "var(--green)", to: "var(--teal)" },
   stock: { Icon: Package, from: "var(--amber)", to: "var(--red)" },
 } as const;
@@ -240,8 +240,20 @@ export function NotificationsForm({ workspaceId, initial }: { workspaceId: strin
   // 모두 끄기가 항목마다 이어서 저장하므로 최신 값은 ref로 읽는다
   const prefsRef = useRef(prefs);
   const mounted = useRef(true);
+  // 서버의 이메일·푸시 발송 가능 여부(키 값은 오지 않는다)와 이 브라우저의 푸시 지원 여부. 확인 전에는 스위치를 잠근다
+  const [cfg, setCfg] = useState<{ email: boolean; push: boolean; vapidPublicKey: string | null } | null>(null);
+  const [pushOk, setPushOk] = useState(false);
   useEffect(() => {
     mounted.current = true;
+    const done = (c: { email: boolean; push: boolean; vapidPublicKey: string | null }) => {
+      if (!mounted.current) return;
+      setPushOk(pushSupported());
+      setCfg(c);
+    };
+    fetch("/api/notifications/config")
+      .then((r) => r.json())
+      .then(done)
+      .catch(() => done({ email: false, push: false, vapidPublicKey: null }));
     return () => {
       mounted.current = false;
     };
@@ -261,14 +273,41 @@ export function NotificationsForm({ workspaceId, initial }: { workspaceId: strin
       toast.error(r.error);
       return false;
     }
+    if (key === "email" || key === "push") {
+      saved(t(`org.settings.notifications.${key}${value ? "On" : "Off"}`));
+      return true;
+    }
     const type = t(`common.notificationType.${key}`);
     saved(value ? t("org.settings.notifications.turnedOn", { type }) : t("org.settings.notifications.turnedOff", { type }));
     return true;
   };
 
+  // 푸시를 켜면 권한 요청과 구독을 먼저 하고 저장한다. 거부나 실패면 스위치는 그대로 꺼져 있다. 끄면 저장 뒤 구독을 지운다
+  const toggleChannel = async (kind: "email" | "push", value: boolean) => {
+    if (kind === "email") return void (await toggle("email", value));
+    if (value) {
+      setBusy(true);
+      const r = await enablePush(cfg?.vapidPublicKey ?? "");
+      if (mounted.current) setBusy(false);
+      if (r.status !== "ok") {
+        toast.error(
+          r.status === "denied"
+            ? t("org.settings.notifications.pushDenied")
+            : r.status === "unsupported"
+              ? t("org.settings.notifications.pushUnsupported")
+              : (r.error ?? t("org.settings.notifications.pushFailed")),
+        );
+        return;
+      }
+      if (!(await toggle("push", true))) await disablePush();
+      return;
+    }
+    if (await toggle("push", false)) await disablePush();
+  };
+
   // 켜진 종류를 위에서부터 0.12초 간격으로 하나씩 끈다(#023). 저장은 항목마다 기존 호출을 쓰고, 실패하면 거기서 멈춘다
   const turnOffAll = async () => {
-    for (const k of LIVE_NOTIF_KEYS) {
+    for (const k of NOTIF_KEYS) {
       if (!mounted.current) return;
       if (!prefsRef.current[k]) continue;
       if (!(await toggle(k, false))) return;
@@ -284,8 +323,8 @@ export function NotificationsForm({ workspaceId, initial }: { workspaceId: strin
         description={t("org.settings.notifications.appDescription")}
       >
         <div className="ux u023">
-          {LIVE_NOTIF_KEYS.map((k) => {
-            const { Icon, from, to } = NOTIF_ICON[k as keyof typeof NOTIF_ICON];
+          {NOTIF_KEYS.map((k) => {
+            const { Icon, from, to } = NOTIF_ICON[k];
             return (
               <div key={k} className={cn("u023-item", !prefs[k] && "is-off")}>
                 <div className="u023-head">
@@ -304,18 +343,11 @@ export function NotificationsForm({ workspaceId, initial }: { workspaceId: strin
           <button
             type="button"
             className="u023-all"
-            disabled={busy || LIVE_NOTIF_KEYS.every((k) => !prefs[k])}
+            disabled={busy || NOTIF_KEYS.every((k) => !prefs[k])}
             onClick={turnOffAll}
           >
             {t("org.settings.notifications.turnOffAll")}
           </button>
-        </div>
-        <div className="flex items-center justify-between gap-4">
-          <div className="grid gap-0.5">
-            <span className="text-(length:--fs-base) text-(--text-2)">{t("common.notificationType.update")}</span>
-            <span className="text-(length:--fs-xs) text-(--text-3)">{t("org.settings.notifications.updateNotSent")}</span>
-          </div>
-          <UnavailableBadge />
         </div>
       </SettingsCard>
       <SettingsCard
@@ -323,15 +355,34 @@ export function NotificationsForm({ workspaceId, initial }: { workspaceId: strin
         title={t("org.settings.notifications.externalTitle")}
         description={t("org.settings.notifications.externalDescription")}
       >
-        {(["email", "push"] as const).map((kind, i) => (
-          <div key={kind} className="flex items-center justify-between gap-4">
-            <Label htmlFor={`notif-ext-${i}`} className="flex items-center gap-2 font-normal text-(--text-2)">
-              {t(`org.settings.notifications.${kind}`)}
-              <UnavailableBadge />
-            </Label>
-            <Switch id={`notif-ext-${i}`} checked={false} disabled aria-describedby="notif-external-title" />
-          </div>
-        ))}
+        {(["email", "push"] as const).map((kind) => {
+          const available = cfg?.[kind] ?? false;
+          const hint =
+            cfg && !available
+              ? t("org.settings.notifications.needsServerSetup")
+              : cfg && kind === "push" && !pushOk
+                ? t("org.settings.notifications.pushUnsupported")
+                : null;
+          return (
+            <div key={kind} className="flex items-center justify-between gap-4">
+              <Label htmlFor={`notif-ext-${kind}`} className="grid gap-0.5 font-normal">
+                <span className="text-(length:--fs-base) text-(--text-2)">{t(`org.settings.notifications.${kind}`)}</span>
+                {hint && (
+                  <span id={`notif-ext-${kind}-hint`} className="text-(length:--fs-xs) text-(--text-3)">
+                    {hint}
+                  </span>
+                )}
+              </Label>
+              <Switch
+                id={`notif-ext-${kind}`}
+                checked={prefs[kind]}
+                disabled={busy || (!prefs[kind] && (!available || (kind === "push" && !pushOk)))}
+                aria-describedby={hint ? `notif-ext-${kind}-hint` : undefined}
+                onCheckedChange={(v) => toggleChannel(kind, v)}
+              />
+            </div>
+          );
+        })}
       </SettingsCard>
     </>
   );

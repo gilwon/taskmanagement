@@ -7,7 +7,8 @@ import { getT } from "@/lib/i18n/server";
 import { orgErrorMessage } from "@/lib/org/errors";
 import {
   DEFAULT_USER_PREFS,
-  NOTIF_KEYS,
+  readNotifPrefs,
+  type NotifPrefKey,
   canOpenOrgScreens,
   parseStartTab,
   parseTaskOpen,
@@ -129,9 +130,9 @@ export async function getTeamProjects(workspaceId: string): Promise<TeamProject[
   return data.map(({ team_id, ...p }) => ({ ...p, teamId: team_id }));
 }
 
-export type NotifPrefs = Record<(typeof NOTIF_KEYS)[number], boolean>;
+export type NotifPrefs = Record<NotifPrefKey, boolean>;
 
-// 행이나 키가 없으면 켜짐(private.notify와 같은 기본값)
+// 행이나 키가 없으면 알림 종류는 켜짐(private.notify와 같은 기본값), 이메일·푸시는 꺼짐
 export async function getNotifPrefs(workspaceId: string, userId: string): Promise<NotifPrefs> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -141,8 +142,7 @@ export async function getNotifPrefs(workspaceId: string, userId: string): Promis
     .eq("user_id", userId)
     .maybeSingle();
   if (error) fail("알림 설정", error);
-  const raw = (data?.notif_prefs ?? {}) as Record<string, unknown>;
-  return Object.fromEntries(NOTIF_KEYS.map((k) => [k, raw[k] !== false])) as NotifPrefs;
+  return readNotifPrefs(data?.notif_prefs);
 }
 
 // 환경 설정. 행이 없으면 기본값이다. 레이아웃과 설정 화면이 한 요청에서 함께 읽으므로 cache로 한 번만 묻는다
