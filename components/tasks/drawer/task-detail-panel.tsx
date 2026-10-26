@@ -1,6 +1,7 @@
 "use client";
 // 작업 상세 본문. 드로어와 전체 페이지가 함께 쓴다. 헤더 동작, 완료·기한 초과 배너, 제목, 속성 목록, 설명, 하위 작업,
 // 댓글·활동·파일 탭(detail-tabs). 모든 쓰기는 작업 store를 거쳐 목록과 같은 값을 본다
+// Lucian UX/UI Prompt #033 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#033
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -53,6 +54,7 @@ import { useTaskActions, useTasks } from "@/components/tasks/task-store";
 import { useFormatter, useT } from "@/lib/i18n/client";
 import { ESTIMATE_LABELS } from "@/lib/i18n/labels";
 import { motionOff } from "@/lib/prefs/prefs";
+import "@/components/tasks/drawer/lucian-title.css";
 import { loadTaskDetail } from "@/lib/tasks/actions";
 import type { Subtask, TaskDetail, TaskItem, TaskStatus } from "@/lib/tasks/types";
 
@@ -193,6 +195,8 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
 
   // 저장할 제목 초안. blur뿐 아니라 드로어를 닫거나 다른 작업으로 바꿀 때(정리 함수)도 저장하므로 ref로도 둔다
   const titleDraft = useRef<TitleDraft | null>(null);
+  // 저장 때 빛이 훑는 틀(#033)
+  const fxRef = useRef<HTMLSpanElement>(null);
   const { update } = actions;
   // 초안을 비우고 바뀐 제목만 저장한다. 빈 제목은 저장하지 않는다
   const flushTitle = useCallback(
@@ -206,7 +210,16 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
         if (notifyEmpty) toast.error(t("tasks.detail.titleRequired"));
         return;
       }
-      if (text !== d.original) void update(d.id, { title: text });
+      if (text !== d.original) {
+        void update(d.id, { title: text });
+        // 저장 때 초록 빛이 훑는다. 정리 함수(notifyEmpty=false)에서는 화면이 곧 바뀌므로 돌리지 않는다
+        const fx = fxRef.current;
+        if (notifyEmpty && fx && !motionOff()) {
+          fx.classList.remove("flash");
+          void fx.offsetWidth;
+          fx.classList.add("flash");
+        }
+      }
     },
     [update, t],
   );
@@ -371,27 +384,43 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
           <label htmlFor={`title-${task.id}`} className="sr-only">
             {t("tasks.detail.title")}
           </label>
-          <textarea
-            id={`title-${task.id}`}
-            ref={titleEl}
-            value={title}
-            rows={1}
-            maxLength={500}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\n/g, "");
-              const next = { id: task.id, original: draft?.id === task.id ? draft.original : task.title, value };
-              titleDraft.current = next;
-              setDraft(next);
-            }}
-            onBlur={commitTitle}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
-              // 제목은 한 줄이다. Shift+Enter 줄바꿈도 막는다
-              e.preventDefault();
-              e.currentTarget.blur();
-            }}
-            className="field-sizing-content w-full resize-none rounded-(--r-sm) bg-transparent px-1 py-0.5 text-(length:--fs-xl) leading-snug font-semibold text-(--text) outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
-          />
+          <div className="ux u033">
+            <textarea
+              id={`title-${task.id}`}
+              ref={titleEl}
+              value={title}
+              rows={1}
+              maxLength={500}
+              // 고친 내용이 있을 때만 Esc를 제목이 먼저 받는다(드로어 Esc 처리가 거른다). 고친 게 없으면 기존대로 드로어가 닫힌다
+              data-esc-local={draft?.id === task.id ? "" : undefined}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\n/g, "");
+                const next = { id: task.id, original: draft?.id === task.id ? draft.original : task.title, value };
+                titleDraft.current = next;
+                setDraft(next);
+              }}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Escape" && draft?.id === task.id) {
+                  // 원래 제목으로 되돌린다. 초안을 저장 없이 비우고 포커스를 뺀다(blur에서 저장할 초안이 없다)
+                  e.preventDefault();
+                  e.stopPropagation();
+                  titleDraft.current = null;
+                  setDraft(null);
+                  e.currentTarget.blur();
+                  return;
+                }
+                if (e.key !== "Enter") return;
+                // 제목은 한 줄이다. Shift+Enter 줄바꿈도 막는다
+                e.preventDefault();
+                e.currentTarget.blur();
+              }}
+              className="field-sizing-content w-full resize-none rounded-(--r-sm) bg-transparent px-1 py-0.5 text-(length:--fs-xl) leading-snug font-semibold text-(--text) outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+            />
+            <span ref={fxRef} className="u033-fx" aria-hidden />
+            <span className="u033-line" aria-hidden />
+          </div>
 
           <dl className="flex flex-col gap-0.5">
             <div className={row}>

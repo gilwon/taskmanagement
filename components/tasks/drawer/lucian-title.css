@@ -1,0 +1,13 @@
+/* Lucian UX/UI Prompt #033 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#033 */
+/* 제목 바로 고치기(#033). 원본의 카드·경로·연필·확인·취소 버튼·수정 시간은 빼고, 포커스 때 왼쪽부터 그어지는 밑줄(.u033-line)과 저장 때 훑는 초록 빛(.flash)만 쓴다. 크기·모션 값은 원본 그대로다 */
+
+@layer components {
+  .u033{position:relative}
+  /* 밑줄. 원본은 오른쪽 버튼 자리(88px)를 비웠지만 여기는 버튼이 없어 끝까지 긋는다. 원본의 .is-edit 대신 포커스 상태를 따른다 */
+  .u033-line{position:absolute;left:0;right:0;bottom:0;height:2.5px;border-radius:2px;background:var(--ux-accent);transform:scaleX(0);transform-origin:0 50%;transition:transform .45s var(--ux-ease);pointer-events:none}
+  .u033:focus-within .u033-line{transform:none}
+  /* 빛이 입력칸 밖으로 새지 않도록 잘라 주는 틀. 원본은 .u033-view 자체가 overflow:hidden이라 이 틀이 따로 필요 없었다 */
+  .u033-fx{position:absolute;inset:0;border-radius:10px;overflow:hidden;pointer-events:none}
+  .u033-fx.flash::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(100deg,transparent 20%,color-mix(in srgb,var(--ux-mint) 40%,transparent) 50%,transparent 80%);animation:u033-sweep .8s var(--ux-ease) forwards}
+  @keyframes u033-sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+}
