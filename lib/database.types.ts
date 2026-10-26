@@ -1277,6 +1277,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"stock_import":
+{ Args: { "p_note": string,"p_rows": Json,"p_ws": string }; Returns: Json
+                           },
 "stock_issue":
 { Args: { "p_item": string,"p_location": string,"p_note"?: string,"p_qty": number }; Returns: {
               "balance_after": number,
