@@ -1,0 +1,75 @@
+/* Lucian UX/UI Prompt #023 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#023 */
+/* 알림 설정 목록. 꺼진 종류의 아이콘이 회색으로 가라앉는 모션(#023)과 모두 끄기 버튼. 원본 340px 카드 대신 설정 카드 폭을 따른다 */
+
+@layer components {
+  .u023 {
+    display: flex;
+    flex-direction: column;
+  }
+  .u023-item {
+    border-top: 1px solid var(--ux-line);
+  }
+  .u023-item:first-child {
+    border-top: 0;
+  }
+  .u023-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 4px;
+  }
+  .u023-ic {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: var(--ux-accent-ink);
+    background: var(--g);
+    transition: filter 0.5s var(--ux-ease), opacity 0.5s var(--ux-ease);
+  }
+  .u023-ic svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .u023-item.is-off .u023-ic {
+    filter: grayscale(1);
+    opacity: 0.45;
+  }
+  .u023-t {
+    flex: 1;
+    min-width: 0;
+  }
+  .u023-all {
+    margin-top: 8px;
+    height: 48px;
+    border: 0;
+    border-radius: 15px;
+    background: var(--ux-surface-2);
+    font-size: 14.5px;
+    font-weight: 680;
+    color: var(--ux-ink-2);
+    transition: background-color 0.3s var(--ux-ease), color 0.3s var(--ux-ease), transform 0.4s var(--ux-spring);
+  }
+  .u023-all:hover:not(:disabled) {
+    color: var(--ux-danger);
+    background: color-mix(in srgb, var(--ux-danger) 10%, var(--ux-surface-2));
+  }
+  .u023-all:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  .u023-all:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .u023-all:focus-visible {
+    outline: 2px solid var(--ux-accent);
+    outline-offset: 2px;
+  }
+}

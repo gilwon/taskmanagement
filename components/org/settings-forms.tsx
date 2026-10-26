@@ -1,8 +1,10 @@
 "use client";
 // 설정 화면의 입력 폼. 워크스페이스 일반·위험 구역, 화면 설정, 알림, 프로필, 시간대, 비밀번호, 로그인 세션
-import { startTransition, useActionState, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { AtSign, MessageSquare, Package, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { ConfirmDialog } from "@/components/org/confirm-dialog";
 import { SettingsCard, UnavailableBadge } from "@/components/org/settings-parts";
 import { announce } from "@/components/tasks/views/shared";
@@ -28,7 +30,9 @@ import {
 import type { NotifPrefs } from "@/lib/org/queries";
 import { NOTIF_KEYS } from "@/lib/org/rules";
 import { PREF_OPTIONS, type Prefs } from "@/lib/prefs/prefs";
+import { motionOff } from "@/lib/prefs/prefs";
 import { usePrefs } from "@/lib/prefs/provider";
+import "./lucian-settings.css";
 
 function FieldError({ id, message }: { id: string; message?: string | null }) {
   if (!message) return null;
@@ -220,24 +224,56 @@ export function AppearanceForm() {
 // update 알림은 아직 보내는 경로가 없어 켜고 끄는 컨트롤을 두지 않는다
 const LIVE_NOTIF_KEYS = NOTIF_KEYS.filter((k) => k !== "update");
 
+// Lucian UX/UI Prompt #023 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#023
+// 종류별 아이콘과 배경 그라디언트 색(프로젝트 토큰)
+const NOTIF_ICON = {
+  mention: { Icon: AtSign, from: "var(--accent)", to: "var(--blue)" },
+  assign: { Icon: UserCheck, from: "var(--blue)", to: "var(--teal)" },
+  comment: { Icon: MessageSquare, from: "var(--green)", to: "var(--teal)" },
+  stock: { Icon: Package, from: "var(--amber)", to: "var(--red)" },
+} as const;
+
 export function NotificationsForm({ workspaceId, initial }: { workspaceId: string; initial: NotifPrefs }) {
   const t = useT();
   const [prefs, setPrefs] = useState(initial);
   const [busy, setBusy] = useState(false);
+  // 모두 끄기가 항목마다 이어서 저장하므로 최신 값은 ref로 읽는다
+  const prefsRef = useRef(prefs);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const toggle = async (key: keyof NotifPrefs, value: boolean) => {
-    const prev = prefs;
-    const next = { ...prefs, [key]: value };
+    const prev = prefsRef.current;
+    const next = { ...prev, [key]: value };
+    prefsRef.current = next;
     setPrefs(next);
     setBusy(true);
     const r = await saveNotifPrefs(workspaceId, next);
-    setBusy(false);
+    if (mounted.current) setBusy(false);
     if (!r.ok) {
-      setPrefs(prev);
-      return void toast.error(r.error);
+      prefsRef.current = prev;
+      if (mounted.current) setPrefs(prev);
+      toast.error(r.error);
+      return false;
     }
     const type = t(`common.notificationType.${key}`);
     saved(value ? t("org.settings.notifications.turnedOn", { type }) : t("org.settings.notifications.turnedOff", { type }));
+    return true;
+  };
+
+  // 켜진 종류를 위에서부터 0.12초 간격으로 하나씩 끈다(#023). 저장은 항목마다 기존 호출을 쓰고, 실패하면 거기서 멈춘다
+  const turnOffAll = async () => {
+    for (const k of LIVE_NOTIF_KEYS) {
+      if (!mounted.current) return;
+      if (!prefsRef.current[k]) continue;
+      if (!(await toggle(k, false))) return;
+      if (!motionOff()) await new Promise((res) => setTimeout(res, 120));
+    }
   };
 
   return (
@@ -247,15 +283,33 @@ export function NotificationsForm({ workspaceId, initial }: { workspaceId: strin
         title={t("org.settings.notifications.appTitle")}
         description={t("org.settings.notifications.appDescription")}
       >
-        {LIVE_NOTIF_KEYS.map((k) => (
-          <div key={k} className="flex items-center justify-between gap-4">
-            <Label htmlFor={`notif-${k}`} className="grid gap-0.5 font-normal">
-              <span className="text-(length:--fs-base) text-(--text)">{t(`common.notificationType.${k}`)}</span>
-              <span className="text-(length:--fs-xs) text-(--text-3)">{t(`common.notifPrefDescription.${k}`)}</span>
-            </Label>
-            <Switch id={`notif-${k}`} checked={prefs[k]} disabled={busy} onCheckedChange={(v) => toggle(k, v)} />
-          </div>
-        ))}
+        <div className="ux u023">
+          {LIVE_NOTIF_KEYS.map((k) => {
+            const { Icon, from, to } = NOTIF_ICON[k as keyof typeof NOTIF_ICON];
+            return (
+              <div key={k} className={cn("u023-item", !prefs[k] && "is-off")}>
+                <div className="u023-head">
+                  <span className="u023-ic" style={{ "--g": `linear-gradient(140deg, ${from}, ${to})` } as React.CSSProperties} aria-hidden="true">
+                    <Icon />
+                  </span>
+                  <Label htmlFor={`notif-${k}`} className="u023-t grid gap-0.5 font-normal">
+                    <span className="text-(length:--fs-base) text-(--text)">{t(`common.notificationType.${k}`)}</span>
+                    <span className="text-(length:--fs-xs) text-(--text-3)">{t(`common.notifPrefDescription.${k}`)}</span>
+                  </Label>
+                  <Switch id={`notif-${k}`} checked={prefs[k]} disabled={busy} onCheckedChange={(v) => toggle(k, v)} />
+                </div>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            className="u023-all"
+            disabled={busy || LIVE_NOTIF_KEYS.every((k) => !prefs[k])}
+            onClick={turnOffAll}
+          >
+            {t("org.settings.notifications.turnOffAll")}
+          </button>
+        </div>
         <div className="flex items-center justify-between gap-4">
           <div className="grid gap-0.5">
             <span className="text-(length:--fs-base) text-(--text-2)">{t("common.notificationType.update")}</span>

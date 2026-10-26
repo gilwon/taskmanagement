@@ -87,6 +87,7 @@ export default {
         "Email and push delivery isn't connected, so these can't be turned on yet. Check Inbox and Notifications in the app.",
       email: "Email notifications",
       push: "Push notifications",
+      turnOffAll: "Turn all off",
     },
     profile: {
       name: "Name",

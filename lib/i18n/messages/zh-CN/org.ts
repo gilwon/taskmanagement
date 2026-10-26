@@ -86,6 +86,7 @@ export default {
       externalDescription: "邮件和推送尚未接入，暂时无法开启。请在应用内的收件箱和通知中查看。",
       email: "邮件通知",
       push: "推送通知",
+      turnOffAll: "全部关闭",
     },
     profile: {
       name: "姓名",
