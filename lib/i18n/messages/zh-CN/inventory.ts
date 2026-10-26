@@ -107,7 +107,7 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "数量",
     target: "盘点后数量",
-    note: "备注（可选）",
+    note: "备注（必填）",
     notePlaceholder: "例如：10月例行入库",
     previewHere: "处理后 本库位 {here} {unit} / 合计 {total} {unit}",
     previewTransfer: "处理后 调出 {from} {unit} / 调入 {to} {unit} / 合计 {total} {unit}",
@@ -116,6 +116,7 @@ export default {
     errTo: "请选择调入库位。",
     errExceeds: "不能超过调出库位的当前数量（{qty} {unit}）。",
     errUnchanged: "与当前数量相同，请输入其他值。",
+    errNote: "请输入备注。",
   },
   // 이동 종류
   kind: {
@@ -167,6 +168,7 @@ export default {
     locationNotEmpty: "仍有库存的位置无法归档。",
     archived: "已归档的项目无法修改数量。",
     invalidQty: "数量不正确。",
+    noteRequired: "必须填写备注。",
     notFound: "找不到该项目。",
     forbidden: "没有权限。",
   },

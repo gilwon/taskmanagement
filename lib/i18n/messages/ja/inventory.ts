@@ -107,7 +107,7 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "数量",
     target: "棚卸後の数量",
-    note: "メモ（任意）",
+    note: "メモ（必須）",
     notePlaceholder: "例：10月の定期入庫",
     previewHere: "処理後 この場所 {here} {unit} / 合計 {total} {unit}",
     previewTransfer: "処理後 移動元 {from} {unit} / 移動先 {to} {unit} / 合計 {total} {unit}",
@@ -116,6 +116,7 @@ export default {
     errTo: "移動先の場所を選択してください。",
     errExceeds: "移動元の現在の数量（{qty} {unit}）を超えることはできません。",
     errUnchanged: "現在の数量と同じです。別の値を入力してください。",
+    errNote: "メモを入力してください。",
   },
   // 이동 종류
   kind: {
@@ -167,6 +168,7 @@ export default {
     locationNotEmpty: "在庫が残っている場所はアーカイブできません。",
     archived: "アーカイブされた項目の数量は変更できません。",
     invalidQty: "数量が正しくありません。",
+    noteRequired: "メモの入力が必要です。",
     notFound: "項目が見つかりません。",
     forbidden: "権限がありません。",
   },

@@ -29,7 +29,7 @@ type Props = {
   onClose: () => void;
 };
 
-type FieldErrors = Partial<Record<"location" | "to" | "qty", string>>;
+type FieldErrors = Partial<Record<"location" | "to" | "qty" | "note", string>>;
 
 const TITLE = {
   in: "inventory.movement.titleIn",
@@ -135,12 +135,13 @@ function MovementForm({ kind, item, levels, locations, onClose }: Props) {
     if (!locationId) next.location = t("inventory.movement.errLocation");
     if (kind === "transfer" && !toId) next.to = t("inventory.movement.errTo");
     if (!parsed.ok) next.qty = t("inventory.errors.invalidQty");
+    if (!note.trim()) next.note = t("inventory.movement.errNote");
     setErrors(next);
     setFormError(null);
     if (Object.keys(next).length > 0 || !parsed.ok || liveError) return;
 
     const q = qtyText.trim();
-    const memo = note.trim() || null;
+    const memo = note.trim();
     const r = await run(() => {
       if (kind === "in") return receiveStock(item.id, locationId, q, memo);
       if (kind === "out") return issueStock(item.id, locationId, q, memo);
@@ -257,9 +258,15 @@ function MovementForm({ kind, item, levels, locations, onClose }: Props) {
           maxLength={500}
           placeholder={t("inventory.movement.notePlaceholder")}
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(e) => {
+            setNote(e.target.value);
+            setErrors((prev) => ({ ...prev, note: undefined }));
+          }}
           className="max-sm:h-10"
+          aria-required
+          {...describe("note", errors.note)}
         />
+        {errorText("note", errors.note)}
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" className="max-sm:h-10" onClick={onClose}>

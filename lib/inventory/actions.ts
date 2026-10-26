@@ -17,6 +17,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 class InputError extends Error {}
 // 수량 검증 실패. 일반 입력 오류와 문구가 달라 따로 둔다
 class QtyError extends Error {}
+// 메모 누락. 서버 검증이 최종이고 RPC도 같은 코드로 거부한다
+class NoteError extends Error {}
 
 function ok<T>(data: T): ActionResult<T> {
   return { ok: true, data };
@@ -58,6 +60,13 @@ function bool(value: unknown): boolean {
   return value;
 }
 
+// 변경 메모는 필수다. 앞뒤 공백을 뺀 값이 비면 RPC를 부르지 않는다
+function requiredNote(value: unknown): string {
+  const v = str(value).trim();
+  if (!v) throw new NoteError();
+  return v;
+}
+
 function qty(value: unknown, parse: typeof parseQty): number {
   if (typeof value !== "string" && typeof value !== "number") throw new QtyError();
   const r = parse(value);
@@ -89,6 +98,7 @@ async function run<R>(
     return await body({ ...s, t });
   } catch (e) {
     if (e instanceof QtyError) return err<R>(t("inventory.errors.invalidQty"));
+    if (e instanceof NoteError) return err<R>(t("inventory.errors.noteRequired"));
     if (e instanceof InputError) return err<R>(t("errors.rpc.invalidInput"));
     console.error(`[${what}]`, e);
     return err<R>(stockErrorMessage({ message: e instanceof Error ? e.message : String(e) }, t));
@@ -150,14 +160,14 @@ export async function receiveStock(
   itemId: string,
   locationId: string,
   quantity: string | number,
-  note?: string | null,
+  note: string,
 ): Promise<ActionResult<null>> {
   return run("재고 입고", async ({ supabase, t }) => {
     const { error } = await supabase.rpc("stock_receive", {
       p_item: uuid(itemId),
       p_location: uuid(locationId),
       p_qty: qty(quantity, parseQty),
-      p_note: optStr(note),
+      p_note: requiredNote(note),
     });
     if (error) return dbErr("재고 입고", error, t);
     return ok(null);
@@ -168,14 +178,14 @@ export async function issueStock(
   itemId: string,
   locationId: string,
   quantity: string | number,
-  note?: string | null,
+  note: string,
 ): Promise<ActionResult<null>> {
   return run("재고 출고", async ({ supabase, t }) => {
     const { error } = await supabase.rpc("stock_issue", {
       p_item: uuid(itemId),
       p_location: uuid(locationId),
       p_qty: qty(quantity, parseQty),
-      p_note: optStr(note),
+      p_note: requiredNote(note),
     });
     if (error) return dbErr("재고 출고", error, t);
     return ok(null);
@@ -187,7 +197,7 @@ export async function transferStock(
   fromLocationId: string,
   toLocationId: string,
   quantity: string | number,
-  note?: string | null,
+  note: string,
 ): Promise<ActionResult<null>> {
   return run("재고 이동", async ({ supabase, t }) => {
     const { error } = await supabase.rpc("stock_transfer", {
@@ -195,7 +205,7 @@ export async function transferStock(
       p_from: uuid(fromLocationId),
       p_to: uuid(toLocationId),
       p_qty: qty(quantity, parseQty),
-      p_note: optStr(note),
+      p_note: requiredNote(note),
     });
     if (error) return dbErr("재고 이동", error, t);
     return ok(null);
@@ -206,14 +216,14 @@ export async function adjustStock(
   itemId: string,
   locationId: string,
   target: string | number,
-  note?: string | null,
+  note: string,
 ): Promise<ActionResult<null>> {
   return run("재고 조정", async ({ supabase, t }) => {
     const { error } = await supabase.rpc("stock_adjust", {
       p_item: uuid(itemId),
       p_location: uuid(locationId),
       p_target: qty(target, parseTarget),
-      p_note: optStr(note),
+      p_note: requiredNote(note),
     });
     if (error) return dbErr("재고 조정", error, t);
     return ok(null);

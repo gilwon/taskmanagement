@@ -107,7 +107,7 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "Quantity",
     target: "Counted quantity",
-    note: "Note (optional)",
+    note: "Note (required)",
     notePlaceholder: "e.g. October regular delivery",
     previewHere: "After: this location {here} {unit} / total {total} {unit}",
     previewTransfer: "After: source {from} {unit} / destination {to} {unit} / total {total} {unit}",
@@ -116,6 +116,7 @@ export default {
     errTo: "Select a destination location.",
     errExceeds: "Cannot exceed the source location's current quantity ({qty} {unit}).",
     errUnchanged: "This equals the current quantity. Enter a different value.",
+    errNote: "Enter a note.",
   },
   // 이동 종류
   kind: {
@@ -167,6 +168,7 @@ export default {
     locationNotEmpty: "A location that still holds stock cannot be archived.",
     archived: "Archived items cannot have their quantity changed.",
     invalidQty: "The quantity is not valid.",
+    noteRequired: "A note is required.",
     notFound: "Item not found.",
     forbidden: "You do not have permission.",
   },

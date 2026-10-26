@@ -105,7 +105,7 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "수량",
     target: "실사 후 수량",
-    note: "메모 (선택)",
+    note: "메모 (필수)",
     notePlaceholder: "예: 10월 정기 입고",
     previewHere: "처리 후 이 위치 {here} {unit} / 합계 {total} {unit}",
     previewTransfer: "처리 후 출발 {from} {unit} / 도착 {to} {unit} / 합계 {total} {unit}",
@@ -114,6 +114,7 @@ export default {
     errTo: "도착 위치를 선택하세요.",
     errExceeds: "출발 위치의 현재 수량({qty} {unit})을 넘을 수 없습니다.",
     errUnchanged: "현재 수량과 같습니다. 다른 값을 입력하세요.",
+    errNote: "메모를 입력하세요.",
   },
   // 이동 종류
   kind: {
@@ -165,6 +166,7 @@ export default {
     locationNotEmpty: "수량이 남은 위치는 보관할 수 없습니다.",
     archived: "보관된 항목은 수량을 바꿀 수 없습니다.",
     invalidQty: "수량이 올바르지 않습니다.",
+    noteRequired: "메모를 입력해야 합니다.",
     notFound: "항목을 찾을 수 없습니다.",
     forbidden: "권한이 없습니다.",
   },

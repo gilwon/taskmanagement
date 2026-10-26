@@ -17,6 +17,7 @@ const STOCK_RPC_MESSAGES = {
   location_not_empty: "inventory.errors.locationNotEmpty",
   archived: "inventory.errors.archived",
   invalid_qty: "inventory.errors.invalidQty",
+  note_required: "inventory.errors.noteRequired",
   not_found: "inventory.errors.notFound",
   forbidden: "inventory.errors.forbidden",
 } as const satisfies Record<string, MessageKey>;
