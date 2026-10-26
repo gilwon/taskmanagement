@@ -2,8 +2,8 @@
 // 탑바. 메뉴·사이드바 펼치기 버튼, 브레드크럼, 검색 이동, 테마 전환, 알림 벨, 새로 만들기, 아바타 메뉴(META §1)
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTransition } from "react";
-import { Bell, ChevronDown, LogOut, Menu, Moon, PanelLeftOpen, Plus, Search, Settings, Sun, User } from "lucide-react";
+import { useState, useTransition } from "react";
+import { ChevronDown, LogOut, Menu, Moon, PanelLeftOpen, Plus, Settings, Sun, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MemberAvatar } from "@/components/shell/member-avatar";
+import { TopbarBell } from "@/components/shell/topbar-bell";
+import { TopbarSearch } from "@/components/shell/topbar-search";
 import { useCommand } from "@/components/command/command-provider";
 import { useNewProject } from "@/components/projects/new-project-launcher";
 import { useNewTask } from "@/components/tasks/new-task";
@@ -97,12 +99,13 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
   const [signingOut, startSignOut] = useTransition();
   const { openNewTask } = useNewTask();
   const { openNewProject } = useNewProject();
-  const { openPalette, openInvite, toggleTheme } = useCommand();
+  const { openInvite, toggleTheme } = useCommand();
+  const [searchOpen, setSearchOpen] = useState(false);
   const ws = data.workspace.slug;
   const crumbs = buildCrumbs(pathname, data, t);
 
   return (
-    <header className="flex h-(--topbar-h) shrink-0 items-center gap-2 border-b border-(--border) bg-(--bg) px-3 max-[901px]:px-(--gutter)">
+    <header className={`u027-host ${searchOpen ? "is-open" : ""} flex h-(--topbar-h) shrink-0 items-center gap-2 border-b border-(--border) bg-(--bg) px-3 max-[901px]:px-(--gutter)`}>
       <Button
         variant="ghost"
         size="icon-sm"
@@ -111,7 +114,7 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
         aria-expanded={menuOpen}
         // 시트는 닫히면 DOM에서 빠지므로 열렸을 때만 가리킨다
         aria-controls={menuOpen ? "app-menu" : undefined}
-        className={`only-narrow ${iconBtn}`}
+        className={`u027-aside only-narrow ${iconBtn}`}
         onClick={onOpenMenu}
       >
         <Menu size={18} strokeWidth={1.8} aria-hidden />
@@ -120,13 +123,13 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
         variant="ghost"
         size="icon-sm"
         aria-label={t("shell.expandSidebar")}
-        className={`only-collapsed ${iconBtn}`}
+        className={`u027-aside only-collapsed ${iconBtn}`}
         onClick={() => setPref("sidebarCollapsed", false)}
       >
         <PanelLeftOpen size={16} strokeWidth={1.8} aria-hidden />
       </Button>
 
-      <nav aria-label={t("shell.breadcrumb")} className="min-w-0 flex-1">
+      <nav aria-label={t("shell.breadcrumb")} className="u027-aside min-w-0 flex-1">
         <ol className="flex min-w-0 items-center gap-1 text-(length:--fs-base)">
           {crumbs.map((c, i) => (
             <li
@@ -156,18 +159,7 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
         </ol>
       </nav>
 
-      <button
-        type="button"
-        aria-label={t("shell.searchOrJump")}
-        aria-keyshortcuts="Meta+K Control+K"
-        aria-haspopup="dialog"
-        onClick={() => openPalette()}
-        className="flex h-(--h-md) w-64 shrink-0 items-center gap-2 rounded-(--r-sm) border border-(--border) bg-(--surface) px-2.5 text-(length:--fs-sm) text-(--text-3) outline-none hover:border-(--border-strong) hover:text-(--text-2) focus-visible:ring-2 focus-visible:ring-(--accent) max-[1100px]:w-(--h-md) max-[1100px]:justify-center max-[1100px]:px-0"
-      >
-        <Search size={14} strokeWidth={1.8} aria-hidden className="shrink-0" />
-        <span className="truncate max-[1100px]:hidden">{t("shell.searchOrJumpPlaceholder")}</span>
-        <kbd className="ml-auto font-mono text-(length:--fs-2xs) text-(--text-3) max-[1100px]:hidden">⌘K</kbd>
-      </button>
+      <TopbarSearch workspace={data.workspace} open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* 밝게·어둡게를 한 번에 바꾼다. ⌘⇧L과 같은 동작이고 아이콘은 dark 변형으로 골라 서버 렌더와 어긋나지 않는다 */}
       <button
@@ -176,26 +168,17 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
         aria-keyshortcuts="Meta+Shift+L Control+Shift+L"
         title={t("shell.toggleThemeTitle")}
         onClick={toggleTheme}
-        className="inline-flex size-(--h-md) shrink-0 items-center justify-center rounded-(--r-sm) text-(--text-2) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
+        className="u027-aside inline-flex size-(--h-md) shrink-0 items-center justify-center rounded-(--r-sm) text-(--text-2) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
       >
         <Moon size={16} strokeWidth={1.8} aria-hidden className="dark:hidden" />
         <Sun size={16} strokeWidth={1.8} aria-hidden className="hidden dark:block" />
       </button>
 
-      <Link
-        href={`/${ws}/notifications`}
-        aria-label={data.counts.unread ? t("shell.notificationsUnread", { count: data.counts.unread }) : t("common.nav.notifications")}
-        className="relative inline-flex size-(--h-md) shrink-0 items-center justify-center rounded-(--r-sm) text-(--text-2) outline-none hover:bg-(--surface-2) hover:text-(--text) focus-visible:ring-2 focus-visible:ring-(--accent)"
-      >
-        <Bell size={16} strokeWidth={1.8} aria-hidden />
-        {!!data.counts.unread && (
-          <span aria-hidden className="absolute top-1.5 right-1.5 size-2 rounded-full bg-(--red) ring-2 ring-(--bg)" />
-        )}
-      </Link>
+      <TopbarBell workspace={data.workspace} unread={data.counts.unread} className="u027-aside" />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="sm" className="h-(--h-md) shrink-0 gap-1 px-2 text-(length:--fs-sm)" aria-label={t("shell.create")}>
+          <Button size="sm" className="u027-aside h-(--h-md) shrink-0 gap-1 px-2 text-(length:--fs-sm)" aria-label={t("shell.create")}>
             <Plus size={14} strokeWidth={1.8} aria-hidden />
             <span className="hide-m">{t("shell.create")}</span>
             <ChevronDown size={12} strokeWidth={1.8} aria-hidden className="hide-m" />
@@ -215,7 +198,7 @@ export function Topbar({ data, menuOpen, onOpenMenu }: { data: ShellData; menuOp
           <button
             type="button"
             aria-label={t("shell.accountMenu")}
-            className="inline-flex size-(--h-md) shrink-0 items-center justify-center rounded-full outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-(--accent)"
+            className="u027-aside inline-flex size-(--h-md) shrink-0 items-center justify-center rounded-full outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-(--accent)"
           >
             <MemberAvatar name={data.me.name} color={data.me.color} size={26} />
           </button>

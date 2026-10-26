@@ -1,0 +1,46 @@
+/* Lucian UX/UI Prompt #027 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#027 */
+/* 펼쳐지는 상단 검색(#027). 원본 350x360 고정 크기 대신 닫힌 크기는 상단 바의 검색 칸 크기(256px, 1100px 이하는 --h-md)에 맞추고,
+   열리면 상단 바 안쪽 폭 전체로 늘어난다(폭과 오른쪽 오프셋은 열 때 JS가 --u027-w, --u027-r로 잰다). 원본의 로고·메뉴 자리는 상단 바의 나머지 요소(.u027-aside)가 맡아 비켜난다.
+   추천 목록(가짜 결과)은 옮기지 않았고 최근 검색 칩만 쓴다 */
+
+@layer components {
+  .u027{position:relative;flex:none;width:256px;height:var(--h-md)}
+  .u027-aside{transition:opacity .25s var(--ux-ease),transform .5s var(--ux-ease),visibility 0s}
+  .u027-host.is-open .u027-aside{opacity:0;transform:translateX(-30px);pointer-events:none;visibility:hidden;transition:opacity .25s var(--ux-ease),transform .5s var(--ux-ease),visibility 0s .5s}
+  .u027-field{position:absolute;right:0;top:0;z-index:2;height:100%;width:100%;border-radius:14px;background:var(--ux-surface-2);box-shadow:inset 0 0 0 1px var(--ux-line);overflow:hidden;transition:width .6s var(--ux-spring),right .6s var(--ux-spring),background-color .3s,box-shadow .3s}
+  .u027:not(.is-open) .u027-field:hover{box-shadow:inset 0 0 0 1px var(--ux-line-2)}
+  .u027.is-open .u027-field{width:var(--u027-w,100%);right:var(--u027-r,0);background:var(--ux-surface);box-shadow:inset 0 0 0 2px var(--ux-accent)}
+  .u027-go{position:absolute;left:0;top:0;z-index:1;display:flex;align-items:center;gap:8px;width:100%;height:100%;border:0;padding:0 0 0 9px;border-radius:14px;background:none;color:var(--ux-ink);text-align:left}
+  .u027.is-open .u027-go{width:var(--h-md);padding:0;justify-content:center}
+  .u027-go:focus-visible{outline:2px solid var(--ux-accent);outline-offset:2px}
+  .u027-go svg,.u027-x svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  /* 닫혀 있을 때만 보이는 안내 문구. 열리면 입력창이 같은 자리에 나타난다 */
+  .u027-hint{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--ux-ink-3);transition:opacity .2s var(--ux-ease)}
+  .u027.is-open .u027-hint{opacity:0}
+  .u027-form{display:contents}
+  .u027-in{position:absolute;left:var(--h-md);right:var(--h-md);top:0;height:100%;border:0;outline:0;background:none;padding:0 4px;font-size:14px;color:var(--ux-ink);opacity:0;pointer-events:none;transition:opacity .3s var(--ux-ease) .15s}
+  .u027-in::placeholder{color:var(--ux-ink-3)}
+  .u027.is-open .u027-in{opacity:1;pointer-events:auto}
+  .u027-x{position:absolute;right:3px;top:3px;width:calc(var(--h-md) - 6px);height:calc(var(--h-md) - 6px);border:0;padding:0;border-radius:10px;background:var(--ux-surface-2);color:var(--ux-ink-2);display:grid;place-items:center;opacity:0;pointer-events:none;transform:scale(.6) rotate(-90deg);transition:opacity .25s,transform .5s var(--ux-spring)}
+  .u027.is-open .u027-x{opacity:1;pointer-events:auto;transform:none}
+  .u027-x:focus-visible{outline:2px solid var(--ux-accent);outline-offset:1px}
+  .u027-pop{position:absolute;right:var(--u027-r,0);top:calc(100% + 14px);z-index:50;width:min(var(--u027-w,100%),560px);padding:14px 10px 10px;border-radius:20px;background:var(--ux-surface);box-shadow:0 0 0 1px var(--ux-line),0 30px 60px -30px var(--ux-shadow-strong);
+    transform-origin:90% 0;opacity:0;transform:translateY(-10px) scale(.96);pointer-events:none;visibility:hidden;transition:opacity .25s var(--ux-ease),transform .45s var(--ux-spring),visibility 0s .45s}
+  .u027.is-open .u027-pop{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .3s var(--ux-ease) .1s,transform .55s var(--ux-spring) .1s,visibility 0s}
+  .u027-sec{margin:0 8px 8px;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ux-ink-3)}
+  .u027-recent{display:flex;gap:6px;flex-wrap:wrap;margin:0 6px 4px;padding:0;list-style:none}
+  .u027-recent button{max-width:100%;height:32px;padding:0 12px;border:0;border-radius:999px;background:var(--ux-surface-2);font-size:13px;font-weight:620;color:var(--ux-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .u027-recent button:hover{color:var(--ux-ink)}
+  .u027-recent button:focus-visible{outline:2px solid var(--ux-accent);outline-offset:2px}
+
+  @media (max-width:1100px){
+    .u027{width:var(--h-md)}
+    .u027:not(.is-open) .u027-hint{display:none}
+    .u027:not(.is-open) .u027-go{padding:0;justify-content:center}
+  }
+
+  /* 앱 모션이 full이어도 OS 동작 줄이기면 멈춘다(motionOff와 같은 판정) */
+  @media (prefers-reduced-motion: reduce){
+    .u027-aside,.u027-host.is-open .u027-aside,.u027-field,.u027-hint,.u027-in,.u027-x,.u027-pop,.u027.is-open .u027-pop{transition:none}
+  }
+}

@@ -1,0 +1,44 @@
+/* Lucian UX/UI Prompt #074 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#074 */
+/* 알림 벨과 드롭다운(#074). 원본 340x500 고정 크기 대신 벨은 상단 바 높이(--h-md)에 맞추고 목록은 벨 아래에 340px 폭으로 펼친다. 520px 이하에서는 화면 양옆 여백에 맞춘다.
+   모션 값은 원본 그대로이고, 새 알림 도착 모션(흔들림·배지 튀어오름·밀고 들어오는 줄)과 전체·멘션 탭은 실시간 구독이 없어 옮기지 않았다 */
+
+@layer components {
+  .u074{position:relative;flex:none}
+  .u074-bell{position:relative;width:var(--h-md);height:var(--h-md);border:0;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--ux-surface);color:var(--ux-ink);box-shadow:0 0 0 1px var(--ux-line),0 10px 20px -14px var(--ux-shadow-strong);transition:transform .3s var(--ux-spring)}
+  .u074-bell:active{transform:scale(.9)}
+  .u074-bell:focus-visible{outline:2px solid var(--ux-accent);outline-offset:3px}
+  .u074-bell svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transform-origin:50% 15%}
+  .u074-badge{position:absolute;right:-6px;top:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--ux-danger);color:#fff;font-size:10.5px;font-weight:850;line-height:18px;text-align:center;box-shadow:0 0 0 2.5px var(--ux-page);font-variant-numeric:tabular-nums;transition:transform .4s var(--ux-spring)}
+  .u074-badge.zero{transform:scale(0)}
+  .u074-pan{position:absolute;right:-8px;top:calc(100% + 12px);z-index:50;width:340px;max-height:min(438px,calc(100dvh - var(--topbar-h) - 24px));display:flex;flex-direction:column;border-radius:24px;background:var(--ux-surface);box-shadow:0 0 0 1px var(--ux-line),0 30px 50px -30px var(--ux-shadow-strong);transform-origin:calc(100% - 23px) -10px;transition:transform .45s var(--ux-spring),opacity .25s}
+  .u074-pan::before{content:"";position:absolute;right:16px;top:-6px;width:14px;height:14px;border-radius:3px;background:var(--ux-surface);transform:rotate(45deg);box-shadow:-1px -1px 0 0 var(--ux-line)}
+  .u074.is-closed .u074-pan{transform:scale(.4);opacity:0;pointer-events:none;transition:transform .3s var(--ux-ease),opacity .2s}
+  .u074-ph{display:flex;align-items:center;gap:6px;padding:14px 14px 10px}
+  /* 원본의 선택된 탭(.u074-tab[aria-selected="true"]) 모양을 제목 알약으로 쓴다. 탭이 하나뿐이라 역할은 붙이지 않는다 */
+  .u074-ttl{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--ux-ink);color:var(--ux-page);font-size:13px;font-weight:750}
+  .u074-all{margin-left:auto;border:0;padding:4px 6px;background:none;font-size:12.5px;font-weight:750;color:var(--ux-accent)}
+  .u074-all:focus-visible,.u074-more:focus-visible{outline:2px solid var(--ux-accent);outline-offset:2px}
+  .u074-all:disabled{color:var(--ux-ink-3);cursor:default}
+  .u074-list{position:relative;flex:1;min-height:0;margin:0;padding:0 8px 10px;list-style:none;overflow-y:auto}
+  .u074-row{position:relative;display:flex;gap:12px;width:100%;padding:11px 26px 11px 10px;border:0;border-radius:14px;background:none;text-align:left;transition:background-color .2s}
+  .u074-row:hover{background:var(--ux-surface-2)}
+  .u074-row:focus-visible{outline:2px solid var(--ux-accent);outline-offset:-2px}
+  .u074-dot{position:absolute;right:10px;top:50%;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;background:var(--ux-accent);transition:transform .35s var(--ux-spring),opacity .25s}
+  .u074-row.read .u074-dot{transform:scale(0);opacity:0}
+  /* 원본에 없는 상태 문구(불러오는 중·비어 있음). 말줄임 없이 가운데에 둔다 */
+  .u074-msg{padding:30px 14px;text-align:center;font-size:13px;color:var(--ux-ink-3)}
+  /* 원본에 없는 '모두 보기' 줄. 알림 화면으로 가는 링크다 */
+  .u074-foot{border-top:1px solid var(--ux-line);padding:6px}
+  .u074-more{display:block;padding:8px;border-radius:14px;text-align:center;font-size:12.5px;font-weight:750;color:var(--ux-accent);text-decoration:none}
+  .u074-more:hover{background:var(--ux-surface-2)}
+
+  @media (max-width:520px){
+    .u074-pan{position:fixed;left:var(--gutter);right:var(--gutter);top:calc(var(--topbar-h) + 8px);width:auto;transform-origin:calc(100% - 40px) -10px}
+    .u074-pan::before{display:none}
+  }
+
+  /* 앱 모션이 full이어도 OS 동작 줄이기면 멈춘다(motionOff와 같은 판정) */
+  @media (prefers-reduced-motion: reduce){
+    .u074-bell,.u074-badge,.u074-pan,.u074.is-closed .u074-pan,.u074-row,.u074-dot{transition:none}
+  }
+}

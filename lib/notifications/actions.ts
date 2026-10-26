@@ -3,6 +3,7 @@
 // 성공하면 refresh로 클라이언트 라우터를 새로 그려 탑바·사이드바의 안 읽은 개수를 맞춘다
 import { refresh } from "next/cache";
 import { getT } from "@/lib/i18n/server";
+import { getNotifications, type NotificationItem } from "@/lib/notifications/queries";
 import { createClient } from "@/lib/supabase/server";
 import { taskErrorMessage } from "@/lib/tasks/errors";
 import type { ActionResult } from "@/lib/tasks/types";
@@ -63,4 +64,19 @@ export async function markAllNotificationsRead(workspaceId: string): Promise<Act
   }
   refresh();
   return { ok: true, data: data.length };
+}
+
+// 탑바 벨 드롭다운이 열 때 부르는 최근 알림. getNotifications를 감싸 앞쪽 몇 건만 돌려준다
+const BELL_LIMIT = 10;
+
+export async function getRecentNotifications(workspaceId: string): Promise<ActionResult<NotificationItem[]>> {
+  const t = await getT();
+  if (typeof workspaceId !== "string" || !UUID_RE.test(workspaceId)) return { ok: false, error: t("errors.rpc.invalidInput") };
+  const s = await session();
+  if (!s) return { ok: false, error: t("errors.msg.sessionExpired") };
+  try {
+    return { ok: true, data: (await getNotifications(workspaceId, s.sub)).slice(0, BELL_LIMIT) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
