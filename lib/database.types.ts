@@ -232,14 +232,14 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "actor_id": string | null,"created_at": string,"id": string,"project_id": string | null,"read_at": string | null,"snippet": string | null,"stock_item_id": string | null,"task_id": string | null,"text": string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
+                    "actor_id": string | null,"created_at": string,"dispatch_attempts": number,"emailed_at": string | null,"id": string,"project_id": string | null,"pushed_at": string | null,"read_at": string | null,"snippet": string | null,"stock_item_id": string | null,"task_id": string | null,"text": string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "actor_id"?: string | null,"created_at"?: string,"id"?: string,"project_id"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"stock_item_id"?: string | null,"task_id"?: string | null,"text"?: string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
+                    "actor_id"?: string | null,"created_at"?: string,"dispatch_attempts"?: number,"emailed_at"?: string | null,"id"?: string,"project_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"stock_item_id"?: string | null,"task_id"?: string | null,"text"?: string,"type": Database["public"]['Enums']["notification_type"],"user_id": string,"workspace_id": string
                   }
                   Update: {
-                    "actor_id"?: string | null,"created_at"?: string,"id"?: string,"project_id"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"stock_item_id"?: string | null,"task_id"?: string | null,"text"?: string,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string,"workspace_id"?: string
+                    "actor_id"?: string | null,"created_at"?: string,"dispatch_attempts"?: number,"emailed_at"?: string | null,"id"?: string,"project_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"snippet"?: string | null,"stock_item_id"?: string | null,"task_id"?: string | null,"text"?: string,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -355,6 +355,26 @@ isOneToOne: false
       columns: ["workspace_id"]
 isOneToOne: false
       referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"push_subscriptions": {
+                  Row: {
+                    "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auth": string,"created_at"?: string,"endpoint": string,"id"?: string,"p256dh": string,"user_id": string
+                  }
+                  Update: {
+                    "auth"?: string,"created_at"?: string,"endpoint"?: string,"id"?: string,"p256dh"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
                   ]
