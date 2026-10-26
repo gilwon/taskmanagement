@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { getSupabaseEnv } from "@/lib/env";
+import { isMfaExemptPath, mfaStepPath, needsMfaStep } from "@/lib/auth/mfa";
 import { isGuestOnlyPath, isPublicPath, safeNext } from "@/lib/safe-next";
 
 export async function updateSession(request: NextRequest) {
@@ -57,6 +58,21 @@ export async function updateSession(request: NextRequest) {
     homeUrl.pathname = "/";
     homeUrl.search = "";
     return redirectTo(homeUrl);
+  }
+
+  // 비밀번호로만 들어온 세션(aal1)이 검증된 2단계 인증 요소를 가졌으면 코드 확인 화면으로 보낸다. 마지막 방어선이다.
+  // 클레임에는 요소 정보가 없고 쿠키의 user는 믿을 수 없어 getUser로 서버에 확인한다. aal1이고 익명이 아닐 때만 호출한다.
+  // 확인 화면·로그아웃은 aal1에서도 열려야 한다. 조회가 실패하면 막지 않는다
+  if (claims && claims.aal === "aal1" && claims.is_anonymous !== true && !isPublicPath(pathname) && !isMfaExemptPath(pathname)) {
+    const { data: userData } = await supabase.auth.getUser();
+    const verified = userData.user?.factors?.some((factor) => factor.status === "verified");
+    if (needsMfaStep(claims.aal, verified ? "aal2" : "aal1")) {
+      const mfaUrl = request.nextUrl.clone();
+      const target = mfaStepPath(pathname + search);
+      mfaUrl.pathname = "/login/mfa";
+      mfaUrl.search = target.slice(target.indexOf("?"));
+      return redirectTo(mfaUrl);
+    }
   }
 
   return supabaseResponse;

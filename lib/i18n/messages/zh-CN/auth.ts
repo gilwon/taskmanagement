@@ -69,6 +69,18 @@ export default {
     description: "现在可以使用新密码继续使用。",
     go: "前往工作区",
   },
+  mfa: {
+    title: "两步验证",
+    description: "请输入验证器应用中显示的 6 位验证码。",
+    code: "验证码",
+    submit: "验证",
+    submitting: "验证中…",
+    signOut: "使用其他账号登录",
+    codeInvalid: "请输入 6 位数字。",
+    codeWrong: "验证码错误或已过期。请输入验证器应用中的最新验证码。",
+    noFactor: "未找到两步验证信息。请重新登录。",
+    rateLimited: "尝试次数过多，请稍后再试。",
+  },
   verify: {
     metaTitle: "验证邮箱",
     title: "请查收邮件",

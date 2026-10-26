@@ -68,6 +68,18 @@ export default {
     description: "새 비밀번호로 계속 이용할 수 있습니다.",
     go: "작업 공간으로 이동",
   },
+  mfa: {
+    title: "2단계 인증",
+    description: "인증 앱에 표시된 6자리 코드를 입력해 주세요.",
+    code: "인증 코드",
+    submit: "확인",
+    submitting: "확인 중…",
+    signOut: "다른 계정으로 로그인",
+    codeInvalid: "6자리 숫자를 입력해 주세요.",
+    codeWrong: "코드가 맞지 않거나 만료되었습니다. 인증 앱의 최신 코드를 입력해 주세요.",
+    noFactor: "2단계 인증 정보를 찾지 못했습니다. 다시 로그인해 주세요.",
+    rateLimited: "시도가 너무 많습니다. 잠시 뒤에 다시 시도해 주세요.",
+  },
   verify: {
     metaTitle: "메일 확인",
     title: "메일함을 확인해 주세요",

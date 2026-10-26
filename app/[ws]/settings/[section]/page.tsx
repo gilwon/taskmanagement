@@ -15,7 +15,8 @@ import {
 import { LanguageForm } from "@/components/org/language-form";
 import { PreferencesForm } from "@/components/org/preferences-form";
 import { RolePermissionsTable } from "@/components/org/role-permissions";
-import { InfoRow, SettingsCard, SettingsTitle, UnavailableRow } from "@/components/org/settings-parts";
+import { InfoRow, SettingsCard, SettingsTitle } from "@/components/org/settings-parts";
+import { TwoFactor } from "@/components/org/two-factor";
 import { ShortcutSettings } from "@/components/shortcuts/shortcut-settings";
 import { Button } from "@/components/ui/button";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
@@ -193,9 +194,7 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title={title}>
-            <UnavailableRow label={title} description={t("org.settings.twoFactor.note")} />
-          </SettingsCard>
+          <TwoFactor title={title} />
         </>
       );
   }

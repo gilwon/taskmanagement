@@ -318,8 +318,8 @@ max_enrolled_factors = 10
 
 # 앱 인증기(TOTP)를 통한 MFA를 설정한다.
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # 휴대폰 메시지를 통한 MFA를 설정한다.
 [auth.mfa.phone]

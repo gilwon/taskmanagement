@@ -70,6 +70,18 @@ export default {
     description: "You can keep using the app with your new password.",
     go: "Go to workspace",
   },
+  mfa: {
+    title: "Two-factor authentication",
+    description: "Enter the 6-digit code shown in your authenticator app.",
+    code: "Authentication code",
+    submit: "Verify",
+    submitting: "Verifying…",
+    signOut: "Log in with another account",
+    codeInvalid: "Enter 6 digits.",
+    codeWrong: "The code is wrong or expired. Enter the latest code from your authenticator app.",
+    noFactor: "Couldn't find your two-factor details. Please log in again.",
+    rateLimited: "Too many attempts. Please try again in a moment.",
+  },
   verify: {
     metaTitle: "Confirm email",
     title: "Check your inbox",

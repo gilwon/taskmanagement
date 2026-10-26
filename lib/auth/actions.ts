@@ -2,6 +2,7 @@
 // 인증·온보딩 Server Action. 입력을 검증한 뒤 서버 Supabase 클라이언트로 호출하고 현재 로캘의 오류를 돌려준다
 import { redirect } from "next/navigation";
 import { authErrorMessage, rpcErrorMessage } from "@/lib/auth/errors";
+import { mfaStepPath, needsMfaStep, normalizeTotpCode } from "@/lib/auth/mfa";
 import {
   EMAIL_RE,
   MIN_PASSWORD_LENGTH,
@@ -67,6 +68,27 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: authErrorMessage(error.code, t) };
   await syncLocaleCookie(supabase, data.user.id);
+  // 2단계 인증을 등록한 사용자는 코드를 확인한 뒤에 들여보낸다
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (needsMfaStep(aal?.currentLevel, aal?.nextLevel)) redirect(mfaStepPath(text(formData, "next")));
+  redirect(safeNext(text(formData, "next")));
+}
+
+// 로그인 뒤 2단계 인증 코드 확인. 검증된 TOTP 요소로 challenge와 verify를 거쳐 세션을 aal2로 올린다
+export async function verifyMfa(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getT();
+  const code = normalizeTotpCode(raw(formData, "code"));
+  if (!code) return fail("code", t("auth.mfa.codeInvalid"));
+
+  const supabase = await createClient();
+  const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
+  const factor = factors?.totp[0];
+  if (listError || !factor) return fail(undefined, t("auth.mfa.noFactor"));
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+  if (error) {
+    if (error.status === 429) return fail(undefined, t("auth.mfa.rateLimited"));
+    return fail("code", t("auth.mfa.codeWrong"));
+  }
   redirect(safeNext(text(formData, "next")));
 }
 
