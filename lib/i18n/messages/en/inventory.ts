@@ -148,6 +148,18 @@ export default {
       noMatchHint: "Try a different type or date range.",
       invalidRange: "The start date is after the end date.",
     },
+    // 기간 선택 달력
+    range: {
+      label: "Date range",
+      placeholder: "Select a range",
+      pick: "Select date",
+      pickStart: "Pick a start date",
+      pickEnd: "Pick an end date or apply",
+      days: "{count} days",
+      apply: "Apply",
+      prev: "Previous month",
+      next: "Next month",
+    },
   },
   toast: {
     itemAdded: "Item added.",

@@ -148,6 +148,18 @@ export default {
       noMatchHint: "请更换类型或日期范围。",
       invalidRange: "开始日期晚于结束日期。",
     },
+    // 기간 선택 달력
+    range: {
+      label: "日期范围",
+      placeholder: "选择日期范围",
+      pick: "选择日期",
+      pickStart: "请选择开始日期",
+      pickEnd: "请选择结束日期或点击应用",
+      days: "{count} 天",
+      apply: "应用",
+      prev: "上个月",
+      next: "下个月",
+    },
   },
   toast: {
     itemAdded: "已添加物品。",

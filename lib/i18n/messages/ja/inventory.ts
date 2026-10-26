@@ -148,6 +148,18 @@ export default {
       noMatchHint: "種別や期間を変えてみてください。",
       invalidRange: "開始日が終了日より後になっています。",
     },
+    // 기간 선택 달력
+    range: {
+      label: "期間",
+      placeholder: "期間を選択",
+      pick: "日付を選択",
+      pickStart: "開始日を選んでください",
+      pickEnd: "終了日を選ぶか適用を押してください",
+      days: "{count}日間",
+      apply: "適用",
+      prev: "前の月",
+      next: "次の月",
+    },
   },
   toast: {
     itemAdded: "品目を追加しました。",

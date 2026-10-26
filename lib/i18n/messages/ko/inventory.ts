@@ -146,6 +146,18 @@ export default {
       noMatchHint: "종류나 기간을 바꿔 보세요.",
       invalidRange: "시작일이 종료일보다 늦습니다.",
     },
+    // 기간 선택 달력
+    range: {
+      label: "기간",
+      placeholder: "기간 선택",
+      pick: "날짜 선택",
+      pickStart: "시작일을 골라 주세요",
+      pickEnd: "종료일을 고르거나 적용을 누르세요",
+      days: "{count}일",
+      apply: "적용",
+      prev: "이전 달",
+      next: "다음 달",
+    },
   },
   toast: {
     itemAdded: "품목을 추가했습니다.",
