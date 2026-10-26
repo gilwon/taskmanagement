@@ -7,7 +7,7 @@ project_id = "taskmanagement"
 [api]
 enabled = true
 # API URL에 사용할 포트.
-port = 54321
+port = 54331
 # API에 노출할 스키마. 이 스키마의 테이블, 뷰, 저장 프로시저에 API 엔드포인트가
 # 생성된다. `public`과 `graphql_public` 스키마는 기본으로 포함된다.
 schemas = ["public", "graphql_public"]
