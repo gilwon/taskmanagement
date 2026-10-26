@@ -107,6 +107,8 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "Quantity",
     target: "Counted quantity",
+    qtyDecrease: "Decrease quantity by one",
+    qtyIncrease: "Increase quantity by one",
     note: "Note (required)",
     notePlaceholder: "e.g. October regular delivery",
     previewHere: "After: this location {here} {unit} / total {total} {unit}",

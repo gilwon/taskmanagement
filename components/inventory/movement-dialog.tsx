@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { QtyStepper } from "@/components/inventory/qty-stepper";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -227,17 +228,17 @@ function MovementForm({ kind, item, levels, locations, onClose }: Props) {
       <div className="grid gap-1.5">
         <Label htmlFor={`${id}-qty`}>{kind === "adjust" ? t("inventory.movement.target") : t("inventory.movement.qty")}</Label>
         <div className="flex items-center gap-2">
-          <Input
+          <QtyStepper
             id={`${id}-qty`}
-            inputMode="decimal"
-            autoComplete="off"
-            autoFocus={!!locationId}
             value={qtyText}
-            onChange={(e) => {
-              setQtyText(e.target.value);
+            onChange={(next) => {
+              setQtyText(next);
               setErrors((prev) => ({ ...prev, qty: undefined }));
             }}
-            className="flex-1 tabular-nums max-sm:h-10"
+            parse={kind === "adjust" ? parseTarget : parseQty}
+            allowZero={kind === "adjust"}
+            max={needsStock && locationId ? here : undefined}
+            autoFocus={!!locationId}
             aria-invalid={qtyError ? true : undefined}
             aria-describedby={[qtyError ? `${id}-qty-error` : null, preview ? `${id}-preview` : null].filter(Boolean).join(" ") || undefined}
           />

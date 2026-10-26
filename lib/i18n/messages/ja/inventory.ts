@@ -107,6 +107,8 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "数量",
     target: "棚卸後の数量",
+    qtyDecrease: "数量を1つ減らす",
+    qtyIncrease: "数量を1つ増やす",
     note: "メモ（必須）",
     notePlaceholder: "例：10月の定期入庫",
     previewHere: "処理後 この場所 {here} {unit} / 合計 {total} {unit}",

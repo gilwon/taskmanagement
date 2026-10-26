@@ -105,6 +105,8 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "수량",
     target: "실사 후 수량",
+    qtyDecrease: "수량 하나 빼기",
+    qtyIncrease: "수량 하나 더하기",
     note: "메모 (필수)",
     notePlaceholder: "예: 10월 정기 입고",
     previewHere: "처리 후 이 위치 {here} {unit} / 합계 {total} {unit}",

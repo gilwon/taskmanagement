@@ -107,6 +107,8 @@ export default {
     option: "{name} · {qty} {unit}",
     qty: "数量",
     target: "盘点后数量",
+    qtyDecrease: "数量减一",
+    qtyIncrease: "数量加一",
     note: "备注（必填）",
     notePlaceholder: "例如：10月例行入库",
     previewHere: "处理后 本库位 {here} {unit} / 合计 {total} {unit}",
