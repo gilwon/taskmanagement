@@ -1,24 +1,37 @@
-"use client";
 // 앱 전체 404. 없는 경로와 소속이 아닌 워크스페이스 slug가 여기로 온다
-import { NotFoundCard } from "@/components/shell/not-found-card";
-import { useDocumentTitle } from "@/components/shell/use-document-title";
-import { useT } from "@/lib/i18n/client";
+import { RootNotFoundView } from "@/components/shell/root-not-found-view";
+import type { NotFoundCandidate } from "@/components/shell/not-found-card";
+import { getT } from "@/lib/i18n/server";
+import { createClient } from "@/lib/supabase/server";
 
-export default function NotFound() {
-  const t = useT();
-  const title = t("errors.notFound.title");
-  // 없는 경로는 루트 metadata의 "작업 공간" title이 head에서 아래 title보다 앞에 와 문서 제목을 차지해 다시 맞춘다
-  // Next 16의 global-not-found는 experimental 설정이 필요해 [ws]/not-found와 같은 관찰자 방식을 쓴다
-  useDocumentTitle(title);
+// 로그인한 사용자의 소속 워크스페이스. 세션이 없거나 조회가 실패하면 빈 목록이라 404 화면은 그대로 뜬다
+async function myWorkspaces() {
+  try {
+    const supabase = await createClient();
+    // 세션이 없으면 조회하지 않아 이름이 새지 않는다(getClaims는 JWT 서명을 검증한다)
+    const { data: auth } = await supabase.auth.getClaims();
+    if (!auth?.claims?.sub) return [];
+    // RLS(workspaces_select, is_ws_member)가 소속 워크스페이스만 돌려준다
+    const { data, error } = await supabase.from("workspaces").select("slug, name").order("name");
+    return error ? [] : data;
+  } catch {
+    return [];
+  }
+}
+
+export default async function NotFound() {
+  const t = await getT();
+  const workspaces = await myWorkspaces();
+  // 워크스페이스가 없으면 지금처럼 "/" 하나만 보인다
+  const candidates: NotFoundCandidate[] = workspaces.length
+    ? workspaces.map((w) => ({ href: `/${w.slug}/home`, name: w.name, compare: `/${w.slug}` }))
+    : [{ href: "/", name: t("common.action.home") }];
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-3 px-(--gutter) py-(--s-12) text-center">
-      {/* not-found에는 metadata를 둘 수 없어 React의 title 끌어올리기로 문서 제목을 정한다 */}
-      <title>{title}</title>
-      <NotFoundCard
-        title={title}
-        description={t("errors.notFound.workspace")}
-        candidates={[{ href: "/", name: t("common.action.home") }]}
-      />
-    </main>
+    <RootNotFoundView
+      title={t("errors.notFound.title")}
+      description={t("errors.notFound.workspace")}
+      candidates={candidates}
+      similar={workspaces.length > 0}
+    />
   );
 }

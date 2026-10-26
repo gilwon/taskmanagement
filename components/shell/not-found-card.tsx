@@ -9,7 +9,8 @@ import { motionOff } from "@/lib/prefs/prefs";
 import { cn } from "@/lib/utils";
 import "./lucian-notfound.css";
 
-export type NotFoundCandidate = { href: string; name: string };
+// compare가 있으면 현재 주소의 첫 세그먼트와 compare("/slug" 꼴)를 비교하고, 없으면 현재 주소 전체와 href를 비교한다
+export type NotFoundCandidate = { href: string; name: string; compare?: string };
 
 type Phase = "idle" | "fixing" | "found";
 
@@ -120,7 +121,8 @@ export function NotFoundCard({
   const locked = phase !== "idle";
   const found = phase === "found";
   const list = (
-    similar ? candidates.map((c) => ({ ...c, match: similarity(pathname, c.href) })).sort((x, y) => y.match - x.match) : candidates
+    similar
+      ? candidates.map((c) => ({ ...c, match: similarity(c.compare === undefined ? pathname : `/${pathname.split("/")[1] ?? ""}`, c.compare ?? c.href) })).sort((x, y) => y.match - x.match) : candidates
   ).slice(0, SUGGEST_MAX) as (NotFoundCandidate & { match?: number })[];
 
   const later = (fn: () => void, ms: number) => {
