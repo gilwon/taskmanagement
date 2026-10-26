@@ -377,4 +377,23 @@ export default {
   commandDialog: { title: "コマンドパレット", description: "実行するコマンドを検索" },
   commandList: "検索結果",
   toaster: { label: "通知", close: "通知を閉じる" },
+  // 404カード(Lucian #089)。移動できるアドレス一覧と移動中の文言
+  notFoundCard: {
+    similar: "いちばん近いアドレス",
+    goTo: "移動できる場所",
+    code404: "404 エラー",
+    code200: "200 正常",
+    foundTitle: "見つかりました",
+    foundDescription: "「{name}」ページへ移動します",
+    goLabel: "{path} {name} ページへ移動",
+    goLabelMatch: "{path} {name} ページへ移動、一致度 {pct}%",
+  },
+  // エラーカード(Lucian #090)。状態表示と再試行中の文言
+  errorCard: {
+    statusWait: "読み込めません",
+    statusTry: "再接続中",
+    trying: "再接続しています…",
+    tryingButton: "接続中",
+    failed: "まだ接続できません",
+  },
 } satisfies Messages["common"];

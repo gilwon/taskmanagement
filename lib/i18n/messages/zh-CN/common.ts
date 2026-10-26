@@ -377,4 +377,23 @@ export default {
   commandDialog: { title: "命令面板", description: "搜索要执行的命令" },
   commandList: "搜索结果",
   toaster: { label: "通知", close: "关闭通知" },
+  // 404 卡片(Lucian #089)。可前往的地址列表和跳转中的文案
+  notFoundCard: {
+    similar: "最相近的地址",
+    goTo: "可以前往的地方",
+    code404: "404 错误",
+    code200: "200 正常",
+    foundTitle: "找到了",
+    foundDescription: "正在打开“{name}”页面",
+    goLabel: "前往 {path} {name} 页面",
+    goLabelMatch: "前往 {path} {name} 页面，匹配度 {pct}%",
+  },
+  // 错误卡片(Lucian #090)。状态标签和重试中的文案
+  errorCard: {
+    statusWait: "加载失败",
+    statusTry: "正在重新连接",
+    trying: "正在重新连接…",
+    tryingButton: "连接中",
+    failed: "仍然无法连接",
+  },
 } satisfies Messages["common"];

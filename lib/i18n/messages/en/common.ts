@@ -377,4 +377,23 @@ export default {
   commandDialog: { title: "Command palette", description: "Search for a command to run" },
   commandList: "Search results",
   toaster: { label: "Notifications", close: "Close notification" },
+  // 404 card (Lucian #089). Addresses you can go to and the redirect text
+  notFoundCard: {
+    similar: "Closest addresses",
+    goTo: "Where you can go",
+    code404: "404 error",
+    code200: "200 OK",
+    foundTitle: "Found it",
+    foundDescription: "Opening the “{name}” page",
+    goLabel: "Go to {name} page at {path}",
+    goLabelMatch: "Go to {name} page at {path}, {pct}% match",
+  },
+  // Error card (Lucian #090). Status labels and the retrying text
+  errorCard: {
+    statusWait: "Failed to load",
+    statusTry: "Reconnecting",
+    trying: "Reconnecting…",
+    tryingButton: "Connecting",
+    failed: "Still can't connect",
+  },
 } satisfies Messages["common"];

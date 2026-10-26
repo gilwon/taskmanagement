@@ -14,4 +14,10 @@ export default {
   noResultsTitle: "結果がありません",
   noResultsDescription: "「{q}」に一致する結果はありません。",
   seeAll: "すべて表示",
+  // 結果なしカード(Lucian #092)。絞った検索範囲を外すと出る結果を知らせる
+  scopeFilters: "適用中の検索範囲",
+  removeScope: "{scope}の範囲を外す",
+  widen: "外すと",
+  widenCount: "{n}件",
+  widenAria: "{scope}の範囲を外すと{n}件",
 } satisfies Messages["search"];

@@ -154,4 +154,23 @@ export default {
   commandList: "검색 결과",
   // ui/sonner 알림 영역 이름과 닫기 버튼
   toaster: { label: "알림 메시지", close: "알림 닫기" },
+  // 404 카드(Lucian #089). 이동할 수 있는 주소 목록과 이동 중 문구
+  notFoundCard: {
+    similar: "가장 비슷한 주소",
+    goTo: "이동할 수 있는 곳",
+    code404: "404 오류",
+    code200: "200 정상",
+    foundTitle: "찾았어요",
+    foundDescription: "‘{name}’ 페이지로 이동합니다",
+    goLabel: "{path} {name} 페이지로 가기",
+    goLabelMatch: "{path} {name} 페이지로 가기, 일치도 {pct}%",
+  },
+  // 오류 카드(Lucian #090). 상태 표시와 다시 시도 중 문구
+  errorCard: {
+    statusWait: "불러오지 못함",
+    statusTry: "다시 연결 중",
+    trying: "다시 연결하는 중…",
+    tryingButton: "연결하는 중",
+    failed: "아직 연결하지 못했어요",
+  },
 } as const;

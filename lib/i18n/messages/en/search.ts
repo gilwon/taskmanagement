@@ -14,4 +14,10 @@ export default {
   noResultsTitle: "No results",
   noResultsDescription: "Nothing matches “{q}”.",
   seeAll: "See all",
+  // No-results card (Lucian #092). Tells what you get by removing the narrowed scope
+  scopeFilters: "Applied search scope",
+  removeScope: "Remove {scope} scope",
+  widen: "Remove to see",
+  widenCount: "{n} results",
+  widenAria: "Remove {scope} scope to see {n} results",
 } satisfies Messages["search"];

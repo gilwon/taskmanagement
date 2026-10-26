@@ -1,0 +1,237 @@
+/* Lucian UX/UI Prompt #090 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#090 */
+/* 플러그가 다시 꽂히는 오류 위젯. 원본의 고정 크기(340x410)는 부모 폭에 맞췄다. 가짜 매출 데이터(성공 패널·막대·자세히·시도 점)와 자동 재시도 카운트다운 규칙은 뺐고, 링은 연결 중에만 돈다 */
+
+@layer components {
+  .u090 {
+    position: relative;
+    width: min(100%, 340px);
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    border-radius: 30px;
+    background: var(--ux-surface);
+    box-shadow: 0 0 0 1px var(--ux-line),0 30px 60px -36px var(--ux-shadow-strong);
+    overflow: hidden;
+  }
+  .u090-h {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 38px;
+  }
+  .u090-pill {
+    margin-left: auto;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: color-mix(in srgb,var(--c) 14%,transparent);
+    color: var(--c);
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    transition: color .35s,background-color .35s;
+  }
+  .u090-pill::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .u090-stage {
+    position: relative;
+    flex: 1;
+    margin: 6px 0 12px;
+  }
+  .u090-err {
+    display: flex;
+    flex-direction: column;
+    transition: opacity .35s,transform .45s var(--ux-ease),visibility 0s;
+    padding: 14px 0;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .u090-plug {
+    width: 220px;
+    height: 70px;
+    overflow: visible;
+  }
+  .u090-cord {
+    fill: none;
+    stroke: var(--ux-ink-3);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .u090-pr {
+    stroke: var(--ux-ink-2);
+    stroke-width: 4.5;
+    stroke-linecap: round;
+  }
+  .u090-bd {
+    fill: var(--ux-ink);
+  }
+  .u090-hole {
+    stroke: var(--ux-surface);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  .u090-led {
+    fill: var(--ux-danger);
+    transition: fill .3s;
+  }
+  .u090-L,
+  .u090-R {
+    transition: transform .55s var(--ux-spring);
+  }
+  .u090-L {
+    transform: translateX(-10px);
+  }
+  .u090-R {
+    transform: translateX(8px);
+  }
+  .u090[data-s="try"] .u090-L {
+    transform: translateX(9px);
+    animation: u090-jig .28s .5s ease-in-out infinite;
+  }
+  .u090[data-s="try"] .u090-R {
+    transform: translateX(-2px);
+  }
+  .u090[data-s="try"] .u090-led {
+    fill: var(--ux-warn);
+    animation: u090-blink .5s steps(1) infinite;
+  }
+  @keyframes u090-jig {
+    50% {
+      transform: translateX(6px);
+    }
+  }
+  @keyframes u090-blink {
+    50% {
+      fill: var(--ux-surface-3);
+    }
+  }
+  .u090-spark {
+    stroke: var(--ux-warn);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    opacity: 0;
+  }
+  .u090.zap .u090-spark {
+    animation: u090-zap .55s var(--ux-ease);
+  }
+  @keyframes u090-zap {
+    0% {
+      opacity: 1;
+      transform: scale(.4);
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.25);
+    }
+  }
+  .u090-spark {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+  }
+  .u090-t {
+    margin: 16px 0 0;
+    font-size: 17px;
+    font-weight: 850;
+    letter-spacing: -.035em;
+  }
+  .u090-s {
+    margin: 5px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--ux-ink-3);
+  }
+  .u090-at {
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 12.5px;
+    font-weight: 750;
+    color: var(--ux-ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .u090-go {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    height: 50px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--ux-ink);
+    color: var(--ux-page);
+    font-size: 14.5px;
+    font-weight: 760;
+    transition: transform .3s var(--ux-spring),opacity .3s;
+  }
+  .u090-go:active {
+    transform: scale(.97);
+  }
+  .u090-go[aria-disabled="true"] {
+    opacity: .55;
+  }
+  .u090-ring {
+    width: 20px;
+    height: 20px;
+    transform: rotate(-90deg);
+    transition: width .3s,margin .3s;
+  }
+  .u090-ring circle {
+    fill: none;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+  }
+  .u090-ring circle:first-child {
+    stroke: color-mix(in srgb,var(--ux-page) 25%,transparent);
+  }
+  .u090-ring circle+circle {
+    stroke: var(--ux-page);
+    stroke-dasharray: 100;
+  }
+  .u090:not([data-s="try"]) .u090-ring {
+    width: 0;
+    margin-right: -9px;
+  }
+  .u090[data-s="try"] .u090-ring {
+    animation: u090-spin .8s linear infinite;
+  }
+  .u090[data-s="try"] .u090-ring circle+circle {
+    stroke-dasharray: 28 72;
+    stroke-dashoffset: 0!important;
+    transition: none!important;
+  }
+  @keyframes u090-spin {
+    to {
+      transform: rotate(270deg);
+    }
+  }
+  .u090-go:focus-visible {
+    outline: 2px solid var(--ux-accent);
+    outline-offset: 2px;
+  }
+
+  /* 앱 모션이 full이어도 OS 동작 줄이기면 멈춘다(motionOff와 같은 판정) */
+  @media (prefers-reduced-motion: reduce) {
+    .u090 *,
+    .u090 *::before,
+    .u090 *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}

@@ -14,4 +14,10 @@ export default {
   noResultsTitle: "결과가 없습니다",
   noResultsDescription: "“{q}”와 일치하는 항목이 없습니다.",
   seeAll: "모두 보기",
+  // 결과 없음 카드(Lucian #092). 좁힌 검색 범위를 풀면 나오는 결과를 알려 준다
+  scopeFilters: "적용된 검색 범위",
+  removeScope: "{scope} 범위 풀기",
+  widen: "풀면",
+  widenCount: "{n}개",
+  widenAria: "{scope} 범위를 풀면 {n}개",
 } as const;

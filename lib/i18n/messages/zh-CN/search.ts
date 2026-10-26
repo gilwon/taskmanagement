@@ -14,4 +14,10 @@ export default {
   noResultsTitle: "无结果",
   noResultsDescription: "没有与“{q}”匹配的内容。",
   seeAll: "查看全部",
+  // 无结果卡片(Lucian #092)。告知取消已缩小的搜索范围后会出现的结果
+  scopeFilters: "已应用的搜索范围",
+  removeScope: "取消{scope}范围",
+  widen: "取消后有",
+  widenCount: "{n} 条",
+  widenAria: "取消{scope}范围后有 {n} 条",
 } satisfies Messages["search"];

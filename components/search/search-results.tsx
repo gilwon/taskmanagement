@@ -1,7 +1,5 @@
 // 검색 결과 탭과 목록. 전체 탭은 종류별 섹션에 5개씩, 종류 탭은 그 종류 전부를 보인다
-import { SearchX } from "lucide-react";
 import Link from "next/link";
-import { EmptyState } from "@/components/shell/empty-state";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { ProjectIcon } from "@/components/shell/project-icon";
 import { StatusIcon } from "@/components/tasks/parts";
@@ -11,6 +9,7 @@ import { SEARCH_SCOPES, type SearchResults, type SearchScope } from "@/lib/searc
 import { cn } from "@/lib/utils";
 import { Highlight } from "./highlight";
 import { searchHref } from "./href";
+import { SearchEmpty } from "./search-empty";
 
 type Kind = Exclude<SearchScope, "all">;
 const KINDS = SEARCH_SCOPES.filter((s): s is Kind => s !== "all");
@@ -179,7 +178,13 @@ export async function SearchResultsView({
 
       <div role="tabpanel" id="search-panel" aria-labelledby={`search-tab-${tab}`} className="min-w-0">
         {count(tab) === 0 ? (
-          <EmptyState icon={SearchX} title={t("search.noResultsTitle")} description={t("search.noResultsDescription", { q })} />
+          <SearchEmpty
+            t={t}
+            wsSlug={wsSlug}
+            q={q}
+            tab={tab}
+            widenCount={tab !== "all" && count("all") > 0 ? countLabel("all") : null}
+          />
         ) : tab === "all" ? (
           <div className="flex flex-col gap-(--s-6) px-(--gutter)">
             {kindsShown.map((k) => (
