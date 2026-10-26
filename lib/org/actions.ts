@@ -10,7 +10,7 @@ import { PROJECT_COLORS } from "@/lib/i18n/labels";
 import { getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/t";
 import { orgErrorMessage } from "@/lib/org/errors";
-import { INVITE_ROLES, MAX_INVITES, TEAM_ICONS, parseInviteEmails, parseNotifPrefs, parsePrefsPatch, type Role } from "@/lib/org/rules";
+import { INVITE_ROLES, MAX_INVITES, NOTIF_KEYS, TEAM_ICONS, parseInviteEmails, parsePrefsPatch, type Role } from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/tasks/types";
 
@@ -385,12 +385,15 @@ export async function updateTimezone(workspaceId: string, tz: string): Promise<A
   return ok(null);
 }
 
-// 앱 내 알림 종류와 이메일·푸시 채널의 켜기·끄기. private.notify가 false인 종류는 만들지 않고, 채널은 dispatch가 본다
+// 앱 내 알림 종류별 켜기·끄기. private.notify가 false인 종류를 보내지 않는다
 export async function saveNotifPrefs(workspaceId: string, prefs: Record<string, boolean>): Promise<ActionResult<null>> {
   const t = await getT();
   if (!isId(workspaceId) || !prefs || typeof prefs !== "object") return err(t("errors.rpc.invalidInput"));
-  const clean = parseNotifPrefs(prefs);
-  if (!clean) return err(t("errors.rpc.invalidInput"));
+  const clean: Record<string, boolean> = {};
+  for (const k of NOTIF_KEYS) {
+    if (typeof prefs[k] !== "boolean") return err(t("errors.rpc.invalidInput"));
+    clean[k] = prefs[k];
+  }
   const s = await session();
   if (!s) return err(t("errors.msg.sessionExpired"));
   const { error } = await s.supabase

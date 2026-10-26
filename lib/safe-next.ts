@@ -1,7 +1,6 @@
 // 로그인 리다이렉트용 경로 판정. 공개 경로 여부와 next 파라미터의 안전성을 검사한다
 
-// /api/notifications/dispatch는 세션 없이 크론이 부른다. 라우트가 Bearer CRON_SECRET으로 직접 인증한다
-const PUBLIC_EXACT = ["/login", "/signup", "/verify", "/api/notifications/dispatch"];
+const PUBLIC_EXACT = ["/login", "/signup", "/verify"];
 const PUBLIC_PREFIX = ["/forgot", "/reset", "/auth"];
 
 export function isPublicPath(pathname: string) {
