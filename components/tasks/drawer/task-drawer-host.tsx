@@ -51,7 +51,7 @@ type Fetched = { key: string; status: "loading" | "missing" | "error"; error?: s
 function Host({ order }: { order?: readonly string[] }) {
   const t = useT();
   const router = useRouter();
-  const { openKey, open, close } = useTaskDrawer();
+  const { openKey, open, openPanel, close } = useTaskDrawer();
   const { items, workspace } = useTasks();
   const actions = useTaskActions();
   const small = useSmallScreen();
@@ -155,10 +155,10 @@ function Host({ order }: { order?: readonly string[] }) {
         const key = dir === "prev" ? prevKey : nextKey;
         if (!key) return;
         stepping.current = true;
-        open(key);
+        openPanel(key);
       },
     };
-  }, [hasNav, prevKey, nextKey, open]);
+  }, [hasNav, prevKey, nextKey, openPanel]);
 
   const state = openKey && !item && fetched?.key === openKey ? fetched : null;
 

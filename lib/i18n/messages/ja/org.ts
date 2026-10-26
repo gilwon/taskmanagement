@@ -37,22 +37,21 @@ export default {
       description: "オーナーと管理者は「メンバー」でロールを変更できます。自分のロールは誰も変更できません。",
     },
     preferences: {
-      description: "これらはまだ変更できません。アプリの見た目は「外観」で変更できます。",
+      description: "このワークスペースでの個人設定です。変更するとすぐ保存されます。アプリの見た目は「外観」で変更できます。",
       startPage: "開始ページ",
-      startPageNote: "現在はホームが開きます。",
+      startPageNote: "ワークスペースのアドレスで入ったときに最初に開く画面です。",
+      startPageOptions: { home: "ホーム", "my-tasks": "自分のタスク", projects: "プロジェクト", inbox: "受信トレイ" },
       taskOpen: "タスクを開く場所",
-      taskOpenNote: "現在はサイドパネルで開きます。",
+      taskOpenNote: "タスクを選んだときの開き方です。",
+      taskOpenOptions: { panel: "サイドパネル", page: "全画面ページ" },
       boardDone: "ボードに完了列を表示",
+      boardDoneNote: "ボード表示の初期状態です。ツールバーで変更した値がある場合はそちらが優先されます。",
       confirmDelete: "削除前に確認",
+      confirmDeleteNote: "タスク・プロジェクト・コメントを削除する前に確認ダイアログを表示します。",
+      saved: "「{label}」の設定を保存しました。",
     },
     twoFactor: {
       note: "この機能はまだ利用できません。",
-    },
-    billing: {
-      description: "請求機能はまだ利用できません。料金は発生しません。",
-      plan: "プラン",
-      paymentMethod: "支払い方法",
-      invoices: "請求書",
     },
     general: {
       adminOnly: "変更できるのはオーナーと管理者のみです。",
@@ -138,7 +137,6 @@ export default {
       password: "パスワード",
       sessions: "セッション",
       "two-factor": "2段階認証",
-      billing: "請求",
     },
     groupOf: {
       general: "一般",
@@ -156,7 +154,6 @@ export default {
       password: "セキュリティ",
       sessions: "セキュリティ",
       "two-factor": "セキュリティ",
-      billing: "請求",
     },
   },
   members: {

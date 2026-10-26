@@ -606,14 +606,14 @@ isOneToOne: false
                   ]
                 },"user_prefs": {
                   Row: {
-                    "confirm_del": boolean,"created_at": string,"default_tab": string | null,"notif_prefs": NonNullable<Json>,"proj_order": (string)[],"recent_searches": (string)[],"show_done_board": boolean,"time_fmt": string,"updated_at": string,"user_id": string,"workspace_id": string
+                    "confirm_del": boolean,"created_at": string,"default_tab": string | null,"notif_prefs": NonNullable<Json>,"proj_order": (string)[],"recent_searches": (string)[],"show_done_board": boolean,"task_open": string,"time_fmt": string,"updated_at": string,"user_id": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "confirm_del"?: boolean,"created_at"?: string,"default_tab"?: string | null,"notif_prefs"?: NonNullable<Json>,"proj_order"?: (string)[],"recent_searches"?: (string)[],"show_done_board"?: boolean,"time_fmt"?: string,"updated_at"?: string,"user_id": string,"workspace_id": string
+                    "confirm_del"?: boolean,"created_at"?: string,"default_tab"?: string | null,"notif_prefs"?: NonNullable<Json>,"proj_order"?: (string)[],"recent_searches"?: (string)[],"show_done_board"?: boolean,"task_open"?: string,"time_fmt"?: string,"updated_at"?: string,"user_id": string,"workspace_id": string
                   }
                   Update: {
-                    "confirm_del"?: boolean,"created_at"?: string,"default_tab"?: string | null,"notif_prefs"?: NonNullable<Json>,"proj_order"?: (string)[],"recent_searches"?: (string)[],"show_done_board"?: boolean,"time_fmt"?: string,"updated_at"?: string,"user_id"?: string,"workspace_id"?: string
+                    "confirm_del"?: boolean,"created_at"?: string,"default_tab"?: string | null,"notif_prefs"?: NonNullable<Json>,"proj_order"?: (string)[],"recent_searches"?: (string)[],"show_done_board"?: boolean,"task_open"?: string,"time_fmt"?: string,"updated_at"?: string,"user_id"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {

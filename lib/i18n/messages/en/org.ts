@@ -37,22 +37,21 @@ export default {
       description: "Owners and admins change roles from Members. No one can change their own role.",
     },
     preferences: {
-      description: "These can't be changed yet. Change how the app looks in Appearance.",
+      description: "Personal settings for this workspace. Changes are saved right away. Change how the app looks in Appearance.",
       startPage: "Start page",
-      startPageNote: "Currently opens to Home.",
+      startPageNote: "The screen that opens first when you enter the workspace address.",
+      startPageOptions: { home: "Home", "my-tasks": "My tasks", projects: "Projects", inbox: "Inbox" },
       taskOpen: "Open tasks in",
-      taskOpenNote: "Currently opens in a side panel.",
+      taskOpenNote: "How a task opens when you select it.",
+      taskOpenOptions: { panel: "Side panel", page: "Full page" },
       boardDone: "Show Done column on boards",
+      boardDoneNote: "The starting state of board views. A value you changed in the toolbar takes priority.",
       confirmDelete: "Confirm before deleting",
+      confirmDeleteNote: "Ask for confirmation before deleting a task, project or comment.",
+      saved: "Saved the {label} setting.",
     },
     twoFactor: {
       note: "This feature isn't available yet.",
-    },
-    billing: {
-      description: "Billing isn't available yet. You won't be charged.",
-      plan: "Plan",
-      paymentMethod: "Payment method",
-      invoices: "Invoices",
     },
     general: {
       adminOnly: "Only owners and admins can change this.",
@@ -138,7 +137,6 @@ export default {
       password: "Password",
       sessions: "Sessions",
       "two-factor": "Two-factor authentication",
-      billing: "Billing",
     },
     groupOf: {
       general: "General",
@@ -156,7 +154,6 @@ export default {
       password: "Security",
       sessions: "Security",
       "two-factor": "Security",
-      billing: "Billing",
     },
   },
   members: {

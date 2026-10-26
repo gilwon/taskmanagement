@@ -37,22 +37,21 @@ export default {
       description: "所有者和管理员可在“成员”中更改角色。任何人都无法更改自己的角色。",
     },
     preferences: {
-      description: "暂时无法更改。应用的外观请在“外观”中更改。",
+      description: "此工作区的个人设置。更改后会立即保存。应用的外观请在“外观”中更改。",
       startPage: "起始页",
-      startPageNote: "目前打开首页。",
+      startPageNote: "通过工作区地址进入时最先打开的页面。",
+      startPageOptions: { home: "首页", "my-tasks": "我的任务", projects: "项目", inbox: "收件箱" },
       taskOpen: "任务打开方式",
-      taskOpenNote: "目前在侧边面板中打开。",
+      taskOpenNote: "点击任务时的打开方式。",
+      taskOpenOptions: { panel: "侧边面板", page: "整页" },
       boardDone: "在看板中显示“已完成”列",
+      boardDoneNote: "看板视图的初始状态。如果在工具栏中改过，则以工具栏的设置为准。",
       confirmDelete: "删除前确认",
+      confirmDeleteNote: "删除任务、项目或评论前弹出确认窗口。",
+      saved: "已保存“{label}”设置。",
     },
     twoFactor: {
       note: "该功能暂未开放。",
-    },
-    billing: {
-      description: "付费功能暂未开放，不会产生任何费用。",
-      plan: "套餐",
-      paymentMethod: "支付方式",
-      invoices: "账单",
     },
     general: {
       adminOnly: "只有所有者和管理员可以更改。",
@@ -137,7 +136,6 @@ export default {
       password: "密码",
       sessions: "会话",
       "two-factor": "双重身份验证",
-      billing: "付费",
     },
     groupOf: {
       general: "通用",
@@ -155,7 +153,6 @@ export default {
       password: "安全",
       sessions: "安全",
       "two-factor": "安全",
-      billing: "付费",
     },
   },
   members: {

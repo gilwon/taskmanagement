@@ -67,6 +67,13 @@ export default {
     retry: "다시 시도",
     home: "홈으로",
   },
+  confirmDelete: {
+    title: "삭제할까요?",
+    task: "이 작업을 삭제합니다. 삭제 직후 되돌리기로 복구할 수 있습니다.",
+    project: "{name} 프로젝트를 삭제합니다. 보관함에서 복원할 수 있습니다.",
+    comment: "이 댓글을 삭제합니다. 삭제 직후 되돌리기로 복구할 수 있습니다.",
+    confirm: "삭제",
+  },
   taskStatus: TASK_STATUS_LABELS,
   taskPriority: TASK_PRIORITY_LABELS,
   taskLabel: TASK_LABEL_LABELS,

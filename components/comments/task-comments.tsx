@@ -12,6 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DeleteConfirm } from "@/components/org/delete-confirm";
+import { useWorkspacePrefs } from "@/components/org/workspace-prefs";
 import { CommentBody } from "@/components/comments/comment-body";
 import { CommentComposer } from "@/components/comments/comment-composer";
 import { Reactions } from "@/components/comments/reactions";
@@ -59,6 +61,8 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [editing, setEditing] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CommentItem | null>(null);
+  const { confirmDel } = useWorkspacePrefs();
   const [now, setNow] = useState(() => new Date());
   // 수신함 "답글"로 들어오면(?compose=1) 입력창에 포커스한다. 입력창은 댓글을 읽은 뒤에 그려지므로 autoFocus로 충분하다
   const compose = useSearchParams().get("compose") === "1";
@@ -241,7 +245,7 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
                             </DropdownMenuItem>
                           )}
                           {canDelete && (
-                            <DropdownMenuItem variant="destructive" onSelect={() => void remove(c)}>
+                            <DropdownMenuItem variant="destructive" onSelect={() => (confirmDel ? setPendingDelete(c) : void remove(c))}>
                               <Trash2 size={14} strokeWidth={1.8} aria-hidden />
                               {t("comments.delete")}
                             </DropdownMenuItem>
@@ -283,6 +287,12 @@ export function TaskComments({ task, onActivityCount }: { task: TaskItem; onActi
           {t("comments.viewOnly")}
         </p>
       )}
+      <DeleteConfirm
+        kind="comment"
+        open={!!pendingDelete}
+        onOpenChange={(v) => !v && setPendingDelete(null)}
+        onConfirm={() => pendingDelete && void remove(pendingDelete)}
+      />
     </div>
   );
 }

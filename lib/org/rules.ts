@@ -14,6 +14,48 @@ export const INVITE_ROLES = ["admin", "member", "guest"] as const satisfies read
 // 앱 내 알림 종류. user_prefs.notif_prefs의 키이고 notification_type enum과 같다
 export const NOTIF_KEYS = ["mention", "assign", "comment", "update", "stock"] as const satisfies readonly Enums<"notification_type">[];
 
+// 환경 설정(user_prefs). 시작 화면의 허용값과 작업 여는 방식. 컬럼 default_tab, task_open, show_done_board, confirm_del에 대응한다
+export const START_TABS = ["home", "my-tasks", "projects", "inbox"] as const;
+export type StartTab = (typeof START_TABS)[number];
+export const TASK_OPEN_MODES = ["panel", "page"] as const;
+export type TaskOpenMode = (typeof TASK_OPEN_MODES)[number];
+
+export type UserPrefsView = { startTab: StartTab; taskOpen: TaskOpenMode; showDoneBoard: boolean; confirmDel: boolean };
+export const DEFAULT_USER_PREFS: Readonly<UserPrefsView> = {
+  startTab: "home",
+  taskOpen: "panel",
+  showDoneBoard: true,
+  confirmDel: true,
+};
+
+// DB 값(null·손상 포함)을 허용값으로 바꾼다. 허용값이 아니면 기본값이다
+export function parseStartTab(v: unknown): StartTab {
+  return (START_TABS as readonly unknown[]).includes(v) ? (v as StartTab) : DEFAULT_USER_PREFS.startTab;
+}
+export function parseTaskOpen(v: unknown): TaskOpenMode {
+  return (TASK_OPEN_MODES as readonly unknown[]).includes(v) ? (v as TaskOpenMode) : DEFAULT_USER_PREFS.taskOpen;
+}
+
+// 시작 화면 경로. /{ws}가 여기로 보낸다
+export const startPath = (slug: string, tab: StartTab) => `/${slug}/${tab}`;
+
+// savePrefs 입력 검증. 허용 키만, 키마다 허용값만 통과한다. 하나라도 어긋나거나 비어 있으면 null이다
+export function parsePrefsPatch(v: unknown): Partial<UserPrefsView> | null {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const o = v as Record<string, unknown>;
+  const keys = Object.keys(o);
+  if (keys.length === 0) return null;
+  const out: Partial<UserPrefsView> = {};
+  for (const k of keys) {
+    const x = o[k];
+    if (k === "startTab" && (START_TABS as readonly unknown[]).includes(x)) out.startTab = x as StartTab;
+    else if (k === "taskOpen" && (TASK_OPEN_MODES as readonly unknown[]).includes(x)) out.taskOpen = x as TaskOpenMode;
+    else if ((k === "showDoneBoard" || k === "confirmDel") && typeof x === "boolean") out[k] = x;
+    else return null;
+  }
+  return out;
+}
+
 // 팀 아이콘. 프로젝트 아이콘과 같은 목록(META §4)이고 components/shell/project-icon.tsx가 그린다
 export const TEAM_ICONS = [
   "globe", "smartphone", "megaphone", "rocket", "component", "building-2", "layout-grid", "palette",

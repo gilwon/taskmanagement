@@ -13,6 +13,7 @@ import {
   TimezoneForm,
 } from "@/components/org/settings-forms";
 import { LanguageForm } from "@/components/org/language-form";
+import { PreferencesForm } from "@/components/org/preferences-form";
 import { RolePermissionsTable } from "@/components/org/role-permissions";
 import { InfoRow, SettingsCard, SettingsTitle, UnavailableRow } from "@/components/org/settings-parts";
 import { ShortcutSettings } from "@/components/shortcuts/shortcut-settings";
@@ -20,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { getWorkspace, requireUserId } from "@/lib/data/workspace";
 import { SETTINGS_SECTIONS, type SettingsSection } from "@/lib/i18n/labels";
 import { getFormatter, getT } from "@/lib/i18n/server";
-import { getNotifPrefs, getOrgMembers, getTeams } from "@/lib/org/queries";
+import { getNotifPrefs, getOrgMembers, getTeams, getUserPrefs } from "@/lib/org/queries";
 import { canOpenSettingsSection, isAdminRole } from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
 
@@ -161,12 +162,7 @@ export default async function SettingsSectionPage({ params }: { params: Params }
       return (
         <>
           {header}
-          <SettingsCard title={title} description={t("org.settings.preferences.description")}>
-            <UnavailableRow label={t("org.settings.preferences.startPage")} description={t("org.settings.preferences.startPageNote")} />
-            <UnavailableRow label={t("org.settings.preferences.taskOpen")} description={t("org.settings.preferences.taskOpenNote")} />
-            <UnavailableRow label={t("org.settings.preferences.boardDone")} />
-            <UnavailableRow label={t("org.settings.preferences.confirmDelete")} />
-          </SettingsCard>
+          <PreferencesForm workspaceId={workspace.id} initial={await getUserPrefs(workspace.id, userId)} />
         </>
       );
     case "shortcuts":
@@ -199,17 +195,6 @@ export default async function SettingsSectionPage({ params }: { params: Params }
           {header}
           <SettingsCard title={title}>
             <UnavailableRow label={title} description={t("org.settings.twoFactor.note")} />
-          </SettingsCard>
-        </>
-      );
-    case "billing":
-      return (
-        <>
-          {header}
-          <SettingsCard title={title} description={t("org.settings.billing.description")}>
-            <UnavailableRow label={t("org.settings.billing.plan")} />
-            <UnavailableRow label={t("org.settings.billing.paymentMethod")} />
-            <UnavailableRow label={t("org.settings.billing.invoices")} />
           </SettingsCard>
         </>
       );

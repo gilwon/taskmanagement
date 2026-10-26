@@ -5,6 +5,9 @@ import {
   canOpenOrgScreens,
   canOpenSettingsSection,
   parseInviteEmails,
+  parsePrefsPatch,
+  parseStartTab,
+  startPath,
 } from "@/lib/org/rules";
 
 describe("parseInviteEmails", () => {
@@ -53,5 +56,22 @@ describe("canOpenOrgScreens·canOpenSettingsSection", () => {
   it("소속이 아니면 모두 막는다", () => {
     expect(canOpenOrgScreens(null)).toBe(false);
     expect(canOpenSettingsSection(undefined, "profile")).toBe(false);
+  });
+});
+
+describe("환경 설정 검증", () => {
+  it("시작 화면은 허용값이 아니면 홈이고 경로로 바뀐다", () => {
+    expect(parseStartTab("inbox")).toBe("inbox");
+    expect(parseStartTab(null)).toBe("home");
+    expect(parseStartTab("../x")).toBe("home");
+    expect(startPath("acme", parseStartTab("my-tasks"))).toBe("/acme/my-tasks");
+  });
+  it("저장 입력은 허용 키·값만 통과한다", () => {
+    expect(parsePrefsPatch({ startTab: "projects", confirmDel: false })).toEqual({ startTab: "projects", confirmDel: false });
+    expect(parsePrefsPatch({})).toBeNull();
+    expect(parsePrefsPatch({ taskOpen: "popup" })).toBeNull();
+    expect(parsePrefsPatch({ confirmDel: "yes" })).toBeNull();
+    expect(parsePrefsPatch({ notif_prefs: {} })).toBeNull();
+    expect(parsePrefsPatch([])).toBeNull();
   });
 });

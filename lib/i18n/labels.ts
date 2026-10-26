@@ -196,7 +196,6 @@ export const SETTINGS_SECTIONS = {
   password: { group: "보안", label: "비밀번호" },
   sessions: { group: "보안", label: "로그인 세션" },
   "two-factor": { group: "보안", label: "2단계 인증", unavailable: true },
-  billing: { group: "결제", label: "결제", unavailable: true },
 } as const satisfies Record<string, { group: string; label: string; unavailable?: boolean }>;
 export type SettingsSection = keyof typeof SETTINGS_SECTIONS;
 

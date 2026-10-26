@@ -10,7 +10,7 @@ import { PROJECT_COLORS } from "@/lib/i18n/labels";
 import { getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/t";
 import { orgErrorMessage } from "@/lib/org/errors";
-import { INVITE_ROLES, MAX_INVITES, NOTIF_KEYS, TEAM_ICONS, parseInviteEmails, type Role } from "@/lib/org/rules";
+import { INVITE_ROLES, MAX_INVITES, NOTIF_KEYS, TEAM_ICONS, parseInviteEmails, parsePrefsPatch, type Role } from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/tasks/types";
 
@@ -400,6 +400,28 @@ export async function saveNotifPrefs(workspaceId: string, prefs: Record<string, 
     .from("user_prefs")
     .upsert({ user_id: s.uid, workspace_id: workspaceId, notif_prefs: clean }, { onConflict: "user_id,workspace_id" });
   if (error) return dbErr("알림 설정", error, t);
+  return ok(null);
+}
+
+// 환경 설정 저장. 허용 키만 받아 해당 컬럼만 upsert한다(없던 행은 나머지 컬럼이 기본값으로 생긴다)
+export async function savePrefs(workspaceId: string, patch: unknown): Promise<ActionResult<null>> {
+  const t = await getT();
+  const clean = parsePrefsPatch(patch);
+  if (!isId(workspaceId) || !clean) return err(t("errors.rpc.invalidInput"));
+  const s = await session();
+  if (!s) return err(t("errors.msg.sessionExpired"));
+  const row = {
+    user_id: s.uid,
+    workspace_id: workspaceId,
+    ...(clean.startTab !== undefined && { default_tab: clean.startTab }),
+    ...(clean.taskOpen !== undefined && { task_open: clean.taskOpen }),
+    ...(clean.showDoneBoard !== undefined && { show_done_board: clean.showDoneBoard }),
+    ...(clean.confirmDel !== undefined && { confirm_del: clean.confirmDel }),
+  };
+  const { error } = await s.supabase.from("user_prefs").upsert(row, { onConflict: "user_id,workspace_id" });
+  if (error) return dbErr("환경 설정", error, t);
+  // 레이아웃이 읽는 값(여는 방식·삭제 확인)을 새로 그리게 한다
+  refresh();
   return ok(null);
 }
 

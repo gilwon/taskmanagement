@@ -11,6 +11,13 @@ export default {
     retry: "再試行",
     home: "ホームへ",
   },
+  confirmDelete: {
+    title: "削除しますか？",
+    task: "このタスクを削除します。削除直後なら元に戻せます。",
+    project: "プロジェクト「{name}」を削除します。アーカイブから復元できます。",
+    comment: "このコメントを削除します。削除直後なら元に戻せます。",
+    confirm: "削除",
+  },
   taskStatus: {
     backlog: "バックログ",
     todo: "未着手",

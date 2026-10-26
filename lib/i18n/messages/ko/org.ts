@@ -36,22 +36,21 @@ export default {
       description: "역할은 구성원 화면에서 소유자·관리자가 바꿉니다. 누구도 자기 역할을 스스로 바꿀 수 없습니다.",
     },
     preferences: {
-      description: "아래 항목은 아직 바꿀 수 없습니다. 화면 모양은 화면 설정에서 바꿉니다.",
+      description: "워크스페이스에서 쓰는 개인 설정입니다. 항목을 바꾸면 바로 저장됩니다. 화면 모양은 화면 설정에서 바꿉니다.",
       startPage: "시작 화면",
-      startPageNote: "지금은 홈으로 시작합니다.",
+      startPageNote: "워크스페이스 주소로 들어올 때 처음 열리는 화면입니다.",
+      startPageOptions: { home: "홈", "my-tasks": "내 작업", projects: "프로젝트", inbox: "수신함" },
       taskOpen: "작업 여는 방식",
-      taskOpenNote: "지금은 오른쪽 패널로 엽니다.",
+      taskOpenNote: "작업을 눌렀을 때 여는 방식입니다.",
+      taskOpenOptions: { panel: "오른쪽 패널", page: "전체 페이지" },
       boardDone: "보드에 완료 열 표시",
+      boardDoneNote: "보드 보기의 처음 상태입니다. 툴바에서 바꾼 값이 있으면 그 값이 우선합니다.",
       confirmDelete: "삭제 전 확인",
+      confirmDeleteNote: "작업·프로젝트·댓글을 삭제하기 전에 확인 창을 띄웁니다.",
+      saved: "{label} 설정을 저장했습니다.",
     },
     twoFactor: {
       note: "이 기능은 현재 제공하지 않습니다.",
-    },
-    billing: {
-      description: "결제 기능은 현재 제공하지 않습니다. 요금이 청구되지 않습니다.",
-      plan: "요금제",
-      paymentMethod: "결제 수단",
-      invoices: "청구서",
     },
     general: {
       adminOnly: "소유자와 관리자만 바꿀 수 있습니다.",
@@ -138,7 +137,6 @@ export default {
       password: "비밀번호",
       sessions: "로그인 세션",
       "two-factor": "2단계 인증",
-      billing: "결제",
     },
     // 섹션이 속한 그룹 이름(SETTINGS_SECTIONS의 group). URL slug가 키다
     groupOf: {
@@ -157,7 +155,6 @@ export default {
       password: "보안",
       sessions: "보안",
       "two-factor": "보안",
-      billing: "결제",
     },
   },
   // 구성원 화면(members-view)

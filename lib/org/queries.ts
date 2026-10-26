@@ -5,7 +5,14 @@ import { getMember, requireUserId } from "@/lib/data/workspace";
 import type { Enums } from "@/lib/database.types";
 import { getT } from "@/lib/i18n/server";
 import { orgErrorMessage } from "@/lib/org/errors";
-import { NOTIF_KEYS, canOpenOrgScreens } from "@/lib/org/rules";
+import {
+  DEFAULT_USER_PREFS,
+  NOTIF_KEYS,
+  canOpenOrgScreens,
+  parseStartTab,
+  parseTaskOpen,
+  type UserPrefsView,
+} from "@/lib/org/rules";
 import { createClient } from "@/lib/supabase/server";
 
 // 내 역할로 조직 화면(구성원·팀·역할과 권한)을 열 수 있는지. 페이지는 false면 forbidden()을 부른다
@@ -137,6 +144,25 @@ export async function getNotifPrefs(workspaceId: string, userId: string): Promis
   const raw = (data?.notif_prefs ?? {}) as Record<string, unknown>;
   return Object.fromEntries(NOTIF_KEYS.map((k) => [k, raw[k] !== false])) as NotifPrefs;
 }
+
+// 환경 설정. 행이 없으면 기본값이다. 레이아웃과 설정 화면이 한 요청에서 함께 읽으므로 cache로 한 번만 묻는다
+export const getUserPrefs = cache(async (workspaceId: string, userId: string): Promise<UserPrefsView> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("user_prefs")
+    .select("default_tab, task_open, show_done_board, confirm_del")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) fail("환경 설정", error);
+  if (!data) return { ...DEFAULT_USER_PREFS };
+  return {
+    startTab: parseStartTab(data.default_tab),
+    taskOpen: parseTaskOpen(data.task_open),
+    showDoneBoard: data.show_done_board,
+    confirmDel: data.confirm_del,
+  };
+});
 
 export type MyInvite = { id: string; workspaceName: string; role: Enums<"ws_role">; createdAt: string };
 

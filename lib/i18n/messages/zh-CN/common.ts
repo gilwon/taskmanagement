@@ -11,6 +11,13 @@ export default {
     retry: "重试",
     home: "返回首页",
   },
+  confirmDelete: {
+    title: "确定删除吗？",
+    task: "将删除此任务。删除后可立即撤销。",
+    project: "将删除项目 {name}。可以从归档中恢复。",
+    comment: "将删除此评论。删除后可立即撤销。",
+    confirm: "删除",
+  },
   taskStatus: {
     backlog: "待办池",
     todo: "待处理",

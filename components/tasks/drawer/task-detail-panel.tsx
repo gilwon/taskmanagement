@@ -27,6 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DeleteConfirm } from "@/components/org/delete-confirm";
+import { useWorkspacePrefs } from "@/components/org/workspace-prefs";
 import { ProjectIcon } from "@/components/shell/project-icon";
 import { isPlainKey } from "@/components/shortcuts/keys";
 import {
@@ -102,6 +104,8 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
   const [reload, setReload] = useState(0);
   const [favorite, setFavorite] = useState<boolean | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { confirmDel } = useWorkspacePrefs();
 
   useEffect(() => {
     let alive = true;
@@ -340,7 +344,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
                 <kbd className="ml-auto font-mono text-(length:--fs-2xs) text-(--text-3)">E</kbd>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onSelect={remove}>
+              <DropdownMenuItem variant="destructive" onSelect={() => (confirmDel ? setDeleteOpen(true) : remove())}>
                 <Trash2 size={14} strokeWidth={1.8} aria-hidden />
                 {t("tasks.detail.delete")}
               </DropdownMenuItem>
@@ -569,6 +573,7 @@ export function TaskDetailPanel({ task, mode, titleRef, escRef, onClose, onToggl
         </div>
       </div>
 
+      <DeleteConfirm kind="task" open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={remove} />
       <NewTaskDialog
         mode="edit"
         open={editOpen}

@@ -11,6 +11,13 @@ export default {
     retry: "Try again",
     home: "Go home",
   },
+  confirmDelete: {
+    title: "Delete this item?",
+    task: "This deletes the task. You can undo it right after.",
+    project: "This deletes the project {name}. You can restore it from the archive.",
+    comment: "This deletes the comment. You can undo it right after.",
+    confirm: "Delete",
+  },
   taskStatus: {
     backlog: "Backlog",
     todo: "Todo",

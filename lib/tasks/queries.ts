@@ -168,7 +168,14 @@ export async function getViewState(workspaceId: string, viewKey: ViewKey): Promi
     .eq("view_key", viewKey)
     .maybeSingle();
   if (error) return fail("뷰 설정", "tasks.errors.loadTarget.viewState", error);
-  return parseViewState(data?.state);
+  if (data) return parseViewState(data.state);
+  // 저장된 값이 없으면 환경 설정의 "보드에 완료 열 표시"가 초기값이다. 툴바에서 바꾸면 저장된 값이 우선한다
+  const { data: prefs } = await supabase
+    .from("user_prefs")
+    .select("show_done_board")
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+  return { ...parseViewState(null), showDone: prefs?.show_done_board ?? true };
 }
 
 // 담당자 선택용. 비활성 구성원은 뺀다

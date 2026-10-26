@@ -3,6 +3,8 @@
 import { Archive, ArchiveRestore, Ellipsis, Star, StarOff, Trash } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 import { toast } from "sonner";
+import { DeleteConfirm } from "@/components/org/delete-confirm";
+import { useWorkspacePrefs } from "@/components/org/workspace-prefs";
 import { MemberAvatar } from "@/components/shell/member-avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,6 +90,8 @@ type MenuAction = { key: string; label: string; icon: React.ReactNode; onSelect:
 function useProjectActions(project: MenuProject, workspaceId: string) {
   const t = useT();
   const [busy, setBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { confirmDel } = useWorkspacePrefs();
   const act = async (fn: () => Promise<{ ok: boolean; error?: string }>, done: string) => {
     setBusy(true);
     const r = await fn();
@@ -140,16 +144,20 @@ function useProjectActions(project: MenuProject, workspaceId: string) {
             archived ? t("projects.menu.unarchived", { name: project.name }) : t("projects.menu.archived", { name: project.name }),
           ),
       },
-      { key: "delete", label: t("projects.menu.delete"), icon: <Trash {...ICON} />, onSelect: () => void remove(), destructive: true },
+      { key: "delete", label: t("projects.menu.delete"), icon: <Trash {...ICON} />, onSelect: () => (confirmDel ? setDeleteOpen(true) : void remove()), destructive: true },
     );
   }
-  return { busy, actions };
+  const confirm = (
+    <DeleteConfirm kind="project" name={project.name} open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={() => void remove()} />
+  );
+  return { busy, actions, confirm };
 }
 
 export function ProjectMenu({ project, workspaceId }: { project: MenuProject; workspaceId: string }) {
   const t = useT();
-  const { busy, actions } = useProjectActions(project, workspaceId);
+  const { busy, actions, confirm } = useProjectActions(project, workspaceId);
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon-xs" aria-label={t("projects.menu.actions", { name: project.name })} disabled={busy}>
@@ -168,6 +176,8 @@ export function ProjectMenu({ project, workspaceId }: { project: MenuProject; wo
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+    {confirm}
+    </>
   );
 }
 
@@ -190,10 +200,11 @@ export function ProjectContextMenu({
   children: React.ReactElement;
 }) {
   const t = useT();
-  const { actions } = useProjectActions(project, workspaceId);
+  const { actions, confirm } = useProjectActions(project, workspaceId);
   // 키보드로 연 경우 닫을 때 포커스를 돌려줄 요소
   const keyboardOpener = useRef<HTMLElement | null>(null);
   return (
+    <>
     <ContextMenu>
       <ContextMenuTrigger
         asChild
@@ -232,5 +243,7 @@ export function ProjectContextMenu({
         ))}
       </ContextMenuContent>
     </ContextMenu>
+    {confirm}
+    </>
   );
 }
