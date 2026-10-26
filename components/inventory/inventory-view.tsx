@@ -1,8 +1,9 @@
 "use client";
 // 재고 화면 본문. 머리말과 "품목"/"위치" 탭을 그린다. 탭·필터·열린 품목은 주소 쿼리가 원본이다.
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
+import { ImportDialog } from "@/components/inventory/import-dialog";
 import { ItemDrawer } from "@/components/inventory/item-drawer";
 import { ItemFormDialog } from "@/components/inventory/item-form-dialog";
 import { ItemTable, type Navigate, type StockFilters } from "@/components/inventory/item-table";
@@ -53,6 +54,7 @@ export function InventoryView({
   const pathname = usePathname();
   const search = useSearchParams();
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   // 다른 쿼리는 유지한 채 patch만 반영한다
   const navigate = useCallback<Navigate>(
@@ -77,10 +79,16 @@ export function InventoryView({
         subtitle={t("inventory.page.subtitle")}
         actions={
           canManage && (
-            <Button size="sm" className="max-sm:h-10" onClick={() => setAdding(true)}>
-              <Plus aria-hidden strokeWidth={1.8} />
-              {t("inventory.page.addItem")}
-            </Button>
+            <>
+              <Button size="sm" variant="outline" className="max-sm:h-10" onClick={() => setImporting(true)}>
+                <Upload aria-hidden strokeWidth={1.8} />
+                {t("inventory.import.button")}
+              </Button>
+              <Button size="sm" className="max-sm:h-10" onClick={() => setAdding(true)}>
+                <Plus aria-hidden strokeWidth={1.8} />
+                {t("inventory.page.addItem")}
+              </Button>
+            </>
           )
         }
       />
@@ -128,6 +136,7 @@ export function InventoryView({
       {canManage && (
         <ItemFormDialog open={adding} onOpenChange={setAdding} workspaceId={workspace.id} categories={categories} />
       )}
+      {canManage && <ImportDialog open={importing} onOpenChange={setImporting} workspaceId={workspace.id} />}
     </>
   );
 }

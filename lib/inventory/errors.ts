@@ -20,6 +20,8 @@ const STOCK_RPC_MESSAGES = {
   note_required: "inventory.errors.noteRequired",
   not_found: "inventory.errors.notFound",
   forbidden: "inventory.errors.forbidden",
+  invalid_import: "inventory.errors.invalidImport",
+  import_invalid: "inventory.errors.importInvalid",
 } as const satisfies Record<string, MessageKey>;
 
 type DbError = { code?: string | null; message?: string | null } | null | undefined;
@@ -33,4 +35,30 @@ export function stockErrorMessage(error: DbError, t?: T): string {
   if (error?.code === "PGRST116") return say(STOCK_RPC_MESSAGES.not_found);
   if (error?.code === "42501") return say(STOCK_RPC_MESSAGES.forbidden);
   return taskErrorMessage(error, t);
+}
+
+// 엑셀 업로드 행 오류 코드(앱 검사와 RPC 공통)별 사유 문구 키. 모르는 코드는 일반 문구로 보인다
+const IMPORT_REASONS = {
+  missing_sku: "inventory.import.reason.missingSku",
+  missing_location: "inventory.import.reason.missingLocation",
+  missing_qty: "inventory.import.reason.missingQty",
+  no_rows: "inventory.import.reason.noRows",
+  too_many_rows: "inventory.import.reason.tooManyRows",
+  sku_required: "inventory.import.reason.skuRequired",
+  location_required: "inventory.import.reason.locationRequired",
+  qty_required: "inventory.import.reason.qtyRequired",
+  invalid_safety: "inventory.import.reason.invalidSafety",
+  location_not_found: "inventory.import.reason.locationNotFound",
+  duplicate_row: "inventory.import.reason.duplicateRow",
+  name_required: "inventory.import.reason.nameRequired",
+  unit_required: "inventory.import.reason.unitRequired",
+  truncated: "inventory.import.reason.truncated",
+  invalid_qty: "inventory.errors.invalidQty",
+  archived: "inventory.errors.archived",
+  duplicate_sku: "inventory.errors.duplicateSku",
+  note_required: "inventory.errors.noteRequired",
+} as const satisfies Record<string, MessageKey>;
+
+export function importReason(code: string, t: T): string {
+  return t(Object.hasOwn(IMPORT_REASONS, code) ? IMPORT_REASONS[code as keyof typeof IMPORT_REASONS] : "inventory.import.reason.unknown");
 }

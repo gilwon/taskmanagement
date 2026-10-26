@@ -2,6 +2,7 @@
 // 재고 Server Action. 품목·위치 관리와 입고·출고·이동·조정을 RPC로 호출한다. 권한·재고 규칙의 최종 판정은 RPC가 한다.
 // 수량은 서버에서 다시 파싱한다. 화면 갱신은 클라이언트가 router.refresh로 한다
 import { stockErrorMessage } from "@/lib/inventory/errors";
+import { MAX_IMPORT_ROWS, type ImportResult, type ImportRow, type ImportRowError, type ImportSummary } from "@/lib/inventory/import";
 import { parseQty, parseTarget } from "@/lib/inventory/rules";
 import { getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/t";
@@ -227,5 +228,71 @@ export async function adjustStock(
     });
     if (error) return dbErr("재고 조정", error, t);
     return ok(null);
+  });
+}
+
+// 업로드 행 하나의 모양 검사. 값의 의미(위치 존재, 중복 등)는 RPC가 판정한다
+function importRow(value: unknown): ImportRow {
+  if (typeof value !== "object" || value === null) throw new InputError();
+  const r = value as Record<string, unknown>;
+  const nullableStr = (v: unknown) => (v == null ? null : str(v));
+  if (typeof r.row !== "number" || !Number.isInteger(r.row)) throw new InputError();
+  if (r.safety != null && typeof r.safety !== "number") throw new InputError();
+  if (typeof r.qty !== "string" && typeof r.qty !== "number") throw new InputError();
+  return {
+    row: r.row,
+    sku: str(r.sku),
+    name: nullableStr(r.name),
+    unit: nullableStr(r.unit),
+    category: nullableStr(r.category),
+    safety: r.safety ?? null,
+    location: str(r.location),
+    qty: String(r.qty),
+  };
+}
+
+function importRows(value: unknown): ImportRow[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > MAX_IMPORT_ROWS) throw new InputError();
+  return value.map(importRow);
+}
+
+// RPC import_invalid의 details(JSON 문자열)를 행 오류로 되돌린다. 모양이 다르면 null
+function parseRowErrors(details: unknown): ImportRowError[] | null {
+  if (typeof details !== "string") return null;
+  try {
+    const list: unknown = JSON.parse(details);
+    if (!Array.isArray(list)) return null;
+    const out: ImportRowError[] = [];
+    for (const e of list) {
+      if (typeof e?.row !== "number" || typeof e?.code !== "string") return null;
+      out.push({ row: e.row, code: e.code });
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+// 엑셀 행 일괄 반영. 한 행이라도 틀리면 RPC가 전체를 되돌리고 행 오류 목록을 돌려준다
+export async function importStock(workspaceId: string, rows: ImportRow[], note: string): Promise<ImportResult> {
+  return run("재고 엑셀 업로드", async ({ supabase, t }) => {
+    const { data, error } = await supabase.rpc("stock_import", {
+      p_ws: uuid(workspaceId),
+      p_rows: importRows(rows),
+      p_note: requiredNote(note),
+    });
+    if (error) {
+      if (error.message === "import_invalid") {
+        const rowErrors = parseRowErrors(error.details);
+        console.error("[재고 엑셀 업로드]", error.code, error.message);
+        return rowErrors && rowErrors.length > 0
+          ? { ok: false, error: t("inventory.errors.importInvalid"), rowErrors }
+          : err(t("inventory.errors.importFailed"));
+      }
+      return dbErr("재고 엑셀 업로드", error, t);
+    }
+    if (!data) return err(t("inventory.errors.importFailed"));
+    // RPC가 {created, adjusted, skipped}를 돌려주므로 생성 타입의 Json을 좁힌다
+    return ok(data as ImportSummary);
   });
 }
