@@ -1,0 +1,25 @@
+/* Lucian UX/UI Prompt #079 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#079 */
+/* 뼈대 전체를 한 줄기 빛이 같은 박자로 훑는 로딩. 원본의 카드 크기·새로고침 버튼·완료 전환은 빼고 빛 모션과 뼈대 블록만 쓴다 */
+
+@layer components {
+  .u079-s {
+    position: relative;
+  }
+  .u079-sk {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    animation: u079-shine 1.6s linear infinite;
+    background:
+      linear-gradient(100deg, transparent 28%, color-mix(in srgb, var(--ux-surface-3), var(--ux-ink) 7%) 45%, transparent 62%) var(--sx, 0) 0/var(--sw, 700px) 100% no-repeat,
+      var(--ux-surface-2);
+  }
+  @keyframes u079-shine {
+    from {
+      background-position: calc(var(--sx, 0px) - 700px) 0, 0 0;
+    }
+    to {
+      background-position: calc(var(--sx, 0px) + 700px) 0, 0 0;
+    }
+  }
+}
